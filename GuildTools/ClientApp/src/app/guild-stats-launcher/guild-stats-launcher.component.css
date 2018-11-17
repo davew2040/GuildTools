@@ -1,0 +1,56 @@
+.launcher-container{
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+}
+
+.fields-container{
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.field-group{
+  text-align: center;
+  display:flex;
+  width:250px;
+  flex-direction: column;
+}
+
+.field-group-left {
+  text-align: center;
+  display: flex;
+  width: 250px;
+  flex-direction: column;
+  margin-left: 0px;
+  margin-right: 10px;
+}
+
+.field-group-right {
+  text-align: center;
+  display: flex;
+  width: 250px;
+  flex-direction: column;
+  margin-left: 10px;
+  margin-right: 0px;
+}
+
+.field-group input {
+  text-align: center;
+}
+
+.field-group input {
+  /*width: 200px;*/
+}
+
+.button-container {
+  margin-top: 35px;
+  text-align: center
+}
+
+.guild-not-found {
+  width: 300px;
+  margin-top: 30px;
+  margin-left: auto;
+  margin-right: auto;
+}

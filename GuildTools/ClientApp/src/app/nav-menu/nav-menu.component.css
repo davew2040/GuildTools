@@ -1,0 +1,45 @@
+li .glyphicon {
+    margin-right: 10px;
+}
+
+/* Highlighting rules for nav menu items */
+li.link-active a,
+li.link-active a:hover,
+li.link-active a:focus {
+    background-color: #4189C7;
+    color: white;
+}
+
+.main-nav {
+  background-color: #193370;
+  padding-left: 15px;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.main-nav h1.page-title {
+  color: white;
+  font-size: 75px;
+  font-family: Arial;
+  font-weight: bold;
+  margin-top: 35px;
+}
+
+.links-container{
+  margin-left: 20px;
+  margin-top: 10px;
+  margin-bottom:30px;
+  font-size: 24px;
+}
+
+.links-container a {
+  color: white;
+}
+
+.auth-content {
+  padding-top: 20px;
+  padding-bottom: 20px;
+  text-align: right;
+}

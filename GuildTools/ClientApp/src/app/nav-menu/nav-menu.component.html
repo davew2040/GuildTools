@@ -1,0 +1,35 @@
+<div class="row bottom main-nav">
+  <div class="col-sm-8">
+    <h1 class="page-title">Guild Tools</h1>
+    <div class="links-container"><a [routerLink]="['./guildstats']">Stats</a></div>
+  </div>
+  <div class="auth-content col-sm-4">
+    <div *ngIf="!auth.isAuthenticated()">
+      <button id="btnLogin"
+              class="btn btn-primary"
+              (click)="this.router.navigate(['/login'])" type="button">
+        Log In
+      </button>
+
+      <button id="btnRegister"
+              class="btn btn-primary"
+              (click)="this.router.navigate(['/register']);"
+              type="button">
+        Register
+      </button>
+    </div>
+    <div *ngIf="auth.isAuthenticated()">
+      <button id="btnLogout"
+              class="btn btn-primary"
+              (click)="auth.logout()" type="button">
+        Log Out
+      </button>
+
+      <button id="btnUserAccount"
+              class="btn btn-primary"
+              (click)="this.router.navigate(['/userSettings'])" type="button">
+        User Settings
+      </button>
+    </div>
+  </div>
+</div>

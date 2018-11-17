@@ -1,0 +1,57 @@
+/* You can add global styles to this file, and also import other style files */
+
+.loginRegisterBlock
+{
+  text-align: right;
+  padding-right:10px;
+  padding-top:10px;
+}
+
+.warrior {
+  background-color: #C69B6D
+}
+
+.druid {
+  background-color: #FF7F00
+}
+
+.rogue {
+  background-color: #FFF67F
+}
+
+.paladin {
+  background-color: #FFC1FD
+}
+
+.mage {
+  background-color: #56B0DD
+}
+
+.warlock {
+  background-color: #7B5EB5
+}
+
+.priest {
+  background-color: #E7E3EA
+}
+
+.monk {
+  background-color: #53E8AF
+}
+
+.dk {
+  background-color: #FF3F4C
+}
+
+.dh {
+  background-color: #8300FF;
+  color: white;
+}
+
+.hunter {
+  background-color: #A4E0A1
+}
+
+.shaman {
+  background-color: #82A2E5
+}
