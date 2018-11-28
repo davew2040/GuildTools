@@ -1,16 +1,22 @@
 <div class='launcher-container'>
   <div class="fields-container">
-    <div class="field-group field-group-left">
-      <h2>Guild</h2>
-      <input class="form-control input-lg" type="text" #guild [value]="savedGuild"/>
+    <div class="field-group field-group-region">
+      <h2>Region</h2>
+      <select style="width:125px; height:45px" class="form-control select-lg" [(ngModel)]="selectedRegion">
+        <option *ngFor="let region of regions" [ngValue]="region">{{region}}</option>
+      </select>
     </div>
-    <div class="field-group field-group-right">
+    <div class="field-group">
+      <h2>Guild</h2>
+      <input class="form-control input-lg" type="text" #guild [value]="savedGuild" />
+    </div>
+    <div class="field-group">
       <h2>Realm</h2>
-      <input class="form-control input-lg" type="text" #realm [value]="savedRealm"/>
+      <input class="form-control input-lg" type="text" #realm [value]="savedRealm" />
     </div>
   </div>
   <div class="row button-container">
-    <button class="btn btn-success btn-lg" style="width:200px" (click)="search(guild.value, realm.value)">Search</button>
+    <button class="btn btn-success btn-lg" style="width:200px" (click)="search(selectedRegion, guild.value, realm.value)">Search</button>
   </div>
 
    <div *ngIf="guildNotFound" class="alert alert-danger guild-not-found"><span>Guild not found!</span></div>

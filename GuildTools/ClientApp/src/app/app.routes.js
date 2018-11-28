@@ -13,7 +13,7 @@ exports.ROUTES = [
     { path: 'register', component: register_user_component_1.RegisterUserComponent },
     { path: 'login', component: login_component_1.LoginComponent },
     { path: 'guildstats', component: guild_stats_launcher_component_1.GuildStatsLauncherComponent },
-    { path: 'guildstats/:guild/:realm', component: guild_stats_component_1.GuildStatsComponent },
+    { path: 'guildstats/:region/:guild/:realm', component: guild_stats_component_1.GuildStatsComponent },
     { path: '**', redirectTo: '' }
 ];
 //# sourceMappingURL=app.routes.js.map

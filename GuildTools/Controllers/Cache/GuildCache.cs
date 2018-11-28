@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static GuildTools.ExternalServices.BlizzardService;
 
 namespace GuildTools.Controllers.Cache
 {
@@ -25,9 +26,9 @@ namespace GuildTools.Controllers.Cache
             this.updatingSet = new HashSet<string>();
         }
 
-        public string Get(string realm, string guild)
+        public string Get(Region region, string realm, string guild)
         {
-            string key = this.GetKey(realm, guild);
+            string key = this.GetKey(region, realm, guild);
 
             if (this.cache.ContainsKey(key))
             {
@@ -52,14 +53,14 @@ namespace GuildTools.Controllers.Cache
                 }
             }
 
-            this.Refresh(guild, realm);
+            this.Refresh(region, guild, realm);
 
             return null;
         }
 
-        public void Refresh(string guild, string realm)
+        public void Refresh(Region region, string guild, string realm)
         {
-            string key = this.GetKey(realm, guild);
+            string key = this.GetKey(region, realm, guild);
 
             if (this.updatingSet.Contains(key))
             {
@@ -70,26 +71,26 @@ namespace GuildTools.Controllers.Cache
 
             Task.Factory.StartNew(async () =>
             {
-                var guildData = await this.blizzardService.GetGuildMembers(guild, realm);
+                var guildData = await this.blizzardService.GetGuildMembers(guild, realm, region);
                 
-                this.Add(realm, guild, guildData, CacheEntryDuration);
+                this.Add(region, realm, guild, guildData, CacheEntryDuration);
 
                 this.updatingSet.Remove(key);
             });
         }
 
 
-        private void Add(string realm, string guild, string value, TimeSpan duration)
+        private void Add(Region region, string realm, string guild, string value, TimeSpan duration)
         {
-            string key = this.GetKey(realm, guild);
+            string key = this.GetKey(region, realm, guild);
 
             this.cache[key] = new ExpiringData<string>(DateTime.Now + duration, value);
-            this.sqlData.SetCachedValue(this.GetKey(realm, guild), value, SqlCacheType, duration);
+            this.sqlData.SetCachedValue(this.GetKey(region, realm, guild), value, SqlCacheType, duration);
         }
         
-        private string GetKey(string realm, string guild)
+        private string GetKey(Region region, string realm, string guild)
         {
-            return $"{realm}:{guild}";
+            return $"{BlizzardService.GetRegionString(region)}:{realm}:{guild}";
         }
     }
 }

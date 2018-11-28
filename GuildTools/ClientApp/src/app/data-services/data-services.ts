@@ -30,8 +30,8 @@ export class DataService {
       });
   }
 
-  public GetGuildExists(guild: string, realm: string, handleResult: (result: GuildExists) => void): void {
-    this.http.get(this.baseUrl + `api/data/guildExists?guild=${guild}&realm=${realm}`).subscribe(
+  public GetGuildExists(region: string, guild: string, realm: string, handleResult: (result: GuildExists) => void): void {
+    this.http.get(this.baseUrl + `api/data/guildExists?region=${region}&guild=${guild}&realm=${realm}`).subscribe(
       success => {
         let guildExists = new GuildExists();
 
@@ -46,8 +46,8 @@ export class DataService {
       });
   }
 
-  public GetGuildMemberStats(guild: string, realm: string, handleResult: (result: GuildMember[]) => void): void {
-    this.http.get(this.baseUrl + `api/data/getGuildMemberStats?guild=${guild}&realm=${realm}`).subscribe(
+  public GetGuildMemberStats(region: string, guild: string, realm: string, handleResult: (result: GuildMember[]) => void): void {
+    this.http.get(this.baseUrl + `api/data/getGuildMemberStats?region=${region}&guild=${guild}&realm=${realm}`).subscribe(
       success => {
         if (success) {
           let mappedResult = (success as Array<any>).map(r => {
@@ -68,6 +68,7 @@ export class DataService {
             member.PvpRbgRating = r["pvpRbgRating"];
             member.TotalHonorableKills = r["totalHonorableKills"];
             member.AzeriteLevel = r["azeriteLevel"];
+            member.RaiderIoMplusScore = r["RaiderIoMplusScore"];
 
             return member;
           });

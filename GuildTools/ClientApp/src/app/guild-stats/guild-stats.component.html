@@ -14,8 +14,9 @@
 <div *ngIf="pageReady()">
 
   <div class="guild-header">
-    <div style="text-align: center; font-size: 36px; font-weight:bold;">{{prettyGuild}}</div>
-    <div style="text-align: center; font-size: 24px;">@ <a [href]="getGuildArmoryLink(realm, guild)">{{prettyRealm}}</a></div>
+    <div style="text-align: center; font-size: 36px; font-weight:bold;">
+    <a [href]="getGuildArmoryLink(realm, guild)">{{prettyGuild}}</a></div>
+    <div style="text-align: center; font-size: 24px;">@ {{prettyRealm}} ({{region}})</div>
 
     <div style="text-align: center; font-size:10pt; margin-top:15px"><a [routerLink]="['/guildstats']">Back to Search</a></div>
   </div>

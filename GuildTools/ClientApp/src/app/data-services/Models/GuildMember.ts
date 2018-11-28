@@ -14,4 +14,5 @@ export class GuildMember {
   public TotalHonorableKills: number;
   public GuildRank: number;
   public AzeriteLevel: number;
+  public RaiderIoMplusScore: number;
 }

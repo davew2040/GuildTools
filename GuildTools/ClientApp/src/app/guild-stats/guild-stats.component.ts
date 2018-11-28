@@ -23,6 +23,7 @@ export class GuildStatsComponent implements OnInit {
   guildMembers: GuildMember[] = [];
   guild: string;
   realm: string;
+  region: string;
   prettyGuild: string;
   prettyRealm: string;
   guildExists: boolean = false;
@@ -35,14 +36,15 @@ export class GuildStatsComponent implements OnInit {
     this.route.params.subscribe(params => {
       this.realm = params['realm'];
       this.guild = params['guild'];
+      this.region = params['region'];
     });
 
-    this.dataService.GetGuildExists(this.guild, this.realm, (result) => {
+    this.dataService.GetGuildExists(this.region, this.guild, this.realm, (result) => {
       if (result.Found === true) {
         this.prettyGuild = result.Name;
         this.prettyRealm = result.Realm;
 
-        this.loadGuildStats(this.realm, this.guild);
+        this.loadGuildStats(this.region, this.realm, this.guild);
       }
       else {
         this.pageStatus = GuildStatsStatus.GuildNotFound;
@@ -169,8 +171,9 @@ export class GuildStatsComponent implements OnInit {
     this.statsTables.push(guildRank);
   }
 
-  loadGuildStats(realm: string, guild: string) {
+  loadGuildStats(region: string, realm: string, guild: string) {
     this.dataService.GetGuildMemberStats(
+      region,
       guild,
       realm,
       (result) => {
@@ -202,13 +205,22 @@ export class GuildStatsComponent implements OnInit {
   }
 
   getPlayerArmoryLink(player: GuildMember): string {
-    let url = `https://worldofwarcraft.com/en-us/character/${BlizzardService.FormatRealm(player.Realm)}/${player.Name}`;
+    let url = `https://worldofwarcraft.com/${this.getPlayerRegionUrlSegment(this.region)}/character/${BlizzardService.FormatRealm(player.Realm)}/${player.Name}`;
     return url;
   }
 
   getGuildArmoryLink(realm: string, guild: string): string {
-    let url = `http://us.battle.net/wow/en/guild/${BlizzardService.FormatRealm(realm)}/${guild}/`;
+    let url = `http://${this.region}.battle.net/wow/en/guild/${BlizzardService.FormatRealm(realm)}/${guild}/`;
     return url;
+  }
+
+  getPlayerRegionUrlSegment(realm: string): string {
+    if (realm.toLowerCase() == "us") {
+      return "en-us";
+    }
+    else {
+      return "en-gb";
+    }
   }
 
   mapClassToColor(classIndex: number): string {

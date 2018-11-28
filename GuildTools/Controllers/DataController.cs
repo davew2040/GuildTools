@@ -14,6 +14,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Serilog;
+using static GuildTools.ExternalServices.BlizzardService;
 
 namespace GuildTools.Controllers
 {
@@ -79,12 +81,13 @@ namespace GuildTools.Controllers
         }
 
         [HttpGet("getGuildMemberStats")]
-        public async Task<IActionResult> GetGuildMemberStats(string guild, string realm)
+        public async Task<IActionResult> GetGuildMemberStats(string region, string guild, string realm)
         {
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
+            Region regionEnum = BlizzardService.GetRegionFromString(region);
 
-            var guildData = this.guildMemberCache.Get(realm, guild);
+            var guildData = this.guildMemberCache.Get(regionEnum, realm, guild);
 
             if (guildData == null)
             {
@@ -95,38 +98,28 @@ namespace GuildTools.Controllers
         }
 
         [HttpGet("guildExists")]
-        public async Task<ActionResult> GuildExists(string guild, string realm)
+        public async Task<ActionResult> GuildExists(string region, string guild, string realm)
         {
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
             
-            try
-            {
-                var result = await this.blizzardService.GetGuildMembers(guild, realm);
+            var result = await this.blizzardService.GetGuildMembers(guild, realm, BlizzardService.GetRegionFromString(region));
 
-                var jobject = JsonConvert.DeserializeObject(result) as JObject;
-                if (jobject["status"] != null && jobject["status"].ToString() == "nok")
-                {
-                    return Json(new GuildFound()
-                    {
-                        Found = false
-                    });
-                }
-
-                return Json(new GuildFound()
-                {
-                    Found = true,
-                    Realm = jobject["realm"].ToString(),
-                    Name = jobject["name"].ToString()
-                });
-            }
-            catch (Exception e)
+            var jobject = JsonConvert.DeserializeObject(result) as JObject;
+            if (jobject["status"] != null && jobject["status"].ToString() == "nok")
             {
                 return Json(new GuildFound()
                 {
                     Found = false
                 });
             }
+
+            return Json(new GuildFound()
+            {
+                Found = true,
+                Realm = jobject["realm"].ToString(),
+                Name = jobject["name"].ToString()
+            });
         }
 
 

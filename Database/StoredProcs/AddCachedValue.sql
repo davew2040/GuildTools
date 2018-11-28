@@ -13,7 +13,7 @@ AS
          SET 
 			Value = @value,
 			ExpiresOn = @expiresOn
-       WHERE Id = id AND Type = @type
+       WHERE Id = @id AND Type = @type
  
     ELSE 
  

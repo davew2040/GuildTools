@@ -17,6 +17,8 @@ using System.Text;
 using GuildTools.Controllers.Cache;
 using GuildTools.ExternalServices;
 using GuildTools.Scheduler;
+using Serilog;
+using Serilog.Sinks.MSSqlServer;
 
 namespace GuildTools
 {
@@ -81,6 +83,19 @@ namespace GuildTools
                     options.TokenValidationParameters = tokenValidationParameters;
                 });
 
+            var logDB = Configuration.GetValue<string>("ConnectionStrings:Database");
+            var logTable = "Logs";
+
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.MSSqlServer(
+                    autoCreateSqlTable: true,
+                    connectionString: logDB,
+                    tableName: logTable)
+                .CreateLogger();
+
+            services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             IBackgroundTaskQueue backgroundTaskQueue = new BackgroundTaskQueue();
@@ -97,10 +112,12 @@ namespace GuildTools
             IBlizzardService blizzardService = new BlizzardService(
                 Configuration.GetValue<string>("ConnectionStrings:Database"), 
                 blizzardSecrets);
-
+            IRaiderIoService raiderIoService = new RaiderIoService();
+            
             services.AddSingleton<IBlizzardService>(blizzardService);
+            services.AddSingleton<IRaiderIoService>(raiderIoService);
             services.AddSingleton<IGuildCache>(new GuildCache(Configuration, blizzardService));
-            services.AddSingleton<IGuildMemberCache>(new GuildMemberCache(Configuration, blizzardService, backgroundTaskQueue));
+            services.AddSingleton<IGuildMemberCache>(new GuildMemberCache(Configuration, blizzardService, raiderIoService, backgroundTaskQueue));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

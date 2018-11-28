@@ -16,7 +16,7 @@ export class BlizzardService {
     name = name.trim();
 
     name = name.replace(/ /g, "-");
-    name = name.replace(/`/g, "-");
+    name = name.replace(/`/g, "");
 
     return name;
   }

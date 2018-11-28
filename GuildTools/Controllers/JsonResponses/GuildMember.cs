@@ -22,5 +22,6 @@ namespace GuildTools.Controllers.JsonResponses
         public int TotalHonorableKills { get; set; }
         public int GuildRank { get; set; }
         public int AzeriteLevel { get; set; }
+        public int RaiderIoMplusScore { get; set; }
     }
 }

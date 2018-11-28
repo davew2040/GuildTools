@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static GuildTools.ExternalServices.BlizzardService;
 
 namespace GuildTools.Controllers.Cache
 {
     public interface IGuildCache
     {
-        string Get(string realm, string guild);
+        string Get(Region region, string realm, string guild);
     }
 }

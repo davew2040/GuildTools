@@ -10,12 +10,22 @@ namespace GuildTools.ExternalServices
 {
     public class BlizzardService : IBlizzardService
     {
-        private const string AccessTokenCacheKey = "BlizzardAccessToken";
+        private readonly Dictionary<Region, string> AccessTokenCacheKeys = new Dictionary<Region, string>()
+        {
+            { Region.US, "UsBlizzardAccessToken" },
+            { Region.EU, "EuBlizzardAccessToken" }
+        };
 
-        private string accessToken = string.Empty;
+        private Dictionary<Region, string> regionAccessTokens;
         private HttpClient client;
         private readonly Sql.Data dataSql;
         private readonly BlizzardApiSecrets secrets;
+
+        public enum Region
+        {
+            US,
+            EU
+        }
 
         public BlizzardService(string connectionString, BlizzardApiSecrets secrets)
         {
@@ -24,54 +34,99 @@ namespace GuildTools.ExternalServices
             this.secrets = secrets;
             this.dataSql = new Sql.Data(connectionString);
 
-            this.accessToken = this.dataSql.GetStoredValue(AccessTokenCacheKey) ?? string.Empty;
+            this.regionAccessTokens = new Dictionary<Region, string>();
+            this.regionAccessTokens[Region.US] = this.dataSql.GetStoredValue(this.AccessTokenCacheKeys[Region.US]) ?? string.Empty;
+            this.regionAccessTokens[Region.EU] = this.dataSql.GetStoredValue(this.AccessTokenCacheKeys[Region.EU]) ?? string.Empty;
         }
 
-        public async Task<string> GetGuildMembers(string guild, string realm)
+        public async Task<string> GetGuildMembers(string guild, string realm, Region region)
         {
-            string url = $"https://us.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?locale=en-US&access_token={{0}}&fields=members";
+            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?locale=en-US&access_token={{0}}&fields=members";
 
-            return await DoBlizzardGet(url);
+            return await this.DoBlizzardGet(url, region);
         }
 
-        public async Task<HttpResponseMessage> GetPlayerItemsWithResponse(string realm, string player)
+        public async Task<string> GetPlayerItems(string player, string realm, Region region)
         {
-            string url = $"https://us.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=items";
+            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=items";
 
-            return await this.DoBlizzardGetWithResponse(url);
+            return await DoBlizzardGet(url, region);
         }
 
-        public async Task<string> GetPlayerItems(string realm, string player)
+        public async Task<string> GetPlayerPvpStats(string player, string realm, Region region)
         {
-            string url = $"https://us.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=items";
+            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=pvp";
 
-            return await DoBlizzardGet(url);
+            return await DoBlizzardGet(url, region);
         }
 
-        public async Task<string> GetPlayerPvpStats(string realm, string player)
+        public async Task<string> GetPlayerMounts(string player, string realm, Region region)
         {
-            string url = $"https://us.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=pvp";
+            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=mounts";
 
-            return await DoBlizzardGet(url);
+            return await DoBlizzardGet(url, region);
         }
 
-        public async Task<string> GetPlayerMounts(string realm, string player)
+        public async Task<string> GetPlayerPets(string player, string realm, Region region)
         {
-            string url = $"https://us.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=mounts";
+            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=pets";
 
-            return await DoBlizzardGet(url);
+            return await DoBlizzardGet(url, region);
         }
 
-        public async Task<string> GetPlayerPets(string realm, string player)
+        public static string GetRegionString(Region region)
         {
-            string url = $"https://us.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=pets";
-
-            return await DoBlizzardGet(url);
+            switch (region)
+            {
+                case Region.EU:
+                    return "eu";
+                case Region.US:
+                default:
+                    return "us";
+            }
         }
 
-        private async Task<string> GetAccessToken()
+        public static Region GetRegionFromString(string region)
         {
-            const string url = "https://us.battle.net/oauth/token?grant_type=client_credentials";
+            region = region.Trim().ToLower();
+
+            switch (region)
+            {
+                case "eu":
+                    return Region.EU;
+                case "us":
+                    return Region.US;
+                default:
+                    throw new ArgumentException($"No valid region associated with region {region}.");
+            }
+        }
+
+        public static string FormatGuildName(string name)
+        {
+            name = name.Trim().ToLower();
+
+            return name;
+        }
+
+        public static string FormatRealmName(string name)
+        {
+            name = name.Trim().ToLower();
+
+            name = name.Replace(' ', '-');
+            name = name.Replace("\'", "");
+
+            return name;
+        }
+
+        public static DateTime FromUnixTime(long unixTime)
+        {
+            var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return epoch.AddMilliseconds(unixTime);
+        }
+
+        private async Task<string> QueryAccessToken(Region region)
+        {
+            string url = $"https://{GetRegionString(region)}.battle.net/oauth/token?grant_type=client_credentials";
             
             client.DefaultRequestHeaders.Clear();
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
@@ -93,27 +148,28 @@ namespace GuildTools.ExternalServices
 
             return converted["access_token"];
         }
-
-        private async Task<string> DoBlizzardGet(string url)
+        
+        // Note: url must be pre-formatted with region!
+        private async Task<string> DoBlizzardGet(string url, Region region)
         {
-            if (string.IsNullOrEmpty(accessToken))
+            if (string.IsNullOrEmpty(this.regionAccessTokens[region]))
             {
-                this.accessToken = await GetAccessToken();
-                this.dataSql.SetStoredValue(AccessTokenCacheKey, this.accessToken);
+                this.regionAccessTokens[region] = await this.QueryAccessToken(region);
+                this.dataSql.SetStoredValue(this.AccessTokenCacheKeys[region], this.regionAccessTokens[region]);
             }
 
             client.DefaultRequestHeaders.Clear();
 
             HttpResponseMessage response;
 
-            response = await client.GetAsync(string.Format(url, this.accessToken));
+            response = await client.GetAsync(string.Format(url, this.regionAccessTokens[region]));
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                this.accessToken = await GetAccessToken();
-                this.dataSql.SetStoredValue(AccessTokenCacheKey, this.accessToken);
+                this.regionAccessTokens[region] = await this.QueryAccessToken(region);
+                this.dataSql.SetStoredValue(this.AccessTokenCacheKeys[region], this.regionAccessTokens[region]);
 
-                response = await client.GetAsync(string.Format(url, accessToken));
+                response = await client.GetAsync(string.Format(url, this.regionAccessTokens[region]));
 
                 if (response.StatusCode != System.Net.HttpStatusCode.OK)
                 {
@@ -127,56 +183,6 @@ namespace GuildTools.ExternalServices
             var jsonResponse = await response.Content.ReadAsStringAsync();
 
             return jsonResponse;
-        }
-
-        private async Task<HttpResponseMessage> DoBlizzardGetWithResponse(string url)
-        {
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                this.accessToken = await GetAccessToken();
-                this.dataSql.SetStoredValue(AccessTokenCacheKey, this.accessToken);
-            }
-
-            client.DefaultRequestHeaders.Clear();
-
-            HttpResponseMessage response;
-
-            response = await client.GetAsync(string.Format(url, this.accessToken));
-
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                this.accessToken = await GetAccessToken();
-                this.dataSql.SetStoredValue(AccessTokenCacheKey, this.accessToken);
-
-                response = await client.GetAsync(string.Format(url, accessToken));
-
-                return response;
-            }
-
-            return response;
-        }
-
-        public static string FormatGuildName(string name)
-        {
-            name = name.Trim().ToLower();
-
-            return name;
-        }
-
-        public static string FormatRealmName(string name)
-        {
-            name = name.Trim().ToLower();
-
-            name = name.Replace(' ', '-');
-            name = name.Replace('\'', '-');
-
-            return name;
-        }
-
-        public static DateTime FromUnixTime(long unixTime)
-        {
-            var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            return epoch.AddMilliseconds(unixTime);
         }
     }
 }

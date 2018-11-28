@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using static GuildTools.ExternalServices.BlizzardService;
 
 namespace GuildTools.Controllers.Cache
 {
@@ -20,21 +21,27 @@ namespace GuildTools.Controllers.Cache
         private Sql.Data sqlData;
         private const string SqlCacheType = "GuildMember";
         private IBlizzardService blizzardService;
+        private IRaiderIoService raiderIoService;
         private readonly TimeSpan CacheEntryDuration = new TimeSpan(24, 0, 0);
         private readonly IBackgroundTaskQueue backgroundQueue;
         private readonly TimeSpan FilterPlayersOlderThan = new TimeSpan(90, 0, 0, 0);
 
-        public GuildMemberCache(IConfiguration configuration, IBlizzardService blizzardService, IBackgroundTaskQueue backgroundQueue)
+        public GuildMemberCache(
+            IConfiguration configuration, 
+            IBlizzardService blizzardService,
+             IRaiderIoService raiderIoService,
+            IBackgroundTaskQueue backgroundQueue)
         {
             this.cache = new Dictionary<string, ExpiringData<IEnumerable<GuildMember>>>();
             this.blizzardService = blizzardService;
+            this.raiderIoService = raiderIoService;
             string connectionString = configuration.GetValue<string>("ConnectionStrings:Database");
             sqlData = new Sql.Data(connectionString);
             this.updatingSet = new HashSet<string>();
             this.backgroundQueue = backgroundQueue;
         }
 
-        public IEnumerable<GuildMember> Get(string realm, string guild)
+        public IEnumerable<GuildMember> Get(Region region, string realm, string guild)
         {
             string key = this.GetKey(realm, guild);
 
@@ -66,14 +73,14 @@ namespace GuildTools.Controllers.Cache
             {
                 this.backgroundQueue.QueueBackgroundWorkItem(async token =>
                 {
-                    await this.Refresh(guild, realm);
+                    await this.Refresh(region, guild, realm);
                 });
             }
 
             return null;
         }
 
-        public async Task Refresh(string guild, string realm)
+        public async Task Refresh(Region region, string guild, string realm)
         {
             string key = this.GetKey(realm, guild);
 
@@ -84,16 +91,16 @@ namespace GuildTools.Controllers.Cache
 
             this.updatingSet.Add(key);
 
-            var guildPlayers = await this.GetGuildMemberData(guild, realm);
+            var guildPlayers = await this.GetGuildMemberData(region, guild, realm);
 
             this.Add(realm, guild, guildPlayers, CacheEntryDuration);
 
             this.updatingSet.Remove(key);
         }
 
-        private async Task<IEnumerable<GuildMember>> GetGuildMemberData(string guild, string realm)
+        private async Task<IEnumerable<GuildMember>> GetGuildMemberData(Region region, string guild, string realm)
          {
-            var guildData = await this.blizzardService.GetGuildMembers(guild, realm);
+            var guildData = await this.blizzardService.GetGuildMembers(guild, realm, region);
 
             JObject parsedGuild = JsonConvert.DeserializeObject((string)guildData) as JObject;
             var members = this.GetPlayersJsonFromGuild(parsedGuild).ToList();
@@ -104,7 +111,7 @@ namespace GuildTools.Controllers.Cache
             {
                 try
                 {
-                    if (await this.PopulateMemberData(member))
+                    if (await this.PopulateMemberData(member, region))
                     {
                         validMembers.Add(member);
                     }
@@ -118,12 +125,13 @@ namespace GuildTools.Controllers.Cache
             return validMembers;
         }
 
-        private async Task<bool> PopulateMemberData(GuildMember member)
+        private async Task<bool> PopulateMemberData(GuildMember member, Region region)
         {
-            var itemsTask = this.blizzardService.GetPlayerItems(member.Realm, member.Name);
-            var mountsTask = this.blizzardService.GetPlayerMounts(member.Realm, member.Name);
-            var petsTask = this.blizzardService.GetPlayerPets(member.Realm, member.Name);
-            var pvpTask = this.blizzardService.GetPlayerPvpStats(member.Realm, member.Name);
+            var itemsTask = this.blizzardService.GetPlayerItems(member.Name, member.Realm, region);
+            var mountsTask = this.blizzardService.GetPlayerMounts(member.Name, member.Realm, region);
+            var petsTask = this.blizzardService.GetPlayerPets(member.Name, member.Realm, region);
+            var pvpTask = this.blizzardService.GetPlayerPvpStats(member.Name, member.Realm, region);
+            //var raiderIoTask = this.raiderIoService.GetMythicPlusDungeonData(member.Name, member.Realm);
 
             await Task.WhenAll(new Task[] { itemsTask, mountsTask, petsTask, pvpTask });
 
@@ -163,6 +171,14 @@ namespace GuildTools.Controllers.Cache
                 this.PopulatePvpStatsFromJson(member, pvpJObject);
             }
             catch { Debug.WriteLine("Error reading PvP stats for " + member.Name); }
+
+            //try
+            //{
+            //    var raiderIoJObject = JsonConvert.DeserializeObject(raiderIoTask.Result) as JObject;
+            //    this.PopulateRaiderIoDataFromJson(member, raiderIoJObject);
+            //}
+            //catch { Debug.WriteLine("Error reading raider.io data for " + member.Name); }
+
 
             Debug.WriteLine("Processed member " + member.Name);
 
@@ -238,7 +254,11 @@ namespace GuildTools.Controllers.Cache
             member.PvpRbgRating = int.Parse(bracketsNode.SelectToken("ARENA_BRACKET_RBG.rating").ToString());
             member.TotalHonorableKills = int.Parse(pvpJson["totalHonorableKills"].ToString());
         }
-
+        
+        private void PopulateRaiderIoDataFromJson(GuildMember member, JObject raiderIoJson)
+        {
+            member.RaiderIoMplusScore = int.Parse(raiderIoJson.SelectToken("mythic_plus_scores.all").ToString());
+        }
         private void Add(string realm, string guild, IEnumerable<GuildMember> value, TimeSpan duration)
         {
             string key = this.GetKey(realm, guild);

@@ -14,6 +14,6 @@ export const ROUTES: Routes = [
   { path: 'register', component: RegisterUserComponent },
   { path: 'login', component: LoginComponent },
   { path: 'guildstats', component: GuildStatsLauncherComponent },
-  { path: 'guildstats/:guild/:realm', component: GuildStatsComponent },
+  { path: 'guildstats/:region/:guild/:realm', component: GuildStatsComponent },
   { path: '**', redirectTo: '' }
 ];
