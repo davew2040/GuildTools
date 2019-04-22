@@ -14,11 +14,14 @@ using GuildTools.Permissions;
 using GuildTools.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using GuildTools.Controllers.Cache;
+using GuildTools.Cache;
 using GuildTools.ExternalServices;
 using GuildTools.Scheduler;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
+using GuildTools.Services;
+using GuildTools.EF;
+using GuildTools.Data;
 
 namespace GuildTools
 {
@@ -34,7 +37,7 @@ namespace GuildTools
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<IConfiguration>(Configuration);
+            services.AddSingleton(Configuration);
             services.Configure<JwtSettings>(Configuration.GetSection("JWTSettings"));
             services.Configure<BlizzardApiSecrets>(Configuration.GetSection("BlizzardApiSecrets"));
             services.Configure<ConnectionStrings>(Configuration.GetSection("ConnectionStrings"));
@@ -44,13 +47,13 @@ namespace GuildTools
             {
                 configuration.RootPath = "ClientApp/dist";
             });
-
+            
             services
-                .AddDbContext<UserDbContext>(options => options.UseSqlServer(Configuration.GetValue<string>("ConnectionStrings:Database")));
+                .AddDbContext<GuildToolsContext>(options => options.UseSqlServer(Configuration.GetValue<string>("ConnectionStrings:Database")));
 
             services
                 .AddIdentity<IdentityUser, IdentityRole>()
-                .AddEntityFrameworkStores<UserDbContext>();
+                .AddEntityFrameworkStores<GuildToolsContext>();
             
             // secretKey contains a secret passphrase only your server knows
             var secretKey = Configuration.GetSection("JWTSettings:SecretKey").Value;
@@ -101,7 +104,7 @@ namespace GuildTools
             IBackgroundTaskQueue backgroundTaskQueue = new BackgroundTaskQueue();
 
             services.AddHostedService<QueuedHostedService>();
-            services.AddSingleton<IBackgroundTaskQueue>(backgroundTaskQueue);
+            services.AddSingleton(backgroundTaskQueue);
 
             BlizzardApiSecrets blizzardSecrets = new BlizzardApiSecrets()
             {
@@ -112,19 +115,22 @@ namespace GuildTools
             IBlizzardService blizzardService = new BlizzardService(
                 Configuration.GetValue<string>("ConnectionStrings:Database"), 
                 blizzardSecrets);
+
+            IGuildMemberService guildMemberService = new GuildMemberService(blizzardService);
             IRaiderIoService raiderIoService = new RaiderIoService();
-            
-            services.AddSingleton<IBlizzardService>(blizzardService);
-            services.AddSingleton<IRaiderIoService>(raiderIoService);
+
+            services.AddSingleton(blizzardService);
+            services.AddSingleton(raiderIoService);
             services.AddSingleton<IGuildCache>(new GuildCache(Configuration, blizzardService));
-            services.AddSingleton<IGuildMemberCache>(new GuildMemberCache(Configuration, blizzardService, raiderIoService, backgroundTaskQueue));
+            services.AddSingleton<IGuildMemberCache>(new GuildMemberCache(Configuration, guildMemberService, backgroundTaskQueue));
+            services.AddScoped<IDataRepository, DataRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(
             IApplicationBuilder app, 
             IHostingEnvironment env, 
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider) 
         { 
             if (env.IsDevelopment())
             {
@@ -167,7 +173,6 @@ namespace GuildTools
         private void CreateRoles(IServiceProvider serviceProvider)
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
             var adminExists = roleManager.RoleExistsAsync(GuildToolsRoles.SuperAdmin);
             adminExists.Wait();

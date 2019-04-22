@@ -6,7 +6,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AspNetAngularTemplate.Controllers.JsonResponses;
-using GuildTools.Controllers.Cache;
+using GuildTools.Cache;
+using GuildTools.Data;
 using GuildTools.ExternalServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,23 +24,26 @@ namespace GuildTools.Controllers
     public class DataController : Controller
     {
         private readonly Sql.Data dataSql;
+        private readonly IConfiguration configuration;
         private readonly ConnectionStrings connectionStrings;
         private readonly IBlizzardService blizzardService;
-        private readonly IGuildCache guildCache;
         private readonly IGuildMemberCache guildMemberCache;
+        private readonly IDataRepository repository;
 
         public DataController(
-            IConfiguration configuration, 
-            IOptions<ConnectionStrings> connectionStrings, 
+            IConfiguration configuration,
+            IOptions<ConnectionStrings> connectionStrings,
+            IDataRepository repository,
             IBlizzardService blizzardService, 
             IGuildCache guildCache, 
             IGuildMemberCache guildMemberCache)
         {
+            this.configuration = configuration;
             this.connectionStrings = connectionStrings.Value;
             this.dataSql = new Sql.Data(this.connectionStrings.Database);
             this.blizzardService = blizzardService;
-            this.guildCache = guildCache;
             this.guildMemberCache = guildMemberCache;
+            this.repository = repository;
         }
 
         [HttpGet]
@@ -120,41 +124,6 @@ namespace GuildTools.Controllers
                 Realm = jobject["realm"].ToString(),
                 Name = jobject["name"].ToString()
             });
-        }
-
-
-        [HttpGet("database")]
-        public ActionResult<IEnumerable<string>> Get()
-        {
-            using (SqlConnection connection = new SqlConnection())
-            using (SqlCommand command = new SqlCommand())
-            {
-                connection.ConnectionString = this.connectionStrings.Database;
-
-                command.Connection = connection;
-                command.CommandType = System.Data.CommandType.Text;
-                command.CommandText = "SELECT * FROM Numbers";
-
-                connection.Open();
-
-                SqlDataReader reader = command.ExecuteReader();
-
-                while (reader.HasRows)
-                {
-                    Debug.WriteLine("\t{0}\t{1}", reader.GetName(0),
-                        reader.GetName(1));
-
-                    while (reader.Read())
-                    {
-                        Debug.WriteLine("\t{0}\t{1}", reader.GetString(0),
-                            reader.GetString(1));
-                    }
-
-                    reader.NextResult();
-                }
-            }
-
-            return new string[] { "value1", "value2" };
         }
     }
 }

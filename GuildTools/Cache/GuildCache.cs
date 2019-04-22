@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using static GuildTools.ExternalServices.BlizzardService;
 
-namespace GuildTools.Controllers.Cache
+namespace GuildTools.Cache
 {
     public class GuildCache : IGuildCache
     {
