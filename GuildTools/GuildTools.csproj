@@ -34,6 +34,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Migrations\20190423151411_GuildProfilePermissions.cs" />
+    <Compile Remove="Migrations\20190423151411_GuildProfilePermissions.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="ClientApp\src\app\app.routes.ts" />
     <None Remove="ClientApp\src\app\auth\auth.service.ts" />
     <None Remove="ClientApp\src\app\blizzard-services\blizzard-services.ts" />

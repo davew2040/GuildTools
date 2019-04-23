@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using GuildTools.EF;
+using GuildTools.ExternalServices;
 
 namespace GuildTools.Tests
 {
@@ -42,19 +43,23 @@ namespace GuildTools.Tests
 
             IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
             GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
-            DatabaseCache<string> dbCache = new DatabaseCache<string>(context, TimeSpan.FromSeconds(10));
-            DatabaseCacheWithMemoryCache<string> cache = new DatabaseCacheWithMemoryCache<string>(TimeSpan.FromSeconds(5), dbCache, memoryCache);
+            DatabaseCache<string> dbCache = new DatabaseCache<string>(context, TimeSpan.FromSeconds(60));
+            DatabaseCacheWithMemoryCache<string> cache = new DatabaseCacheWithMemoryCache<string>(TimeSpan.FromSeconds(30), dbCache, memoryCache);
 
             TestKeyedResource keyedResource = new TestKeyedResource(manager, cache);
 
-            IEnumerable<Task<string>> tasks = new List<Task<string>>()
+            List<Task<string>> tasks = new List<Task<string>>();
+
+            var startTime = DateTime.Now;
+
+            for (int i=0; i<1000000; i++)
             {
-                keyedResource.Get("bah")
-            };
+                tasks.Add(keyedResource.Get("Longanimity", "burning-blade", ExternalServices.BlizzardService.Region.US));
+            }
 
             Task.WaitAll(tasks.ToArray());
 
-            var results = tasks.Select(t => t.Result);
+            var endTime = DateTime.Now;
 
             int x = 42;
         }
@@ -68,6 +73,29 @@ namespace GuildTools.Tests
            sem.Release();
 
             return DateTime.Now.ToString();
+        }
+
+        [TestMethod]
+        public async Task MemoryCachePerfTest()
+        {
+            IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+
+            memoryCache.Set("key", "value");
+
+            var startTime = DateTime.Now;
+
+            for (int i = 0; i < 10000000; i++)
+            {
+                SemaphoreSlim semaphore = new SemaphoreSlim(1);
+                await semaphore.WaitAsync();
+                string value;
+                memoryCache.TryGetValue("key", out value);
+                semaphore.Release();
+            }
+
+            var endTime = DateTime.Now;
+
+            int x = 42;
         }
     }
 }

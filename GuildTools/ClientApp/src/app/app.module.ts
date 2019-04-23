@@ -19,6 +19,7 @@ import { GuildStatsComponent } from './guild-stats/guild-stats.component';
 import { BlizzardService } from './blizzard-services/blizzard-services';
 import { DataService } from './data-services/data-services';
 import { GuildStatsLauncherComponent } from './guild-stats-launcher/guild-stats-launcher.component';
+import { MyGuildProfilesComponent } from './my-guild-profiles/my-guild-profiles.component';
 
 @NgModule({
   declarations: [
@@ -31,7 +32,8 @@ import { GuildStatsLauncherComponent } from './guild-stats-launcher/guild-stats-
     RegisterUserComponent,
     LoginComponent,
     GuildStatsComponent,
-    GuildStatsLauncherComponent
+    GuildStatsLauncherComponent,
+    MyGuildProfilesComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),

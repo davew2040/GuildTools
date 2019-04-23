@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using GuildTools.EF.Models;
+using EfEnums = GuildTools.EF.Models.Enums;
+using EfModels = GuildTools.EF.Models;
+using GuildTools.EF.Models.Enums;
 
 namespace GuildTools.EF
 {
@@ -16,6 +20,7 @@ namespace GuildTools.EF
 
         public virtual DbSet<BigValueCache> BigValueCache { get; set; }
         public virtual DbSet<GuildProfile> GuildProfile { get; set; }
+        public virtual DbSet<EfModels.GuildProfilePermissionLevel> GUildProfilePermissions { get; set; }
         public virtual DbSet<UserData> UserData { get; set; }
         public virtual DbSet<ValueStore> ValueStore { get; set; }
 
@@ -29,6 +34,8 @@ namespace GuildTools.EF
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.HasAnnotation("ProductVersion", "2.2.4-servicing-10062");
+
+            modelBuilder.Entity<EfModels.GuildProfilePermissionLevel>().ToTable("GuildProfilePermissionLevels");
 
             modelBuilder.Entity<BigValueCache>(entity =>
             {
@@ -103,6 +110,18 @@ namespace GuildTools.EF
             modelBuilder.Ignore<AspNetUserLogins>();
             modelBuilder.Ignore<AspNetUserRoles>();
             modelBuilder.Ignore<AspNetUsers>();
+
+            this.AddStaticEnumData(modelBuilder);
+        }
+
+        private void AddStaticEnumData(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<EfModels.GuildProfilePermissionLevel>().HasData(
+                EnumUtilities.GetEnumValues<EfEnums.GuildProfilePermissionLevel>().Select(p => new EfModels.GuildProfilePermissionLevel()
+                {
+                    Id = (int)p,
+                    PermissionName = p.ToString()
+                }));
         }
     }
 }

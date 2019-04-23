@@ -1,7 +1,10 @@
 <div class="row bottom main-nav">
   <div class="col-sm-8">
     <h1 class="page-title">Guild Tools</h1>
-    <div class="links-container"><a [routerLink]="['./guildstats']">Stats</a></div>
+    <div class="links-container">
+      <a [routerLink]="['./guildstats']">Stats</a>
+      <a [routerLink]="['./myprofiles']">My Guild Profiles</a>
+    </div>
   </div>
   <div class="auth-content col-sm-4">
     <div *ngIf="!auth.isAuthenticated()">

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
+import { r } from '@angular/core/src/render3';
 (window as any).global = window;
 
 @Injectable()
@@ -49,4 +50,14 @@ export class AuthService {
     const expiresAt = JSON.parse(localStorage.getItem('expires_at') || '{}');
     return new Date().getTime() < expiresAt;
   }
+
+  public getPermissionLevelForProfile(profileId: number): GuildProfilePermissions {
+    return GuildProfilePermissions.Admin;
+  }
+}
+
+export enum GuildProfilePermissions {
+  Admin = 1,
+  Office = 2,
+  Member = 3
 }

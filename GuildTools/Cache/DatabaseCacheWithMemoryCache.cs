@@ -24,25 +24,37 @@ namespace GuildTools.Cache
         public override async Task<T> TryGetValueAsync(string key)
         {
             T tryValue;
+
             this.memoryCache.TryGetValue(key, out tryValue);
 
-            if (!EqualityComparer<T>.Default.Equals(tryValue, default(T)))
+            if (tryValue != null)
             {
                 return tryValue;
             }
 
             tryValue = await this.dbCache.TryGetValueAsync(key);
 
+            if (!EqualityComparer<T>.Default.Equals(tryValue, default(T)))
+            {
+                this.SetMemoryCacheEntry(key, tryValue);
+            }
+
             return tryValue;
         }
 
         public override async Task InsertValueAsync(string key, T newValue)
         {
-            var entry = this.memoryCache.CreateEntry(key).SetValue(newValue).SetAbsoluteExpiration(DateTime.Now + this.memoryDuration);
-
-            this.memoryCache.Set(key, entry);
+            this.SetMemoryCacheEntry(key, newValue);
 
             await this.dbCache.InsertValueAsync(key, newValue);
+        }
+
+        public void SetMemoryCacheEntry(string key, T newValue)
+        {
+            var options = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(DateTime.Now + this.memoryDuration);
+
+            this.memoryCache.Set(key, newValue, options);
         }
     }
 }

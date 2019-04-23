@@ -168,6 +168,8 @@ namespace GuildTools
             });
 
             this.CreateRoles(serviceProvider);
+
+            this.MigrateDatabase(app);
         }
 
         private void CreateRoles(IServiceProvider serviceProvider)
@@ -188,6 +190,25 @@ namespace GuildTools
             if (!standardExists.Result)
             {
                 roleManager.CreateAsync(new IdentityRole(GuildToolsRoles.Standard)).Wait();
+            }
+        }
+
+        private void MigrateDatabase(IApplicationBuilder app)
+        {
+            try
+            {
+                using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
+                    .CreateScope())
+                {
+
+                    serviceScope.ServiceProvider.GetService<GuildToolsContext>()
+                        .Database.Migrate();
+                }
+            }
+            catch (Exception e)
+            {
+                var msg = e.Message;
+                var stacktrace = e.StackTrace;
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GuildTools.ExternalServices;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,7 +9,9 @@ namespace GuildTools.Cache
     public class TestKeyedResource
     {
         private IKeyedResourceManager resourceManager;
-        DatabaseCacheWithMemoryCache<string> cache;
+        private DatabaseCacheWithMemoryCache<string> cache;
+
+        private const string keyPrefix = "members";
 
         public TestKeyedResource(IKeyedResourceManager resourceManager, DatabaseCacheWithMemoryCache<string> cache)
         {
@@ -16,8 +19,10 @@ namespace GuildTools.Cache
             this.resourceManager = resourceManager;
         }
 
-        public async Task<string> Get(string key)
+        public async Task<string> Get(string guild, string realm, BlizzardService.Region region)
         {
+            string key = this.getKey(guild, realm, region);
+
             string value;
             await this.resourceManager.AcquireKeyLockAsync(key);
 
@@ -29,7 +34,7 @@ namespace GuildTools.Cache
                 return existingValue;
             }
 
-            var retrievedValue = await this.GetResource(key);
+            var retrievedValue = await this.GetResource(guild, realm, region);
 
             await this.cache.InsertValueAsync(key, retrievedValue);
 
@@ -38,11 +43,16 @@ namespace GuildTools.Cache
             return retrievedValue;
         }
 
-        private async Task<string> GetResource(string key)
+        private async Task<string> GetResource(string guild, string realm, BlizzardService.Region region)
         {
             await Task.Delay(10000);
 
-            return key + "_value = " + DateTime.Now.ToString();
+            return this.getKey(guild, realm, region) + "_" + DateTime.Now.ToString();
+        }
+
+        private string getKey(string guild, string realm, BlizzardService.Region region)
+        {
+            return $"{keyPrefix}:{guild}:{realm}:{region.ToString()}";
         }
     }
 }

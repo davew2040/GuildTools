@@ -1,0 +1,6 @@
+<div>
+  <div *ngIf="!authService.isAuthenticated()" class="must-be-logged-in">
+    <div>You must be authenticated to view your profiles!</div>
+    <div style="margin-top:10px;"><a (click)="navigateToLogin()">Log In</a></div>
+  </div>
+</div>

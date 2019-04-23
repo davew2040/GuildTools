@@ -34,6 +34,10 @@ li.link-active a:focus {
   font-size: 24px;
 }
 
+.links-container a:not(:first-child) {
+  margin-left: 25px;
+}
+
 .links-container a {
   color: white;
 }

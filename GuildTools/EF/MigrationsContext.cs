@@ -11,13 +11,13 @@ namespace GuildTools.EF
         : IDesignTimeDbContextFactory<GuildToolsContext>
     {
         private const string connectionString =
-        "Server=(localdb)\\mssqllocaldb;Database=EfCoreInActionDb;Trusted_Connection=True;MultipleActiveResultSets=true";
+            "Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=GuildTools;Integrated Security=True";
         public GuildToolsContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new
                 DbContextOptionsBuilder<GuildToolsContext>();
             optionsBuilder.UseSqlServer(connectionString,
-                b => b.MigrationsAssembly("DataLayer"));
+                b => b.MigrationsAssembly("GuildTools"));
             return new GuildToolsContext(optionsBuilder.Options);
         }
     }
