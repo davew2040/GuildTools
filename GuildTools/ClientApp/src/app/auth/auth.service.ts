@@ -58,6 +58,7 @@ export class AuthService {
 
 export enum GuildProfilePermissions {
   Admin = 1,
-  Office = 2,
-  Member = 3
+  Officer = 2,
+  Member = 3,
+  Visitor = 4
 }

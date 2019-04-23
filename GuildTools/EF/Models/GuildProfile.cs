@@ -9,7 +9,10 @@ namespace GuildTools.EF.Models
         public string GuildName { get; set; }
         public string Realm { get; set; }
         public string CreatorId { get; set; }
+        public int RegionId { get; set; }
 
         public virtual AspNetUsers Creator { get; set; }
+        public virtual IEnumerable<User_GuildProfilePermissions> User_GuildProfilePermissions { get; set; }
+        public virtual GameRegion Region { get; set; }
     }
 }

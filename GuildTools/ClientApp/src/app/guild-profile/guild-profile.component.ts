@@ -19,7 +19,7 @@ enum GuildStatsStatus {
 })
 export class GuildProfileComponent implements OnInit {
 
-  constructor(public profileId: number, public route: ActivatedRoute, public dataService: DataService, public blizzardService: BlizzardService) { }
+  constructor(public route: ActivatedRoute, public dataService: DataService, public blizzardService: BlizzardService) { }
 
   ngOnInit() {
     this.route.params.subscribe(params => {

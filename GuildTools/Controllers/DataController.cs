@@ -9,14 +9,15 @@ using AspNetAngularTemplate.Controllers.JsonResponses;
 using GuildTools.Cache;
 using GuildTools.Data;
 using GuildTools.ExternalServices;
+using GuildTools.ExternalServices.Blizzard;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Serilog;
-using static GuildTools.ExternalServices.BlizzardService;
+using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 
 namespace GuildTools.Controllers
 {
@@ -29,6 +30,7 @@ namespace GuildTools.Controllers
         private readonly IBlizzardService blizzardService;
         private readonly IGuildMemberCache guildMemberCache;
         private readonly IDataRepository repository;
+        private readonly UserManager<IdentityUser> userManager;
 
         public DataController(
             IConfiguration configuration,
@@ -36,7 +38,8 @@ namespace GuildTools.Controllers
             IDataRepository repository,
             IBlizzardService blizzardService, 
             IGuildCache guildCache, 
-            IGuildMemberCache guildMemberCache)
+            IGuildMemberCache guildMemberCache,
+            UserManager<IdentityUser> userManager)
         {
             this.configuration = configuration;
             this.connectionStrings = connectionStrings.Value;
@@ -44,6 +47,7 @@ namespace GuildTools.Controllers
             this.blizzardService = blizzardService;
             this.guildMemberCache = guildMemberCache;
             this.repository = repository;
+            this.userManager = userManager;
         }
 
         [HttpGet]
@@ -56,9 +60,9 @@ namespace GuildTools.Controllers
             });
         }
 
+        [Authorize]
         [HttpGet]
         [Route("private")]
-        [Authorize]
         public IActionResult Private()
         {
             return Json(new
@@ -77,7 +81,7 @@ namespace GuildTools.Controllers
                 return Json(new
                 {
                     GuildName = profile.Name,
-                    Realm = profile.Realm
+                    profile.Realm
                 });
             }
 
@@ -107,7 +111,7 @@ namespace GuildTools.Controllers
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
             
-            var result = await this.blizzardService.GetGuildMembers(guild, realm, BlizzardService.GetRegionFromString(region));
+            var result = await this.blizzardService.GetGuildAsync(guild, realm, BlizzardService.GetRegionFromString(region));
 
             var jobject = JsonConvert.DeserializeObject(result) as JObject;
             if (jobject["status"] != null && jobject["status"].ToString() == "nok")
@@ -124,6 +128,35 @@ namespace GuildTools.Controllers
                 Realm = jobject["realm"].ToString(),
                 Name = jobject["name"].ToString()
             });
+        }
+
+        [Authorize]
+        [HttpPost("createGuildProfile")]
+        public async Task<ActionResult> CreateGuildProfile(string guild, string realm, string region)
+        {
+            guild = BlizzardService.FormatGuildName(guild);
+            realm = BlizzardService.FormatRealmName(realm);
+            var regionEnum = BlizzardService.GetRegionFromString(region);
+
+            var blizzardGuild = await this.blizzardService.GetGuildAsync(guild, realm, regionEnum);
+
+            if (!this.CheckGuildOkay(blizzardGuild))
+            {
+                throw new ArgumentException("Could not locate this guild!");
+            }
+
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            await this.repository.CreateGuildProfileAsync(user.Id, guild, realm, BlizzardService.GetRegionFromString(region));
+
+            return Ok();
+        }
+
+        private bool CheckGuildOkay(string jsonResponse)
+        {
+            var jobject = JsonConvert.DeserializeObject(jsonResponse) as JObject;
+
+            return (jobject["status"] != null && jobject["status"].ToString() != "nok");
         }
     }
 }

@@ -9,5 +9,7 @@ namespace GuildTools.EF.Models
     {
         public int Id { get; set; }
         public string PermissionName { get; set; }
+
+        public virtual IEnumerable<User_GuildProfilePermissions> User_GuildProfilePermissions { get; set; }
     }
 }

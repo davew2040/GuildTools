@@ -22,6 +22,7 @@ using Serilog.Sinks.MSSqlServer;
 using GuildTools.Services;
 using GuildTools.EF;
 using GuildTools.Data;
+using GuildTools.ExternalServices.Blizzard;
 
 namespace GuildTools
 {

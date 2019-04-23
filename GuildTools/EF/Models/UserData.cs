@@ -11,5 +11,6 @@ namespace GuildTools.EF.Models
         public string GuildRealm { get; set; }
 
         public virtual AspNetUsers User { get; set; }
+        public virtual User_GuildProfilePermissions GuildPermissions { get; set; }
     }
 }

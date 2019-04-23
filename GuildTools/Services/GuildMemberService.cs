@@ -1,13 +1,14 @@
 ﻿using GuildTools.Controllers.JsonResponses;
 using GuildTools.ExternalServices;
-using GuildTools.JsonParsing;
+using GuildTools.ExternalServices.Blizzard;
+using GuildTools.ExternalServices.Blizzard.JsonParsing;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using static GuildTools.ExternalServices.BlizzardService;
-using static GuildTools.JsonParsing.GuildMemberParsing;
+using static GuildTools.ExternalServices.Blizzard.BlizzardService;
+using static GuildTools.ExternalServices.Blizzard.JsonParsing.GuildMemberParsing;
 
 namespace GuildTools.Services
 {
@@ -24,7 +25,7 @@ namespace GuildTools.Services
 
         public async Task<IEnumerable<GuildMember>> GetGuildMemberDataAsync(Region region, string guild, string realm)
         {
-            var guildDataJson = await this.blizzardService.GetGuildMembers(guild, realm, region);
+            var guildDataJson = await this.blizzardService.GetGuildMembersAsync(guild, realm, region);
 
             var members = GuildMemberParsing.GetSlimPlayersFromGuildPlayerList(guildDataJson).ToList();
 
@@ -50,10 +51,10 @@ namespace GuildTools.Services
 
         private async Task<bool> PopulateMemberDataAsync(GuildMember member, Region region)
         {
-            var itemsTask = this.blizzardService.GetPlayerItems(member.Name, member.Realm, region);
-            var mountsTask = this.blizzardService.GetPlayerMounts(member.Name, member.Realm, region);
-            var petsTask = this.blizzardService.GetPlayerPets(member.Name, member.Realm, region);
-            var pvpTask = this.blizzardService.GetPlayerPvpStats(member.Name, member.Realm, region);
+            var itemsTask = this.blizzardService.GetPlayerItemsAsync(member.Name, member.Realm, region);
+            var mountsTask = this.blizzardService.GetPlayerMountsAsync(member.Name, member.Realm, region);
+            var petsTask = this.blizzardService.GetPlayerPetsAsync(member.Name, member.Realm, region);
+            var pvpTask = this.blizzardService.GetPlayerPvpStatsAsync(member.Name, member.Realm, region);
 
             await Task.WhenAll(new Task[] { itemsTask, mountsTask, petsTask, pvpTask });
 

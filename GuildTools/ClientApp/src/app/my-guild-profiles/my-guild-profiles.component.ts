@@ -13,7 +13,12 @@ import { AuthService } from '../auth/auth.service';
 })
 export class MyGuildProfilesComponent implements OnInit {
 
-  constructor(public route: ActivatedRoute, public dataService: DataService, public blizzardService: BlizzardService, private authService: AuthService, private router: Router) { }
+  constructor(
+    public route: ActivatedRoute,
+    public dataService: DataService,
+    public blizzardService: BlizzardService,
+    public authService: AuthService,
+    private router: Router) { }
 
   ngOnInit() {
     this.route.params.subscribe(params => {

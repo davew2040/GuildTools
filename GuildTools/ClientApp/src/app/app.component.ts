@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { AuthService } from './auth/auth.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BlizzardService } from './blizzard-services/blizzard-services';
+import { BusyService } from './shared-services/busy-service';
 
 @Component({
   selector: 'app-root',
@@ -17,7 +17,7 @@ export class AppComponent {
       @Inject('BASE_URL') private baseUrl: string,
       public auth: AuthService,
       public router: Router,
-      public blizzardService : BlizzardService) {
+      public busyService: BusyService) {
     this.auth.handleAuthentication();
   }
 

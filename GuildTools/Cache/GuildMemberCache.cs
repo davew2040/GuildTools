@@ -1,7 +1,7 @@
 ﻿using GuildTools.Configuration;
 using GuildTools.Controllers.JsonResponses;
 using GuildTools.ExternalServices;
-using GuildTools.JsonParsing;
+using GuildTools.ExternalServices.Blizzard;
 using GuildTools.Scheduler;
 using GuildTools.Services;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static GuildTools.ExternalServices.BlizzardService;
+using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 
 namespace GuildTools.Cache
 {

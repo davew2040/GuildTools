@@ -36,6 +36,8 @@
   <ItemGroup>
     <Compile Remove="Migrations\20190423151411_GuildProfilePermissions.cs" />
     <Compile Remove="Migrations\20190423151411_GuildProfilePermissions.Designer.cs" />
+    <Compile Remove="Migrations\20190423171945_GameRegions.cs" />
+    <Compile Remove="Migrations\20190423171945_GameRegions.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -48,6 +50,7 @@
     <None Remove="ClientApp\src\app\data-services\Models\GuildProfile.ts" />
     <None Remove="ClientApp\src\app\login\login.model.ts" />
     <None Remove="ClientApp\src\app\register-user\register-user.model.ts" />
+    <None Remove="ClientApp\src\app\shared-services\busy-service.ts" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,6 +63,7 @@
     <TypeScriptCompile Include="ClientApp\src\app\data-services\Models\GuildProfile.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\login\login.model.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\register-user\register-user.model.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\shared-services\busy-service.ts" />
   </ItemGroup>
 
   <ItemGroup>

@@ -4,14 +4,16 @@ using GuildTools.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace GuildTools.Migrations
 {
     [DbContext(typeof(GuildToolsContext))]
-    partial class GuildToolsContextModelSnapshot : ModelSnapshot
+    [Migration("20190423155946_User_GuildProfilePermissions_link")]
+    partial class User_GuildProfilePermissions_link
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,31 +39,6 @@ namespace GuildTools.Migrations
                     b.ToTable("BigValueCache");
                 });
 
-            modelBuilder.Entity("GuildTools.EF.Models.GameRegion", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("RegionName");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GameRegions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            RegionName = "US"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            RegionName = "EU"
-                        });
-                });
-
             modelBuilder.Entity("GuildTools.EF.Models.GuildProfile", b =>
                 {
                     b.Property<int>("Id");
@@ -78,11 +55,7 @@ namespace GuildTools.Migrations
                         .IsRequired()
                         .HasMaxLength(100);
 
-                    b.Property<int>("RegionId");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("RegionId");
 
                     b.ToTable("GuildProfile");
                 });
@@ -341,15 +314,6 @@ namespace GuildTools.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens");
-                });
-
-            modelBuilder.Entity("GuildTools.EF.Models.GuildProfile", b =>
-                {
-                    b.HasOne("GuildTools.EF.Models.GameRegion", "Region")
-                        .WithMany("GuildProfiles")
-                        .HasForeignKey("RegionId")
-                        .HasConstraintName("FK_GuildProfile_GameRegion")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("GuildTools.EF.Models.UserData", b =>

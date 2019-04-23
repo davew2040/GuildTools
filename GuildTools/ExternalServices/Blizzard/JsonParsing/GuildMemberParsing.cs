@@ -7,9 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using static GuildTools.ExternalServices.BlizzardService;
 
-namespace GuildTools.JsonParsing
+namespace GuildTools.ExternalServices.Blizzard.JsonParsing
 {
     public class GuildMemberParsing
     {

@@ -34,5 +34,6 @@ namespace GuildTools.EF.Models
         public virtual ICollection<AspNetUserLogins> AspNetUserLogins { get; set; }
         public virtual ICollection<AspNetUserRoles> AspNetUserRoles { get; set; }
         public virtual ICollection<GuildProfile> GuildProfile { get; set; }
+        public virtual ICollection<User_GuildProfilePermissions> GuildProfilePermissions { get; set; }
     }
 }

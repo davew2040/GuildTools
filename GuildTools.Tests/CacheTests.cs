@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GuildTools.EF;
 using GuildTools.ExternalServices;
+using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 
 namespace GuildTools.Tests
 {
@@ -54,7 +55,7 @@ namespace GuildTools.Tests
 
             for (int i=0; i<1000000; i++)
             {
-                tasks.Add(keyedResource.Get("Longanimity", "burning-blade", ExternalServices.BlizzardService.Region.US));
+                tasks.Add(keyedResource.Get("Longanimity", "burning-blade", Region.US));
             }
 
             Task.WaitAll(tasks.ToArray());

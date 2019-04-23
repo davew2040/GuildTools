@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace GuildTools.ExternalServices
+namespace GuildTools.ExternalServices.Blizzard
 {
     public class BlizzardService : IBlizzardService
     {
@@ -39,37 +39,44 @@ namespace GuildTools.ExternalServices
             this.regionAccessTokens[Region.EU] = this.dataSql.GetStoredValue(this.AccessTokenCacheKeys[Region.EU]) ?? string.Empty;
         }
 
-        public async Task<string> GetGuildMembers(string guild, string realm, Region region)
+        public async Task<string> GetGuildMembersAsync(string guild, string realm, Region region)
         {
             string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?locale=en-US&access_token={{0}}&fields=members";
 
             return await this.DoBlizzardGet(url, region);
         }
 
-        public async Task<string> GetPlayerItems(string player, string realm, Region region)
+        public async Task<string> GetPlayerItemsAsync(string player, string realm, Region region)
         {
             string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=items";
 
             return await DoBlizzardGet(url, region);
         }
 
-        public async Task<string> GetPlayerPvpStats(string player, string realm, Region region)
+        public async Task<string> GetPlayerPvpStatsAsync(string player, string realm, Region region)
         {
             string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=pvp";
 
             return await DoBlizzardGet(url, region);
         }
 
-        public async Task<string> GetPlayerMounts(string player, string realm, Region region)
+        public async Task<string> GetPlayerMountsAsync(string player, string realm, Region region)
         {
             string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=mounts";
 
             return await DoBlizzardGet(url, region);
         }
 
-        public async Task<string> GetPlayerPets(string player, string realm, Region region)
+        public async Task<string> GetPlayerPetsAsync(string player, string realm, Region region)
         {
             string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?locale=en-US&access_token={{0}}&fields=pets";
+
+            return await DoBlizzardGet(url, region);
+        }
+
+        public async Task<string> GetGuildAsync(string guild, string realm, Region region)
+        {   
+            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?locale=en-US&access_token={{0}}&fields=pets";
 
             return await DoBlizzardGet(url, region);
         }

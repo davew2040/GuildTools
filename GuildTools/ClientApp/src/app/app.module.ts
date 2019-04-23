@@ -20,6 +20,8 @@ import { BlizzardService } from './blizzard-services/blizzard-services';
 import { DataService } from './data-services/data-services';
 import { GuildStatsLauncherComponent } from './guild-stats-launcher/guild-stats-launcher.component';
 import { MyGuildProfilesComponent } from './my-guild-profiles/my-guild-profiles.component';
+import { GuildProfileComponent } from './guild-profile/guild-profile.component';
+import { BusyService } from './shared-services/busy-service';
 
 @NgModule({
   declarations: [
@@ -33,6 +35,7 @@ import { MyGuildProfilesComponent } from './my-guild-profiles/my-guild-profiles.
     LoginComponent,
     GuildStatsComponent,
     GuildStatsLauncherComponent,
+    GuildProfileComponent,
     MyGuildProfilesComponent
   ],
   imports: [
@@ -41,7 +44,7 @@ import { MyGuildProfilesComponent } from './my-guild-profiles/my-guild-profiles.
     FormsModule,
     RouterModule.forRoot(ROUTES)
   ],
-  providers: [AuthService, BlizzardService, DataService],
+  providers: [AuthService, BlizzardService, DataService, BusyService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

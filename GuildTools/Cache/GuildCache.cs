@@ -1,10 +1,11 @@
 ﻿using GuildTools.ExternalServices;
+using GuildTools.ExternalServices.Blizzard;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static GuildTools.ExternalServices.BlizzardService;
+using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 
 namespace GuildTools.Cache
 {
@@ -71,7 +72,7 @@ namespace GuildTools.Cache
 
             Task.Factory.StartNew(async () =>
             {
-                var guildData = await this.blizzardService.GetGuildMembers(guild, realm, region);
+                var guildData = await this.blizzardService.GetGuildMembersAsync(guild, realm, region);
                 
                 this.Add(region, realm, guild, guildData, CacheEntryDuration);
 

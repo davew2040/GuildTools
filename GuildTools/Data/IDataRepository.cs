@@ -1,11 +1,16 @@
-﻿using System;
+﻿using GuildTools.Data.RepositoryModels;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 
 namespace GuildTools.Data
 {
     public interface IDataRepository
     {
-        Task<string> SimpleGetAsync();
+        Task<IEnumerable<ProfilePermission>> GetProfilePermissionsForUserAsync(string userId);
+        Task CreateGuildProfileAsync(string creatorId, string guild, string realm, Region region);
     }
 }

@@ -20,7 +20,8 @@ namespace GuildTools.EF
 
         public virtual DbSet<BigValueCache> BigValueCache { get; set; }
         public virtual DbSet<GuildProfile> GuildProfile { get; set; }
-        public virtual DbSet<EfModels.GuildProfilePermissionLevel> GUildProfilePermissions { get; set; }
+        public virtual DbSet<EfModels.GuildProfilePermissionLevel> GuildProfilePermissions { get; set; }
+        public virtual DbSet<User_GuildProfilePermissions> User_GuildProfilePermissions { get; set; }
         public virtual DbSet<UserData> UserData { get; set; }
         public virtual DbSet<ValueStore> ValueStore { get; set; }
 
@@ -36,6 +37,8 @@ namespace GuildTools.EF
             modelBuilder.HasAnnotation("ProductVersion", "2.2.4-servicing-10062");
 
             modelBuilder.Entity<EfModels.GuildProfilePermissionLevel>().ToTable("GuildProfilePermissionLevels");
+
+            modelBuilder.Entity<EfModels.GameRegion>().ToTable("GameRegions");
 
             modelBuilder.Entity<BigValueCache>(entity =>
             {
@@ -65,10 +68,17 @@ namespace GuildTools.EF
                     .IsRequired()
                     .HasMaxLength(100);
 
+                entity
+                    .HasOne(e => e.Region)
+                    .WithMany(f => f.GuildProfiles)
+                    .HasForeignKey(e => e.RegionId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_GuildProfile_GameRegion");
+
                 entity.HasOne(d => d.Creator)
                     .WithMany(p => p.GuildProfile)
                     .HasForeignKey(d => d.CreatorId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Restrict)
                     .HasConstraintName("FK_GuildProfile_ToTable");
             });
 
@@ -91,7 +101,7 @@ namespace GuildTools.EF
                 entity.HasOne(d => d.User)
                     .WithOne(p => p.UserData)
                     .HasForeignKey<UserData>(d => d.UserId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Restrict)
                     .HasConstraintName("FK_Users_AspNetUsers");
             });
 
@@ -102,6 +112,32 @@ namespace GuildTools.EF
                     .ValueGeneratedNever();
 
                 entity.Property(e => e.Value).IsRequired();
+            });
+
+            modelBuilder.Entity<User_GuildProfilePermissions>(entity =>
+            {
+                entity.HasKey(e => new { e.UserId, e.PermissionLevelId, e.ProfileId });
+
+                entity
+                    .HasOne(e => e.PermissionLevel)
+                    .WithMany(f => f.User_GuildProfilePermissions)
+                    .HasForeignKey(e => e.PermissionLevelId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK__GuildProfilePermissions_GuildPermissions");
+
+                entity
+                    .HasOne(e => e.Profile)
+                    .WithMany(f => f.User_GuildProfilePermissions)
+                    .HasForeignKey(e => e.ProfileId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK__GuildProfilePermissions_GuildProfiles");
+
+                entity
+                    .HasOne(e => e.User)
+                    .WithMany(f => f.GuildProfilePermissions)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK__GuildProfilePermissions_AspNetUsers");
             });
 
             modelBuilder.Ignore<AspNetRoleClaims>();
@@ -121,6 +157,13 @@ namespace GuildTools.EF
                 {
                     Id = (int)p,
                     PermissionName = p.ToString()
+                }));
+
+            modelBuilder.Entity<EfModels.GameRegion>().HasData(
+                EnumUtilities.GetEnumValues<EfEnums.GameRegion>().Select(p => new EfModels.GameRegion()
+                {
+                    Id = (int)p,
+                    RegionName = p.ToString()
                 }));
         }
     }
