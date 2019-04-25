@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router'
-import { DataService } from '../data-services/data-services';
+import { DataService } from '../services/data-services';
 import { BlizzardService } from '../blizzard-services/blizzard-services';
-import { GuildProfile } from '../data-services/Models/GuildProfile';
-import { GuildMember } from '../data-services/Models/GuildMember';
+import { GuildProfile } from '../services/Models/GuildProfile';
+import { GuildMember } from '../services/Models/GuildMember';
 
 enum GuildStatsStatus {
   Loading,

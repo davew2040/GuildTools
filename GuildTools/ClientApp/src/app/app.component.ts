@@ -18,9 +18,10 @@ export class AppComponent {
       public auth: AuthService,
       public router: Router,
       public busyService: BusyService) {
-    this.auth.handleAuthentication();
+
   }
 
   ngOnInit(): void {
+    //this.auth.appInitialization();
   }
 }

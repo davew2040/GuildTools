@@ -7,6 +7,8 @@ var login_component_1 = require("./login/login.component");
 var guild_stats_component_1 = require("./guild-stats/guild-stats.component");
 var guild_stats_launcher_component_1 = require("./guild-stats-launcher/guild-stats-launcher.component");
 var my_guild_profiles_component_1 = require("./my-guild-profiles/my-guild-profiles.component");
+var reset_password_component_1 = require("./reset-password/reset-password.component");
+var reset_password_token_component_1 = require("./reset-password-token/reset-password-token.component");
 exports.ROUTES = [
     { path: '', component: guild_stats_launcher_component_1.GuildStatsLauncherComponent },
     { path: 'callback', component: callback_component_1.CallbackComponent },
@@ -16,6 +18,8 @@ exports.ROUTES = [
     { path: 'guildstats', component: guild_stats_launcher_component_1.GuildStatsLauncherComponent },
     { path: 'guildstats/:region/:guild/:realm', component: guild_stats_component_1.GuildStatsComponent },
     { path: 'myprofiles', component: my_guild_profiles_component_1.MyGuildProfilesComponent },
+    { path: 'resetpassword', component: reset_password_component_1.ResetPasswordComponent },
+    { path: 'resetpasswordtoken', component: reset_password_token_component_1.ResetPasswordWithTokenComponent },
     { path: '**', redirectTo: '' }
 ];
 //# sourceMappingURL=app.routes.js.map

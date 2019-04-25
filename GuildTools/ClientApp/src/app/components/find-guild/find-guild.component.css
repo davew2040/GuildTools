@@ -1,0 +1,21 @@
+.fields-container {
+    width: 100%;
+    margin: 0 auto;
+}
+
+
+
+.guild {
+    padding-left: 5px !important;
+    padding-right: 25px !important;
+}
+
+.realm {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.region {
+    padding-left: 10px !important;
+    padding-right: 5px !important;
+}

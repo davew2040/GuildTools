@@ -20,6 +20,7 @@
     <PackageReference Include="Microsoft.Azure.KeyVault" Version="3.0.3" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.1.1" />
+    <PackageReference Include="Sendgrid" Version="9.11.0" />
     <PackageReference Include="Serilog" Version="2.7.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
@@ -44,12 +45,16 @@
     <None Remove="ClientApp\src\app\app.routes.ts" />
     <None Remove="ClientApp\src\app\auth\auth.service.ts" />
     <None Remove="ClientApp\src\app\blizzard-services\blizzard-services.ts" />
-    <None Remove="ClientApp\src\app\data-services\data-services.ts" />
-    <None Remove="ClientApp\src\app\data-services\Models\GuildExists.ts" />
-    <None Remove="ClientApp\src\app\data-services\Models\GuildMember.ts" />
-    <None Remove="ClientApp\src\app\data-services\Models\GuildProfile.ts" />
+    <None Remove="ClientApp\src\app\data\blizzard-realms.ts" />
+    <None Remove="ClientApp\src\app\services\account-service.ts" />
+    <None Remove="ClientApp\src\app\services\data-services.ts" />
+    <None Remove="ClientApp\src\app\services\Models\GuildExists.ts" />
+    <None Remove="ClientApp\src\app\services\Models\GuildMember.ts" />
+    <None Remove="ClientApp\src\app\services\Models\GuildProfile.ts" />
     <None Remove="ClientApp\src\app\login\login.model.ts" />
     <None Remove="ClientApp\src\app\register-user\register-user.model.ts" />
+    <None Remove="ClientApp\src\app\reset-password-token\reset-password-token.model.ts" />
+    <None Remove="ClientApp\src\app\reset-password\reset-password.model.ts" />
     <None Remove="ClientApp\src\app\shared-services\busy-service.ts" />
   </ItemGroup>
 
@@ -57,16 +62,22 @@
     <TypeScriptCompile Include="ClientApp\src\app\app.routes.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\auth\auth.service.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\blizzard-services\blizzard-services.ts" />
-    <TypeScriptCompile Include="ClientApp\src\app\data-services\data-services.ts" />
-    <TypeScriptCompile Include="ClientApp\src\app\data-services\Models\GuildMember.ts" />
-    <TypeScriptCompile Include="ClientApp\src\app\data-services\Models\GuildExists.ts" />
-    <TypeScriptCompile Include="ClientApp\src\app\data-services\Models\GuildProfile.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\data\blizzard-realms.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\services\account-service.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\services\data-services.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\services\Models\GuildMember.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\services\Models\GuildExists.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\services\Models\GuildProfile.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\login\login.model.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\register-user\register-user.model.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\reset-password-token\reset-password-token.model.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\reset-password\reset-password.model.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\shared-services\busy-service.ts" />
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="ClientApp\src\app\components\" />
+    <Folder Include="ClientApp\src\app\NewFolder\" />
     <Folder Include="Models\" />
   </ItemGroup>
 

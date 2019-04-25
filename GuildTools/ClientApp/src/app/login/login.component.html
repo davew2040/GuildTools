@@ -1,5 +1,5 @@
 
-<div class='container-fluid'>
+<div class='container'>
   <h1>Login</h1>
 
   <form (ngSubmit)="onSubmit()" #registrationForm="ngForm">
@@ -11,7 +11,7 @@
 
     <div class="form-group">
       <label for="password">Password:</label>
-      <input type="text" class="form-control" id="password" required [(ngModel)]="model.Password" #password="ngModel" [ngModelOptions]="{standalone: true}">
+      <input type="password" class="form-control" id="password" required [(ngModel)]="model.Password" #password="ngModel" [ngModelOptions]="{standalone: true}">
       <div [hidden]="password.valid || password.pristine" class="alert alert-danger">Password is required.</div>
     </div>
 
@@ -20,5 +20,9 @@
     </div>
 
     <button type="submit" class="btn btn-success">Login</button>
+
+    <div class="forgot-password">
+      <a (click)="forgotPassword()">I forgot my password</a>
+    </div>
   </form>
 </div>

@@ -8,7 +8,7 @@ namespace GuildTools.Data.RepositoryModels
 {
     public class ProfilePermission
     {
-        public int GuildId { get; set; }
+        public int ProfileId { get; set; }
         public EfEnums.GuildProfilePermissionLevel PermissionLevel { get; set; }
     }
 }

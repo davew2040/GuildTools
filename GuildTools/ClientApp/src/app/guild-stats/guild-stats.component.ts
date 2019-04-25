@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router'
-import { DataService } from '../data-services/data-services';
+import { DataService } from '../services/data-services';
 import { BlizzardService } from '../blizzard-services/blizzard-services';
-import { GuildProfile } from '../data-services/Models/GuildProfile';
-import { GuildMember } from '../data-services/Models/GuildMember';
+import { GuildProfile } from '../services/Models/GuildProfile';
+import { GuildMember } from '../services/Models/GuildMember';
 
 enum GuildStatsStatus {
   Loading,
@@ -39,17 +39,23 @@ export class GuildStatsComponent implements OnInit {
       this.region = params['region'];
     });
 
-    this.dataService.GetGuildExists(this.region, this.guild, this.realm, (result) => {
-      if (result.Found === true) {
-        this.prettyGuild = result.Name;
-        this.prettyRealm = result.Realm;
+    this.dataService.getGuildExists(this.region, this.guild, this.realm).subscribe(
+      success => {
+        if (success !== null) {
+          if (success.Found === true) {
+            this.prettyGuild = success.Name;
+            this.prettyRealm = success.Realm;
 
-        this.loadGuildStats(this.region, this.realm, this.guild);
-      }
-      else {
-        this.pageStatus = GuildStatsStatus.GuildNotFound;
-      }
-    });
+            this.loadGuildStats(this.region, this.realm, this.guild);
+          }
+          else {
+            this.pageStatus = GuildStatsStatus.GuildNotFound;
+          }
+        }
+      },
+      error => {
+        console.log(error);
+      });
   }
 
   populateStatsTableDefinitions(): void {
@@ -172,19 +178,19 @@ export class GuildStatsComponent implements OnInit {
   }
 
   loadGuildStats(region: string, realm: string, guild: string) {
-    this.dataService.GetGuildMemberStats(
-      region,
-      guild,
-      realm,
-      (result) => {
-        if (result && result.length > 0) {
-          this.guildMembers = result;
+    this.dataService.getGuildMemberStats(region, guild, realm).subscribe(
+      success => {
+        if (success && success.length > 0) {
+          this.guildMembers = success;
           this.populateStatsTableDefinitions();
           this.pageStatus = GuildStatsStatus.Ready;
         }
         else {
           this.pageStatus = GuildStatsStatus.DataNotReady;
         }
+      },
+      error => {
+        console.log(error);
       });
   }
   

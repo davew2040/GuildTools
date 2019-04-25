@@ -1,4 +1,6 @@
 ﻿using GuildTools.Data.RepositoryModels;
+using GuildTools.EF.Models;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,5 +14,7 @@ namespace GuildTools.Data
     {
         Task<IEnumerable<ProfilePermission>> GetProfilePermissionsForUserAsync(string userId);
         Task CreateGuildProfileAsync(string creatorId, string guild, string realm, Region region);
+        Task<IdentityUser> GetUserByEmailAddressAsync(string email);
+        Task<IEnumerable<GuildProfile>> GetGuildProfilesForUserAsync(string userId);
     }
 }

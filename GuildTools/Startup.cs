@@ -23,6 +23,7 @@ using GuildTools.Services;
 using GuildTools.EF;
 using GuildTools.Data;
 using GuildTools.ExternalServices.Blizzard;
+using GuildTools.Services.Mail;
 
 namespace GuildTools
 {
@@ -53,26 +54,22 @@ namespace GuildTools
                 .AddDbContext<GuildToolsContext>(options => options.UseSqlServer(Configuration.GetValue<string>("ConnectionStrings:Database")));
 
             services
-                .AddIdentity<IdentityUser, IdentityRole>()
-                .AddEntityFrameworkStores<GuildToolsContext>();
+                .AddIdentity<IdentityUser, IdentityRole>(x =>
+                {
+                    x.Password.RequiredLength = 8;
+                })
+                .AddEntityFrameworkStores<GuildToolsContext>()
+                .AddDefaultTokenProviders();
             
             // secretKey contains a secret passphrase only your server knows
             var secretKey = Configuration.GetSection("JWTSettings:SecretKey").Value;
-            var issuer = Configuration.GetSection("JWTSettings:Issuer").Value;
-            var audience = Configuration.GetSection("JWTSettings:Audience").Value;
             var signingKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey));
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = signingKey,
-
-                // Validate the JWT Issuer (iss) claim
-                ValidateIssuer = true,
-                ValidIssuer = issuer,
-
-                // Validate the JWT Audience (aud) claim
-                ValidateAudience = true,
-                ValidAudience = audience
+                ValidateIssuer = false,
+                ValidateAudience = false
             };
 
             services
@@ -84,6 +81,8 @@ namespace GuildTools
                 })
                 .AddJwtBearer(options =>
                 {
+                    options.RequireHttpsMetadata = false;
+                    options.SaveToken = true;
                     options.TokenValidationParameters = tokenValidationParameters;
                 });
 
@@ -125,6 +124,17 @@ namespace GuildTools
             services.AddSingleton<IGuildCache>(new GuildCache(Configuration, blizzardService));
             services.AddSingleton<IGuildMemberCache>(new GuildMemberCache(Configuration, guildMemberService, backgroundTaskQueue));
             services.AddScoped<IDataRepository, DataRepository>();
+
+            IMailSender mailSender = new MailSender(Configuration.GetValue<string>("SendGridApiKey"));
+            services.AddSingleton(mailSender);
+
+            ICommonValuesProvider valuesProvider = new CommonValuesProvider()
+            {
+                AdminEmail = "dwinterm@gmail.com",
+                AdminName = "GuildTools Administrator"
+            };
+
+            services.AddSingleton(valuesProvider);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

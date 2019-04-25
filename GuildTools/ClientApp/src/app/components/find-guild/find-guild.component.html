@@ -1,0 +1,22 @@
+<form class="example-form">
+  <mat-grid-list cols="3" gutter-size:>
+    <mat-grid-tile class="guild">
+        <mat-form-field>
+          <input matInput placeholder="Guild Name:" #guild  value="">
+        </mat-form-field>
+    </mat-grid-tile>
+    <mat-grid-tile class="realm">
+      <mat-form-field>
+        <input matInput placeholder="Realm:" #realm value="">
+      </mat-form-field>
+    </mat-grid-tile>
+    <mat-grid-tile class="region">
+        <mat-form-field>
+          <mat-label>Region</mat-label>
+          <mat-select [(value)]="selectedRegionName" name="regionName">
+              <mat-option *ngFor="let region of regions" [value]="region.Name">{{region.Name}}</mat-option>
+          </mat-select>
+      </mat-form-field>
+    </mat-grid-tile>
+  </mat-grid-list>
+</form>

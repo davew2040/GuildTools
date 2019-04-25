@@ -2,8 +2,8 @@
   <div class="fields-container">
     <div class="field-group field-group-region">
       <h2>Region</h2>
-      <select style="width:125px; height:45px" class="form-control select-lg" [(ngModel)]="selectedRegion">
-        <option *ngFor="let region of regions" [ngValue]="region">{{region}}</option>
+      <select style="width:125px; height:45px" class="form-control select-lg" [(ngModel)]="selectedRegionName">
+        <option *ngFor="let region of regions" [ngValue]="region.Name">{{region.Name}}</option>
       </select>
     </div>
     <div class="field-group">

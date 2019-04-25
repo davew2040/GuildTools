@@ -15,13 +15,13 @@
 
     <div class="form-group">
       <label for="password">Password:</label>
-      <input type="text" class="form-control" id="password" required [(ngModel)]="model.Password" #password="ngModel" [ngModelOptions]="{standalone: true}">
+      <input type="password" autocomplete="off" class="form-control" id="password" required [(ngModel)]="model.Password" #password="ngModel" [ngModelOptions]="{standalone: true}">
       <div [hidden]="password.valid || password.pristine" class="alert alert-danger">Password is required.</div>
     </div>
 
     <div class="form-group">
       <label for="password_verify">Retype password:</label>
-      <input type="text" class="form-control" id="verifyPassword" required [(ngModel)]="model.VerifyPassword" #verifyPassword="ngModel" [ngModelOptions]="{standalone: true}">
+      <input type="password" autocomplete="off" class="form-control" id="verifyPassword" required [(ngModel)]="model.VerifyPassword" #verifyPassword="ngModel" [ngModelOptions]="{standalone: true}">
       <div [hidden]="verifyPassword.valid || verifyPassword.pristine" class="alert alert-danger">Password confirmation is required.</div>
     </div>
 

@@ -1,9 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using GuildTools.Configuration;
+using GuildTools.Data;
+using GuildTools.EF.Models.Enums;
 using GuildTools.Models;
+using GuildTools.Services;
+using GuildTools.Services.Mail;
 using JWT;
 using JWT.Algorithms;
 using JWT.Serializers;
@@ -11,6 +18,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace GuildTools.Controllers
 {
@@ -21,16 +29,25 @@ namespace GuildTools.Controllers
         private readonly SignInManager<IdentityUser> signInManager;
         private readonly JwtSettings jwtSettings;
         private readonly ConnectionStrings connectionStrings;
+        private readonly ICommonValuesProvider commonValues;
         private readonly Sql.Accounts accountsSql;
+        private readonly IMailSender mailSender;
+        private readonly IDataRepository dataRepository;
 
         public AccountController(
             UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager,
+            IMailSender mailSender,
+            IDataRepository dataRepository,
+            ICommonValuesProvider commonValues,
             IOptions<JwtSettings> jwtSettings,
             IOptions<ConnectionStrings> connectionStrings)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
+            this.mailSender = mailSender;
+            this.dataRepository = dataRepository;
+            this.commonValues = commonValues;
             this.jwtSettings = jwtSettings.Value;
             this.connectionStrings = connectionStrings.Value;
             this.accountsSql = new Sql.Accounts(this.connectionStrings.Database);
@@ -55,12 +72,10 @@ namespace GuildTools.Controllers
                 {
                     this.accountsSql.UpdateUsername(user.Id, credentials.Username, connectionStrings.Database);
                     await this.signInManager.SignInAsync(user, isPersistent: false);
-                    
-                    return new JsonResult(new Dictionary<string, object>
-                      {
-                        { "access_token", this.GetAccessToken(user.Id, user.Email) },
-                        { "id_token", this.GetIdToken(user) }
-                      });
+
+                    var authenticationResponse = await this.GetAuthenticationResponse(user);
+
+                    return new JsonResult(authenticationResponse);
                 }
                 else
                 {
@@ -74,6 +89,65 @@ namespace GuildTools.Controllers
 
             }
             return Error("Unexpected error");
+        }
+
+        [HttpGet]
+        [Route("resetPassword")]
+        public async Task<IActionResult> ResetPassword(string emailAddress)
+        {
+            var user = await this.userManager.FindByEmailAsync(emailAddress);
+
+            if (user == null)
+            {
+                return Error("No user registered with this email address.");
+            }
+
+            string resetToken = await this.userManager.GeneratePasswordResetTokenAsync(user);
+
+            string baseUrl = $"{this.Request.Scheme}://{this.Request.Host}{this.Request.PathBase}";
+            string resetUrl = $"{baseUrl}/resetpasswordtoken?userId={user.Id}&token={resetToken}";
+
+            var resetEmail = MailGenerator.GenerateResetPasswordEmail(resetUrl);
+            var result = await this.mailSender.SendMailAsync(user.Email, this.commonValues.AdminEmail, resetEmail.Subject, resetEmail.TextContent, resetEmail.HtmlContent);
+
+            if (result)
+            {
+                return Ok();
+            }
+            else
+            {
+                return Error("Failed to send reset password email.");
+            }
+        }
+
+        public class ResetPasswordWithTokenModel
+        {
+            public string UserId { get; set; }
+            public string Token { get; set; }
+            public string NewPassword { get; set; }
+        }
+
+        [HttpPost]
+        [Route("resetPasswordToken")]
+        public async Task<IActionResult> ResetPasswordWithToken([FromBody] ResetPasswordWithTokenModel model)
+        {
+            var user = await this.userManager.FindByIdAsync(model.UserId);
+
+            if (user == null)
+            {
+                return Error($"No user with id {model.UserId}.");
+            }
+
+            var resetResult = await this.userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+
+            if (resetResult.Succeeded)
+            {
+                return Ok();
+            }
+            else
+            {
+                return Errors(resetResult);
+            }
         }
 
         [HttpPost]
@@ -90,57 +164,56 @@ namespace GuildTools.Controllers
             if (result.Succeeded)
             {
                 var user = await userManager.FindByEmailAsync(credentials.Email);
+                
+                var authenticationResponse = await this.GetAuthenticationResponse(user);
 
-                return new JsonResult(new Dictionary<string, object>
-                {
-                    { "access_token", this.GetAccessToken(user.Id, user.Email) },
-                    { "id_token", this.GetIdToken(user) }
-                });
+                return new JsonResult(authenticationResponse);
             }
 
             return new JsonResult("Unable to sign in.") { StatusCode = 401 };
         }
 
-        private string GetIdToken(IdentityUser user)
+        private async Task<Dictionary<string, object>> GetAuthenticationResponse(IdentityUser user)
         {
-            var payload = new Dictionary<string, object>
-             {
-                { "id", user.Id },
-                { "sub", user.UserName },
-                { "email", user.Email },
-                { "emailConfirmed", user.EmailConfirmed },
-             };
+            var profilePermissions = await this.GetAllProfilePermissions(user);
 
-            return GetToken(payload);
-        }
-
-        private string GetAccessToken(string username, string email)
-        {
-            var payload = new Dictionary<string, object>
+            return new Dictionary<string, object>
             {
-                { "sub", email },
-                { "email", email }
+                { "access_token", this.GetJwt(user.Id) },
+                { "permissions", profilePermissions }
             };
-
-            return GetToken(payload);
         }
 
-        private string GetToken(Dictionary<string, object> payload)
+        private async Task<IEnumerable<JsonResponses.ProfilePermission>> GetAllProfilePermissions(IdentityUser user)
         {
-            var secret = this.jwtSettings.SecretKey;
+            var result = await this.dataRepository.GetProfilePermissionsForUserAsync(user.Id);
 
-            payload.Add("iss", this.jwtSettings.Issuer);
-            payload.Add("aud", this.jwtSettings.Audience);
-            payload.Add("nbf", ConvertToUnixTimestamp(DateTime.Now));
-            payload.Add("iat", ConvertToUnixTimestamp(DateTime.Now));
-            payload.Add("exp", ConvertToUnixTimestamp(DateTime.Now.AddDays(7)));
+            return result.Select(x => new JsonResponses.ProfilePermission()
+            {
+                PermissionLevel = (int)x.PermissionLevel,
+                ProfileId = x.ProfileId
+            });
+        }
 
-            IJwtAlgorithm algorithm = new HMACSHA256Algorithm();
-            IJsonSerializer serializer = new JsonNetSerializer();
-            IBase64UrlEncoder urlEncoder = new JwtBase64UrlEncoder();
-            IJwtEncoder encoder = new JwtEncoder(algorithm, serializer, urlEncoder);
+        private string GetJwt(string userId)
+        {
+            string serializedToken;
 
-            return encoder.Encode(payload, secret);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(this.jwtSettings.SecretKey);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.Name, userId)
+                }),
+                Expires = DateTime.UtcNow.AddDays(7),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            serializedToken = tokenHandler.WriteToken(token);
+
+            return serializedToken;
         }
 
         private JsonResult Errors(IdentityResult result)

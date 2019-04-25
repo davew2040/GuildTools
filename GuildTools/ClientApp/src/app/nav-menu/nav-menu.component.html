@@ -7,7 +7,7 @@
     </div>
   </div>
   <div class="auth-content col-sm-4">
-    <div *ngIf="!auth.isAuthenticated()">
+    <div *ngIf="!auth.isAuthenticated">
       <button id="btnLogin"
               class="btn btn-primary"
               (click)="this.router.navigate(['/login'])" type="button">
@@ -21,10 +21,10 @@
         Register
       </button>
     </div>
-    <div *ngIf="auth.isAuthenticated()">
+    <div *ngIf="auth.isAuthenticated">
       <button id="btnLogout"
               class="btn btn-primary"
-              (click)="auth.logout()" type="button">
+              (click)="logout()" type="button">
         Log Out
       </button>
 

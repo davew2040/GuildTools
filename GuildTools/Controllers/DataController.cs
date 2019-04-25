@@ -29,7 +29,7 @@ namespace GuildTools.Controllers
         private readonly ConnectionStrings connectionStrings;
         private readonly IBlizzardService blizzardService;
         private readonly IGuildMemberCache guildMemberCache;
-        private readonly IDataRepository repository;
+        private readonly IDataRepository dataRepo;
         private readonly UserManager<IdentityUser> userManager;
 
         public DataController(
@@ -46,7 +46,7 @@ namespace GuildTools.Controllers
             this.dataSql = new Sql.Data(this.connectionStrings.Database);
             this.blizzardService = blizzardService;
             this.guildMemberCache = guildMemberCache;
-            this.repository = repository;
+            this.dataRepo = repository;
             this.userManager = userManager;
         }
 
@@ -147,9 +147,34 @@ namespace GuildTools.Controllers
 
             var user = await this.userManager.GetUserAsync(HttpContext.User);
 
-            await this.repository.CreateGuildProfileAsync(user.Id, guild, realm, BlizzardService.GetRegionFromString(region));
+            await this.dataRepo.CreateGuildProfileAsync(user.Id, guild, realm, BlizzardService.GetRegionFromString(region));
 
             return Ok();
+        }
+
+
+        [Authorize]
+        [HttpGet("getGuildProfiles")]
+        public async Task<IEnumerable<JsonResponses.GuildProfile>> GetGuildProfiles()
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (user == null)
+            {
+                return new List<JsonResponses.GuildProfile>();
+            }
+
+            var profiles = await this.dataRepo.GetGuildProfilesForUserAsync(user.Id);
+
+            var jsonProfiles = profiles.Select(p => new JsonResponses.GuildProfile()
+            {
+                Id = p.Id,
+                GuildName = p.GuildName,
+                Realm = p.Realm,
+                Region = p.Region.RegionName
+            });
+
+            return jsonProfiles;
         }
 
         private bool CheckGuildOkay(string jsonResponse)

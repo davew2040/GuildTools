@@ -3,6 +3,8 @@ import { RegisterUserModel } from './register-user.model';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
+import { AccountService, RegistrationModel } from '../services/account-service';
+import { BusyService } from '../shared-services/busy-service';
 
 @Component({
   selector: 'app-register-user',
@@ -17,6 +19,8 @@ export class RegisterUserComponent implements OnInit {
   constructor(
       private http: HttpClient,
       public auth: AuthService,
+      private accountService: AccountService,
+      private busyService: BusyService,
       public router: Router,
       @Inject('BASE_URL') private baseUrl: string) {
     this.model = new RegisterUserModel();
@@ -30,18 +34,23 @@ export class RegisterUserComponent implements OnInit {
       return;
     }
 
-    let credentials :ServiceCredentials = new ServiceCredentials();
+    let credentials = new RegistrationModel();
 
-    credentials.Username = this.model.Username;
-    credentials.Password = this.model.Password;
-    credentials.Email = this.model.Email;
+    credentials.username = this.model.Username;
+    credentials.password = this.model.Password;
+    credentials.email = this.model.Email;
 
-    this.http.post(this.baseUrl + 'api/account/register', credentials).subscribe(
+    this.busyService.setBusy();
+
+    this.accountService.register(credentials).subscribe(
       success => {
-        this.auth.loggedIn(success);
-        this.router.navigate(['/']);
+        this.busyService.unsetBusy();
+        this.auth.processLogin(success);
       },
-      error => { console.error(error); });
+      error => {
+        this.busyService.unsetBusy();
+        this.errors = error.errors;
+      });
   }
 
   validateEmail(email: string): boolean {
