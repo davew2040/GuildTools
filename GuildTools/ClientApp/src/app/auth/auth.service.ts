@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { GuildProfile } from '../services/Models/GuildProfile';
 import { AccountService } from '../services/account-service';
 import { BusyService } from '../shared-services/busy-service';
 import { Observable, Subscription } from 'rxjs';
@@ -53,6 +52,9 @@ export class AuthService {
     localStorage.setItem(AuthKeys.AccessToken, accessToken);
     localStorage.setItem(AuthKeys.ExpiresAt, expiresAt);
 
+    let userName = authResult['email'];
+    localStorage.setItem(AuthKeys.UserName, userName);
+
     let permissions = authResult['permissions'];
 
     localStorage.setItem(AuthKeys.ProfilePermissions, JSON.stringify(permissions));
@@ -60,6 +62,10 @@ export class AuthService {
 
   public getAccessToken(): string {
     return localStorage.getItem(AuthKeys.AccessToken);
+  }
+
+  public get username(): string {
+    return localStorage.getItem(AuthKeys.UserName);
   }
 
   private decodeTokenExpiration(token: string): any {
@@ -131,6 +137,7 @@ export class GuildProfilePermissionSet {
 
 class AuthKeys {
   public static get AccessToken() { return 'access_token'; }
+  public static get UserName() { return 'username'; }
   public static get ExpiresAt() { return 'expires_at'; }
   public static get ProfilePermissions() { return 'profile_permissions'; }
 }

@@ -1,0 +1,30 @@
+<div class='new-guild-profile-container'>
+    <form class="new-guild-profile-form" [formGroup]="newProfileForm" #form (submit)="createProfile()">
+        <mat-card-title class='header'>New Guild Profile</mat-card-title>
+
+        <mat-divider></mat-divider>
+
+        <div fxLayout="column" fxLayoutAlign="space-between" fxLayoutGap="25px" style='margin-top: 25px;'>
+
+            <div fxLayout="column">
+                <label>Profile Name:</label>
+                <input formControlName="profileName" fxFlex>
+            </div>
+
+            <div fxLayout="column">
+                <label>Guild:</label>
+                <div fxLayout="row" fxLayoutAlign="space-between center" fxLayoutGap="15px">
+                    <input type="text" disabled [value]="guildDisplay" fxFlex style="height:28px">
+                    <button mat-raised-button (click)="findGuild()">Find</button>
+                </div>
+                <div *ngIf="errors.length !== 0" class="alert alert-danger">
+                    <div *ngFor="let error of errors">{{error}}</div>
+                </div>
+            </div>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="space-evenly" style='margin-top: 25px;'>
+            <button type="submit" mat-raised-button [disabled]="!newProfileForm.valid">Create Profile</button>
+        </div>
+    </form>
+</div>

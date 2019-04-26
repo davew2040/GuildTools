@@ -15,6 +15,7 @@ using GuildTools.ExternalServices.Blizzard;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 using GuildTools.Configuration;
+using GuildTools.Cache.SpecificCaches;
 
 namespace GuildTools.Tests
 {

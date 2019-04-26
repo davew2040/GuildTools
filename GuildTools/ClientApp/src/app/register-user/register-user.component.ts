@@ -34,7 +34,7 @@ export class RegisterUserComponent implements OnInit {
       return;
     }
 
-    let credentials = new RegistrationModel();
+    const credentials = new RegistrationModel();
 
     credentials.username = this.model.Username;
     credentials.password = this.model.Password;

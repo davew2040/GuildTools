@@ -18,19 +18,21 @@ import { GuildStatsComponent } from './guild-stats/guild-stats.component';
 import { BlizzardService } from './blizzard-services/blizzard-services';
 import { DataService } from './services/data-services';
 import { GuildStatsLauncherComponent } from './guild-stats-launcher/guild-stats-launcher.component';
-import { MyGuildProfilesComponent } from './my-guild-profiles/my-guild-profiles.component';
+import { MyGuildProfilesComponent } from './components/my-guild-profiles/my-guild-profiles.component';
 import { GuildProfileComponent } from './guild-profile/guild-profile.component';
 import { BusyService } from './shared-services/busy-service';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { ResetPasswordWithTokenComponent } from './reset-password-token/reset-password-token.component';
 import { AccountService } from './services/account-service';
-import { NewProfileDialogComponent } from './dialogs/new-profile-dialog-component/new-profile-dialog';
+import { FindGuildDialogComponent } from './dialogs/find-guild-dialog.component/find-guild-dialog.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog, MatDialogModule, MatInputModule, MatSelectModule, MatGridListModule, MatAutocompleteModule } from '@angular/material';
 import { FindGuildComponent } from './components/find-guild/find-guild.component';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { BusyDirective } from './directives/busy.directive';
 import { MaterialModule } from './material.module';
+import { NewGuildProfileComponent } from './components/new-guild-profile/new-guild-profile.component';
+import { NewProfilePageComponent } from './components/new-profile-page/new-profile-page.component';
 
 @NgModule({
   declarations: [
@@ -47,9 +49,12 @@ import { MaterialModule } from './material.module';
     GuildStatsLauncherComponent,
     GuildProfileComponent,
     MyGuildProfilesComponent,
-    NewProfileDialogComponent,
     FindGuildComponent,
-    BusyDirective
+    FindGuildDialogComponent,
+    NewGuildProfileComponent,
+    FindGuildComponent,
+    BusyDirective,
+    NewProfilePageComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -63,6 +68,6 @@ import { MaterialModule } from './material.module';
   ],
   providers: [AuthService, BlizzardService, DataService, AccountService, BusyService, MatDialog],
   bootstrap: [AppComponent],
-  entryComponents: [NewProfileDialogComponent]
+  entryComponents: [FindGuildDialogComponent]
 })
 export class AppModule { }

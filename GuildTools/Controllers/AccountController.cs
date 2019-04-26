@@ -73,6 +73,8 @@ namespace GuildTools.Controllers
                 {
                     await this.userManager.AddToRoleAsync(user, GuildToolsRoles.StandardUser.Name);
 
+                    await userManager.AddClaimAsync(user, new Claim(GuildToolsClaims.UserId, user.Id));
+
                     this.accountsSql.UpdateUsername(user.Id, credentials.Username, connectionStrings.Database);
                     await this.signInManager.SignInAsync(user, isPersistent: false);
 
@@ -182,7 +184,8 @@ namespace GuildTools.Controllers
 
             return new Dictionary<string, object>
             {
-                { "access_token", this.GetJwt(user.Id) },
+                { "access_token", this.GetJwt(user.Id, user.Email) },
+                { "email", user.Email },
                 { "permissions", profilePermissions }
             };
         }
@@ -198,7 +201,7 @@ namespace GuildTools.Controllers
             });
         }
 
-        private string GetJwt(string userId)
+        private string GetJwt(string userId, string email)
         {
             string serializedToken;
 
@@ -208,7 +211,8 @@ namespace GuildTools.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Name, userId)
+                    new Claim(ClaimTypes.Email, email),
+                    new Claim(GuildToolsClaims.UserId, userId)
                 }),
                 Expires = DateTime.UtcNow.AddDays(7),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

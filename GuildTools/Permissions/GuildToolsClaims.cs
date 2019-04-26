@@ -7,7 +7,6 @@ namespace GuildTools.Permissions
 {
     public class GuildToolsClaims
     {
-        public const string SuperAdmin = nameof(SuperAdmin);
-        public const string Standard = nameof(Standard);
+        public const string UserId = "UserId";
     }
 }

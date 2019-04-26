@@ -1,0 +1,6 @@
+<mat-card>
+    <mat-card-title class='header'>Find Guild</mat-card-title>
+
+    <mat-divider></mat-divider>
+    <app-find-guild (guildSelected)="handleGuildSelected($event)" (cancelled)="handleChildCancelled()"></app-find-guild>
+</mat-card>

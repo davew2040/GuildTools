@@ -1,0 +1,12 @@
+<div>
+    <div *ngIf="!authService.isAuthenticated" class="must-be-logged-in">
+        <div>You must be authenticated to view your profiles!</div>
+        <div style="margin-top:10px;"><a (click)="navigateToLogin()">Log In</a></div>
+    </div>
+
+    <div *ngIf="authService.isAuthenticated">
+        You have no profiles!
+
+        <input mat-raised-button type="button" (click)="addProfile()" value="Add new profile" />
+    </div>
+</div>

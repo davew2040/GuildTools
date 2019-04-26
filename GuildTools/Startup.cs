@@ -63,6 +63,7 @@ namespace GuildTools
                 .AddIdentity<IdentityUser, IdentityRole>(x =>
                 {
                     x.Password.RequiredLength = 8;
+                    x.ClaimsIdentity.UserIdClaimType = GuildToolsClaims.UserId;
                 })
                 .AddEntityFrameworkStores<GuildToolsContext>()
                 .AddDefaultTokenProviders();
@@ -241,7 +242,27 @@ namespace GuildTools
 
             var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
-            var adminUser = userManager.FindByEmailAsync("dwinterm@gmail.com").Result;
+            var adminEmail = Configuration.GetValue<string>("AdminCredentials:Email");
+
+            var adminUser = userManager.FindByEmailAsync(adminEmail).Result;
+
+            if (null == adminUser)
+            {
+                adminUser = new IdentityUser { UserName = adminEmail, Email = adminEmail };
+
+                var adminPassword = Configuration.GetValue<string>("AdminCredentials:Password");
+                var result = userManager.CreateAsync(adminUser, adminPassword).Result;
+
+                if (!result.Succeeded)
+                {
+                    throw new Exception("Failed to create admin user.");
+                }
+            }
+
+            if (!userManager.GetClaimsAsync(adminUser).Result.Any(c => c.Type == GuildToolsClaims.UserId))
+            {
+                userManager.AddClaimAsync(adminUser, new Claim(GuildToolsClaims.UserId, adminUser.Id)).Wait();
+            }
 
             var adminUserRoles = userManager.GetRolesAsync(adminUser).Result;
 

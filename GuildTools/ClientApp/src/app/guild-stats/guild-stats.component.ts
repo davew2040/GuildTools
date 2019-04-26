@@ -2,8 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router'
 import { DataService } from '../services/data-services';
 import { BlizzardService } from '../blizzard-services/blizzard-services';
-import { GuildProfile } from '../services/Models/GuildProfile';
-import { GuildMember } from '../services/Models/GuildMember';
+import { GuildMember } from '../services/ServiceTypes/service-types';
 
 enum GuildStatsStatus {
   Loading,
@@ -42,9 +41,9 @@ export class GuildStatsComponent implements OnInit {
     this.dataService.getGuildExists(this.region, this.guild, this.realm).subscribe(
       success => {
         if (success !== null) {
-          if (success.Found === true) {
-            this.prettyGuild = success.Name;
-            this.prettyRealm = success.Realm;
+          if (success.found === true) {
+            this.prettyGuild = success.guildName;
+            this.prettyRealm = success.realmName;
 
             this.loadGuildStats(this.region, this.realm, this.guild);
           }
@@ -64,20 +63,20 @@ export class GuildStatsComponent implements OnInit {
     let equippedIlvl = new StatsTable(this.guildMembers);
     equippedIlvl.Title = "Equipped ILVL";
     equippedIlvl.NameDisplayer = (m) => {
-      return m.EquippedIlvl.toString();
+      return m.equippedIlvl.toString();
     };
-    equippedIlvl.Filter = (m => m.EquippedIlvl < 500 && m.EquippedIlvl > 0);
-    equippedIlvl.Sorter = (g1, g2) => { return g2.EquippedIlvl - g1.EquippedIlvl; }
+    equippedIlvl.Filter = (m => m.equippedIlvl < 500 && m.equippedIlvl > 0);
+    equippedIlvl.Sorter = (g1, g2) => { return g2.equippedIlvl - g1.equippedIlvl; }
     this.statsTables.push(equippedIlvl);
 
 
     let maxIlvl = new StatsTable(this.guildMembers);
     maxIlvl.Title = "Max ILVL";
     maxIlvl.NameDisplayer = (m) => {
-      return m.MaximumIlvl.toString();
+      return m.maximumIlvl.toString();
     };
-    maxIlvl.Filter = (m => m.MaximumIlvl < 500 && m.MaximumIlvl > 0);
-    maxIlvl.Sorter = (g1, g2) => { return g2.MaximumIlvl - g1.MaximumIlvl; }
+    maxIlvl.Filter = (m => m.maximumIlvl < 500 && m.maximumIlvl > 0);
+    maxIlvl.Sorter = (g1, g2) => { return g2.maximumIlvl - g1.maximumIlvl; }
 
     this.statsTables.push(maxIlvl);
 
@@ -85,9 +84,9 @@ export class GuildStatsComponent implements OnInit {
     let achieves = new StatsTable(this.guildMembers);
     achieves.Title = "Achievement Points";
     achieves.NameDisplayer = (m) => {
-      return m.AchievementPoints.toString();
+      return m.achievementPoints.toString();
     };
-    achieves.Sorter = (g1, g2) => { return g2.AchievementPoints - g1.AchievementPoints; }
+    achieves.Sorter = (g1, g2) => { return g2.achievementPoints - g1.achievementPoints; }
 
     this.statsTables.push(achieves);
 
@@ -95,10 +94,10 @@ export class GuildStatsComponent implements OnInit {
     let azerite = new StatsTable(this.guildMembers);
     azerite.Title = "Azerite Level";
     azerite.NameDisplayer = (m) => {
-      return m.AzeriteLevel.toString();
+      return m.azeriteLevel.toString();
     };
-    azerite.Sorter = (g1, g2) => { return g2.AzeriteLevel - g1.AzeriteLevel; }
-    azerite.Filter = (g) => g.AzeriteLevel > 0;
+    azerite.Sorter = (g1, g2) => { return g2.azeriteLevel - g1.azeriteLevel; }
+    azerite.Filter = (g) => g.azeriteLevel > 0;
 
     this.statsTables.push(azerite);
 
@@ -106,9 +105,9 @@ export class GuildStatsComponent implements OnInit {
     let mounts = new StatsTable(this.guildMembers);
     mounts.Title = "Mounts";
     mounts.NameDisplayer = (m) => {
-      return m.MountCount.toString();
+      return m.mountCount.toString();
     };
-    mounts.Sorter = (g1, g2) => { return g2.MountCount - g1.MountCount; }
+    mounts.Sorter = (g1, g2) => { return g2.mountCount - g1.mountCount; }
 
     this.statsTables.push(mounts);
 
@@ -116,9 +115,9 @@ export class GuildStatsComponent implements OnInit {
     let pets = new StatsTable(this.guildMembers);
     pets.Title = "Pets";
     pets.NameDisplayer = (m) => {
-      return m.PetCount.toString();
+      return m.petCount.toString();
     };
-    pets.Sorter = (g1, g2) => { return g2.PetCount - g1.PetCount; }
+    pets.Sorter = (g1, g2) => { return g2.petCount - g1.petCount; }
 
     this.statsTables.push(pets);
 
@@ -126,21 +125,21 @@ export class GuildStatsComponent implements OnInit {
     let arena2v2 = new StatsTable(this.guildMembers);
     arena2v2.Title = "Arena 2v2";
     arena2v2.NameDisplayer = (m) => {
-      return m.Pvp2v2Rating.toString();
+      return m.pvp2v2Rating.toString();
     };
-    arena2v2.Sorter = (g1, g2) => { return g2.Pvp2v2Rating - g1.Pvp2v2Rating; }
-    arena2v2.Filter = (g) => g.Pvp2v2Rating > 0;
-    
+    arena2v2.Sorter = (g1, g2) => { return g2.pvp2v2Rating - g1.pvp2v2Rating; }
+    arena2v2.Filter = (g) => g.pvp2v2Rating > 0;
+
     this.statsTables.push(arena2v2);
 
 
     let arena3v3 = new StatsTable(this.guildMembers);
     arena3v3.Title = "Arena 3v3";
     arena3v3.NameDisplayer = (m) => {
-      return m.Pvp3v3Rating.toString();
+      return m.pvp3v3Rating.toString();
     };
-    arena3v3.Sorter = (g1, g2) => { return g2.Pvp3v3Rating - g1.Pvp3v3Rating; }
-    arena3v3.Filter = (g) => g.Pvp3v3Rating > 0;
+    arena3v3.Sorter = (g1, g2) => { return g2.pvp3v3Rating - g1.pvp3v3Rating; }
+    arena3v3.Filter = (g) => g.pvp3v3Rating > 0;
 
     this.statsTables.push(arena3v3);
 
@@ -148,10 +147,10 @@ export class GuildStatsComponent implements OnInit {
     let rbg = new StatsTable(this.guildMembers);
     rbg.Title = "Rated BG's";
     rbg.NameDisplayer = (m) => {
-      return m.PvpRbgRating.toString();
+      return m.pvpRbgRating.toString();
     };
-    rbg.Sorter = (g1, g2) => { return g2.PvpRbgRating - g1.PvpRbgRating; }
-    rbg.Filter = (g) => g.PvpRbgRating > 0;
+    rbg.Sorter = (g1, g2) => { return g2.pvpRbgRating - g1.pvpRbgRating; }
+    rbg.Filter = (g) => g.pvpRbgRating > 0;
 
     this.statsTables.push(rbg);
 
@@ -159,10 +158,10 @@ export class GuildStatsComponent implements OnInit {
     let hk = new StatsTable(this.guildMembers);
     hk.Title = "Honorable Kills";
     hk.NameDisplayer = (m) => {
-      return m.TotalHonorableKills.toString();
+      return m.totalHonorableKills.toString();
     };
-    hk.Sorter = (g1, g2) => { return g2.TotalHonorableKills - g1.TotalHonorableKills; }
-    hk.Filter = (g) => g.TotalHonorableKills > 0;
+    hk.Sorter = (g1, g2) => { return g2.totalHonorableKills - g1.totalHonorableKills; }
+    hk.Filter = (g) => g.totalHonorableKills > 0;
 
     this.statsTables.push(hk);
 
@@ -170,9 +169,9 @@ export class GuildStatsComponent implements OnInit {
     let guildRank = new StatsTable(this.guildMembers);
     guildRank.Title = "Guild Rank";
     guildRank.NameDisplayer = (m) => {
-      return m.GuildRank.toString();
+      return m.guildRank.toString();
     };
-    guildRank.Sorter = (g1, g2) => { return g2.GuildRank - g1.GuildRank; }
+    guildRank.Sorter = (g1, g2) => { return g2.guildRank - g1.guildRank; }
 
     this.statsTables.push(guildRank);
   }
@@ -193,7 +192,7 @@ export class GuildStatsComponent implements OnInit {
         console.log(error);
       });
   }
-  
+
   pageLoading(): boolean {
     return this.pageStatus === GuildStatsStatus.Loading;
   }
@@ -211,7 +210,7 @@ export class GuildStatsComponent implements OnInit {
   }
 
   getPlayerArmoryLink(player: GuildMember): string {
-    let url = `https://worldofwarcraft.com/${this.getPlayerRegionUrlSegment(this.region)}/character/${BlizzardService.FormatRealm(player.Realm)}/${player.Name}`;
+    let url = `https://worldofwarcraft.com/${this.getPlayerRegionUrlSegment(this.region)}/character/${BlizzardService.FormatRealm(player.realm)}/${player.name}`;
     return url;
   }
 
@@ -221,7 +220,7 @@ export class GuildStatsComponent implements OnInit {
   }
 
   getPlayerRegionUrlSegment(realm: string): string {
-    if (realm.toLowerCase() == "us") {
+    if (realm.toLowerCase() === "us") {
       return "en-us";
     }
     else {

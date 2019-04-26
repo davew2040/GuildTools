@@ -1,13 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router'
-import { DataService } from '../services/data-services';
-import { BlizzardService } from '../blizzard-services/blizzard-services';
-import { GuildProfile } from '../services/Models/GuildProfile';
-import { GuildMember } from '../services/Models/GuildMember';
-import { AuthService } from '../auth/auth.service';
-import { BusyService } from '../shared-services/busy-service';
+import { DataService } from '../../services/data-services';
+import { BlizzardService } from '../../blizzard-services/blizzard-services';
+import { AuthService } from '../../auth/auth.service';
+import { BusyService } from '../../shared-services/busy-service';
 import { MatDialogRef, MatDialog } from '@angular/material';
-import { NewProfileDialogComponent } from '../dialogs/new-profile-dialog-component/new-profile-dialog';
+import { FindGuildDialogComponent } from '../../dialogs/find-guild-dialog.component/find-guild-dialog.component';
+import { GuildProfile } from '../../services/ServiceTypes/service-types';
 
 @Component({
   selector: 'app-my-guild-profiles',
@@ -36,7 +35,7 @@ export class MyGuildProfilesComponent implements OnInit {
 
     this.busyService.setBusy();
 
-    this.dataService.getMyGuildProfiles()
+    this.dataService.getGuildProfilesForUser()
       .subscribe(
         success => {
           this.myGuildProfiles = success;
@@ -53,15 +52,13 @@ export class MyGuildProfilesComponent implements OnInit {
   }
 
   public addProfile(): void {
-    let dialogRef = this.dialog.open(NewProfileDialogComponent, {
+    const dialogRef = this.dialog.open(FindGuildDialogComponent, {
       disableClose: true,
-      width: '600px',
-      height: '500px'
+      width: '600px'
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      console.log('The dialog was closed');
-      let test = result;
+
     });
   }
 }

@@ -11,9 +11,9 @@ import { BlizzardRealms, BlizzardRegionDefinition } from '../data/blizzard-realm
 export class GuildStatsLauncherComponent implements OnInit {
 
   guildNotFound = false;
-  private savedRealmKey: string = "stats-launcher-realm";
-  private savedGuildKey: string = "stats-launcher-guild";
-  private savedRegionKey: string = "stats-launcher-region";
+  private savedRealmKey = 'stats-launcher-realm';
+  private savedGuildKey = 'stats-launcher-guild';
+  private savedRegionKey = 'stats-launcher-region';
   savedRealm: string;
   savedGuild: string;
   savedRegion: string;
@@ -37,7 +37,7 @@ export class GuildStatsLauncherComponent implements OnInit {
     this.dataService.getGuildExists(region, guild, realm)
       .subscribe(
         success => {
-          if (success.Found) {
+          if (success.found) {
             this.guildNotFound = false;
 
             localStorage.setItem(this.savedRealmKey, realm);

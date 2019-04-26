@@ -2,7 +2,9 @@ li .glyphicon {
     margin-right: 10px;
 }
 
+
 /* Highlighting rules for nav menu items */
+
 li.link-active a,
 li.link-active a:hover,
 li.link-active a:focus {
@@ -11,39 +13,44 @@ li.link-active a:focus {
 }
 
 .main-nav {
-  background-color: #193370;
-  padding-left: 15px;
-  display: flex;
-  flex-flow: row wrap;
-  justify-content: space-between;
-  align-items: center;
+    background-color: #193370;
+    color: white;
+    padding-left: 15px;
 }
 
 .main-nav h1.page-title {
-  color: white;
-  font-size: 75px;
-  font-family: Arial;
-  font-weight: bold;
-  margin-top: 35px;
+    font-size: 75px;
+    font-family: Arial;
+    font-weight: bold;
+    margin-top: 35px;
 }
 
-.links-container{
-  margin-left: 20px;
-  margin-top: 10px;
-  margin-bottom:30px;
-  font-size: 24px;
+.links-container {
+    margin-left: 20px;
+    margin-top: 10px;
+    margin-bottom: 30px;
+    font-size: 24px;
 }
 
 .links-container a:not(:first-child) {
-  margin-left: 25px;
+    margin-left: 25px;
 }
 
 .links-container a {
-  color: white;
+    color: white;
 }
 
 .auth-content {
-  padding-top: 20px;
-  padding-bottom: 20px;
-  text-align: right;
+    padding-top: 60px;
+    padding-bottom: 20px;
+    padding-right: 20px;
+    text-align: right;
+}
+
+.logged-in-as {
+    margin-top: 15px;
+}
+
+.auth-content button {
+    margin-left: 15px;
 }

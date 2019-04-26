@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import { BlizzardRegionDefinition, BlizzardRealms } from '../../data/blizzard-realms';
 import { BusyService } from '../../shared-services/busy-service';
 import { DataService } from '../../services/data-services';
@@ -6,6 +6,13 @@ import { Realm } from '../../services/ServiceTypes/service-types';
 import { FormControl, FormGroup, AbstractControl } from '@angular/forms';
 import { Observable, Subject, combineLatest } from 'rxjs';
 import { startWith, map, filter, tap } from 'rxjs/operators';
+import { SelectedGuild } from '../../models/selected-guild';
+
+enum SearchState {
+  Waiting,
+  Found,
+  NotFound
+}
 
 @Component({
   selector: 'app-find-guild',
@@ -14,7 +21,6 @@ import { startWith, map, filter, tap } from 'rxjs/operators';
 })
 export class FindGuildComponent implements OnInit {
 
-  public selectedRegionName: string;
   public selectedRealm: Realm;
   public regions: Array<BlizzardRegionDefinition>;
   public realmsSubject: Subject<Realm[]>;
@@ -27,18 +33,19 @@ export class FindGuildComponent implements OnInit {
     realm: new FormControl('')
   });
 
-  constructor(public busyService: BusyService, private dataService: DataService) { 
+  @Output() guildSelected = new EventEmitter<SelectedGuild>()
+  @Output() cancelled = new EventEmitter();
+
+  constructor(public busyService: BusyService, private dataService: DataService) {
     this.selectedGuild = '';
 
     this.regions = BlizzardRealms.AllRealms;
-
-    this.selectedRegionName = this.regions[0].Name;
   }
 
   ngOnInit() {
     this.realmsSubject = new Subject<Realm[]>();
 
-    let realmsControlValueChanges = this.realmsControl.valueChanges.pipe(
+    const realmsControlValueChanges = this.realmsControl.valueChanges.pipe(
       startWith(''),
       map(value => {
         return typeof value === 'string' ? value : value.name;}
@@ -50,8 +57,8 @@ export class FindGuildComponent implements OnInit {
       });
 
     this.filteredRealms = combineLatest(
-        this.realmsSubject.pipe(startWith([])),
-        realmsControlValueChanges)
+        [this.realmsSubject.pipe(startWith([])),
+        realmsControlValueChanges])
       .pipe(
         map(([realms, typedSearch]) => {
           if (typeof typedSearch !== 'string') {
@@ -60,18 +67,24 @@ export class FindGuildComponent implements OnInit {
           return this.filterRealms(typedSearch, realms);
         }));
 
-    this.busyService.setBusy();
 
-    this.dataService.getRealms(this.selectedRegionName).subscribe(
-      success => {
-        this.busyService.unsetBusy();
-        this.realmsSubject.next(success);
-      },
-      error => {
-        this.busyService.unsetBusy();
-        console.error("Failed to get realms.");
-      }
-    )
+    this.searchForm.controls['region'].valueChanges.subscribe((newValue : BlizzardRegionDefinition) => {
+      this.busyService.setBusy();
+
+      this.dataService.getRealms(newValue.Name).subscribe(
+        success => {
+          this.busyService.unsetBusy();
+          this.realmsSubject.next(success);
+          this.searchForm.controls['realm'].setValue('');
+        },
+        error => {
+          this.busyService.unsetBusy();
+          console.error('Failed to get realms.');
+        }
+      );
+    });
+
+    this.searchForm.controls['region'].setValue(this.regions[0]);
   }
 
   public get searchStateClasses(): Array<string> {
@@ -79,7 +92,7 @@ export class FindGuildComponent implements OnInit {
       return []
     }
     else if (this.searchState === SearchState.Found) {
-      return ['search-found'];  
+      return ['search-found'];
     }
     else {
       return ['search-not-found'];
@@ -88,13 +101,13 @@ export class FindGuildComponent implements OnInit {
 
   public get searchStateText(): string {
     if (this.searchState === SearchState.Waiting) {
-      return "Search";
+      return 'Search';
     }
     else if (this.searchState === SearchState.Found) {
-      return "Found!";  
+      return 'Found!';
     }
     else {
-      return "Not Found";
+      return 'Not Found';
     }
   }
 
@@ -111,13 +124,13 @@ export class FindGuildComponent implements OnInit {
     this.busyService.setBusy();
 
     this.dataService.getGuildExists(
-        this.searchForm.controls['region'].value.name, 
-        this.searchForm.controls['guild'].value, 
+        this.searchForm.controls['region'].value.name,
+        this.searchForm.controls['guild'].value,
         this.searchForm.controls['realm'].value.name)
       .subscribe(
         success => {
-          if (success.Found) {
-            this.searchState = SearchState.Found
+          if (success.found) {
+            this.searchState = SearchState.Found;
           }
           else {
             this.searchState = SearchState.NotFound;
@@ -125,13 +138,27 @@ export class FindGuildComponent implements OnInit {
           this.busyService.unsetBusy();
         },
         error => {
-          console.error("An error occurred while fetching this guild state.");
-          this.busyService.unsetBusy;
+          console.error('An error occurred while fetching this guild state.');
+          this.busyService.unsetBusy();
         });
   }
 
   public displayRealm(realm?: Realm): string | undefined {
     return realm ? realm.name : undefined;
+  }
+
+  private cancel(): void {
+    this.cancelled.emit();
+  }
+
+  private useGuild(): void {
+    const selectedGuild = new SelectedGuild();
+
+    selectedGuild.name = this.searchForm.controls['guild'].value;
+    selectedGuild.realm = this.searchForm.controls['realm'].value.name;
+    selectedGuild.region = this.searchForm.controls['region'].value;
+
+    this.guildSelected.emit(selectedGuild);
   }
 
   private get realmsControl(): AbstractControl {
@@ -144,7 +171,7 @@ export class FindGuildComponent implements OnInit {
     if (typedSearch.trim() !== '') {
       realms = realms.filter(x => x.name.toLowerCase().includes(lowered));
     }
-    
+
     realms = realms.sort(
       (a: Realm,b : Realm) => {
         if (a.name < b.name) {
@@ -155,13 +182,7 @@ export class FindGuildComponent implements OnInit {
         }
         return 0;
       });
-    
+
     return realms;
   }
-}
-
-enum SearchState {
-  Waiting,
-  Found,
-  NotFound
 }

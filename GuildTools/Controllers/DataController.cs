@@ -95,7 +95,7 @@ namespace GuildTools.Controllers
         }
 
         [HttpGet("getGuildMemberStats")]
-        public async Task<IEnumerable<JsonResponses.GuildMember>> GetGuildMemberStats(string region, string guild, string realm)
+        public async Task<IEnumerable<GuildMember>> GetGuildMemberStats(string region, string guild, string realm)
         {
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
@@ -105,7 +105,7 @@ namespace GuildTools.Controllers
 
             if (guildData == null)
             {
-                return new List<JsonResponses.GuildMember>();
+                return new List<GuildMember>();
             }
 
             return guildData;
@@ -161,23 +161,30 @@ namespace GuildTools.Controllers
 
         [Authorize]
         [HttpGet("getGuildProfiles")]
-        public async Task<IEnumerable<JsonResponses.GuildProfile>> GetGuildProfiles()
+        public async Task<IEnumerable<GuildProfile>> GetGuildProfiles()
         {
             var user = await this.userManager.GetUserAsync(HttpContext.User);
 
             if (user == null)
             {
-                return new List<JsonResponses.GuildProfile>();
+                return new List<GuildProfile>();
             }
 
             var profiles = await this.dataRepo.GetGuildProfilesForUserAsync(user.Id);
 
-            var jsonProfiles = profiles.Select(p => new JsonResponses.GuildProfile()
+            var jsonProfiles = profiles.Select(p => new GuildProfile()
             {
                 Id = p.Id,
+                ProfileName = p.ProfileName,
                 GuildName = p.GuildName,
                 Realm = p.Realm,
-                Region = p.Region.RegionName
+                Region = p.Region.RegionName,
+                Creator = new CreatorStub()
+                {
+                    Id = p.Creator.Id,
+                    Email = p.Creator.Email,
+                    Username = p.Creator.UserData.Username
+                }
             });
 
             return jsonProfiles;

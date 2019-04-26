@@ -279,6 +279,8 @@ export interface IGuildFound {
 
 export class GuildProfile implements IGuildProfile {
     id?: number | undefined;
+    creator?: CreatorStub | undefined;
+    profileName?: string | undefined;
     guildName?: string | undefined;
     realm?: string | undefined;
     region?: string | undefined;
@@ -295,6 +297,8 @@ export class GuildProfile implements IGuildProfile {
     init(data?: any) {
         if (data) {
             this.id = data["id"];
+            this.creator = data["creator"] ? CreatorStub.fromJS(data["creator"]) : <any>undefined;
+            this.profileName = data["profileName"];
             this.guildName = data["guildName"];
             this.realm = data["realm"];
             this.region = data["region"];
@@ -311,6 +315,8 @@ export class GuildProfile implements IGuildProfile {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["id"] = this.id;
+        data["creator"] = this.creator ? this.creator.toJSON() : <any>undefined;
+        data["profileName"] = this.profileName;
         data["guildName"] = this.guildName;
         data["realm"] = this.realm;
         data["region"] = this.region;
@@ -320,9 +326,55 @@ export class GuildProfile implements IGuildProfile {
 
 export interface IGuildProfile {
     id?: number | undefined;
+    creator?: CreatorStub | undefined;
+    profileName?: string | undefined;
     guildName?: string | undefined;
     realm?: string | undefined;
     region?: string | undefined;
+}
+
+export class CreatorStub implements ICreatorStub {
+    id?: string | undefined;
+    email?: string | undefined;
+    username?: string | undefined;
+
+    constructor(data?: ICreatorStub) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.email = data["email"];
+            this.username = data["username"];
+        }
+    }
+
+    static fromJS(data: any): CreatorStub {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreatorStub();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["email"] = this.email;
+        data["username"] = this.username;
+        return data; 
+    }
+}
+
+export interface ICreatorStub {
+    id?: string | undefined;
+    email?: string | undefined;
+    username?: string | undefined;
 }
 
 export class Realm implements IRealm {

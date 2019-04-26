@@ -80,8 +80,9 @@ namespace GuildTools.Data
         public async Task<IEnumerable<GuildProfile>> GetGuildProfilesForUserAsync(string userId)
         {
             return await this.context.GuildProfile
-                .Where(p => p.CreatorId == userId)
-                .Include(x => x.Region)
+                .Include(g => g.Creator)
+                .Include(g => g.Region)
+                .Where(g => g.CreatorId == userId)
                 .ToListAsync();
         }
 
