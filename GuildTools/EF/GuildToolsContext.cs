@@ -54,9 +54,7 @@ namespace GuildTools.EF
 
             modelBuilder.Entity<GuildProfile>(entity =>
             {
-                entity.HasKey(e => e.Id);
-
-                entity.HasIndex(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedNever();
 
                 entity.Property(e => e.CreatorId)
                     .IsRequired()

@@ -45,6 +45,18 @@
     <Compile Remove="Migrations\20190423151411_GuildProfilePermissions.Designer.cs" />
     <Compile Remove="Migrations\20190423171945_GameRegions.cs" />
     <Compile Remove="Migrations\20190423171945_GameRegions.Designer.cs" />
+    <Compile Remove="Migrations\20190426202619_ProfileKey.cs" />
+    <Compile Remove="Migrations\20190426202619_ProfileKey.Designer.cs" />
+    <Compile Remove="Migrations\20190426233712_ProfileKey.cs" />
+    <Compile Remove="Migrations\20190426233712_ProfileKey.Designer.cs" />
+    <Compile Remove="Migrations\20190426233817_ProfileKey.cs" />
+    <Compile Remove="Migrations\20190426233817_ProfileKey.Designer.cs" />
+    <Compile Remove="Migrations\20190426233927_ProfileKey.cs" />
+    <Compile Remove="Migrations\20190426233927_ProfileKey.Designer.cs" />
+    <Compile Remove="Migrations\20190426234222_ProfileKey.cs" />
+    <Compile Remove="Migrations\20190426234222_ProfileKey.Designer.cs" />
+    <Compile Remove="Migrations\20190426234336_ProfileKey.cs" />
+    <Compile Remove="Migrations\20190426234336_ProfileKey.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>

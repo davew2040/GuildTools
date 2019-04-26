@@ -64,9 +64,7 @@ namespace GuildTools.Migrations
 
             modelBuilder.Entity("GuildTools.EF.Models.GuildProfile", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                    b.Property<int>("Id");
 
                     b.Property<string>("CreatorId")
                         .IsRequired()
@@ -87,8 +85,6 @@ namespace GuildTools.Migrations
                     b.Property<int>("RegionId");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Id");
 
                     b.HasIndex("RegionId");
 
