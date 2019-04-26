@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using GuildTools.Permissions;
 using GuildTools.Configuration;
@@ -24,6 +25,11 @@ using GuildTools.EF;
 using GuildTools.Data;
 using GuildTools.ExternalServices.Blizzard;
 using GuildTools.Services.Mail;
+using Swashbuckle.AspNetCore.Swagger;
+using System.IO;
+using System.Reflection;
+using GuildTools.Cache.SpecificCaches;
+using System.Security.Claims;
 
 namespace GuildTools
 {
@@ -119,11 +125,17 @@ namespace GuildTools
             IGuildMemberService guildMemberService = new GuildMemberService(blizzardService);
             IRaiderIoService raiderIoService = new RaiderIoService();
 
+            services.AddScoped<IKeyedResourceManager, KeyedResourceManager>();
+            services.AddSingleton(guildMemberService);
+            services.AddScoped<IDatabaseCache, DatabaseCache>();
+            services.AddScoped<IDataRepository, DataRepository>();
             services.AddSingleton(blizzardService);
             services.AddSingleton(raiderIoService);
             services.AddSingleton<IGuildCache>(new GuildCache(Configuration, blizzardService));
-            services.AddSingleton<IGuildMemberCache>(new GuildMemberCache(Configuration, guildMemberService, backgroundTaskQueue));
             services.AddScoped<IDataRepository, DataRepository>();
+            services.AddScoped<IGuildMemberCache, GuildMemberCache>();
+
+            this.InitializeCaches(services);
 
             IMailSender mailSender = new MailSender(Configuration.GetValue<string>("SendGridApiKey"));
             services.AddSingleton(mailSender);
@@ -135,6 +147,20 @@ namespace GuildTools
             };
 
             services.AddSingleton(valuesProvider);
+
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new Info
+                {
+                    Version = "v1",
+                    Title = "CSV TEST API",
+                });
+
+                // comments path
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -158,6 +184,12 @@ namespace GuildTools
             app.UseSpaStaticFiles();
             app.UseAuthentication();
 
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "CSV Test API V1");
+            });
+
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
@@ -178,29 +210,44 @@ namespace GuildTools
                 }
             });
 
-            this.CreateRoles(serviceProvider);
+            this.UpdateClaims(serviceProvider);
 
-            this.MigrateDatabase(app);
+            if (!env.IsDevelopment())
+            {
+                this.MigrateDatabase(app);
+            }
         }
 
-        private void CreateRoles(IServiceProvider serviceProvider)
+        private void InitializeCaches(IServiceCollection services)
+        {
+            services.AddScoped<RealmsCache>();
+        }
+
+        private void UpdateClaims(IServiceProvider serviceProvider)
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            var adminExists = roleManager.RoleExistsAsync(GuildToolsRoles.SuperAdmin);
-            adminExists.Wait();
-
-            if (!adminExists.Result)
+            foreach (var roleName in GuildToolsRoles.AllRoleNames)
             {
-                roleManager.CreateAsync(new IdentityRole(GuildToolsRoles.SuperAdmin)).Wait();
+                var role = roleManager.FindByNameAsync(roleName).Result;
+
+                if (role == null)
+                {
+                    role = new IdentityRole(roleName);
+
+                    roleManager.CreateAsync(role).Wait();
+                }
             }
 
-            var standardExists = roleManager.RoleExistsAsync(GuildToolsRoles.Standard);
-            standardExists.Wait();
+            var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
-            if (!standardExists.Result)
+            var adminUser = userManager.FindByEmailAsync("dwinterm@gmail.com").Result;
+
+            var adminUserRoles = userManager.GetRolesAsync(adminUser).Result;
+
+            if (!adminUserRoles.Contains(GuildToolsRoles.AdminRole.Name))
             {
-                roleManager.CreateAsync(new IdentityRole(GuildToolsRoles.Standard)).Wait();
+                userManager.AddToRoleAsync(adminUser, GuildToolsRoles.AdminRole.Name).Wait();
             }
         }
 

@@ -7,6 +7,7 @@ import { GuildExists } from './Models/GuildExists';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/Rx';
 import { AuthService } from '../auth/auth.service';
+import { Realm, IRealm } from './ServiceTypes/service-types';
 
 @Injectable()
 export class DataService {
@@ -55,28 +56,35 @@ export class DataService {
       });
   }
 
+  public getRealms(regionName: string): Observable<Array<Realm>> {
+    return this.http.get(this.baseUrl + `api/data/getRealms?region=${regionName}`)
+      .map(response => {
+        return (response as Array<IRealm>).map(i => new Realm(i));
+      });
+  }
+
   public getGuildMemberStats(region: string, guild: string, realm: string): Observable<Array<GuildMember>> {
     return this.http.get(this.baseUrl + `api/data/getGuildMemberStats?region=${region}&guild=${guild}&realm=${realm}`)
-      .map(response => {
-        const mappedResult = (response as Array<any>).map(r => {
+      .map(response  => {
+        const mappedResult = (response as Array<GuildMember>).map(r => {
           let member = new GuildMember();
 
-          member.AchievementPoints = r["achievementPoints"];
-          member.Class = r["class"];
-          member.EquippedIlvl = r["equippedIlvl"];
-          member.MaximumIlvl = r["maximumIlvl"];
-          member.Level = r["level"];
-          member.Name = r["name"];
-          member.Realm = r["realm"];
-          member.PetCount = r["petCount"];
-          member.MountCount = r["mountCount"];
-          member.GuildRank = r["guildRank"];
-          member.Pvp2v2Rating = r["pvp2v2Rating"];
-          member.Pvp3v3Rating = r["pvp3v3Rating"];
-          member.PvpRbgRating = r["pvpRbgRating"];
-          member.TotalHonorableKills = r["totalHonorableKills"];
-          member.AzeriteLevel = r["azeriteLevel"];
-          member.RaiderIoMplusScore = r["RaiderIoMplusScore"];
+          member.AchievementPoints = r.AchievementPoints;
+          member.Class = r.Class;
+          member.EquippedIlvl = r.EquippedIlvl;
+          member.MaximumIlvl = r.MaximumIlvl
+          member.Level = r.Level;
+          member.Name = r.Name;
+          member.Realm = r.Realm;
+          member.PetCount = r.PetCount;
+          member.MountCount = r.MountCount;
+          member.GuildRank = r.GuildRank;
+          member.Pvp2v2Rating = r.Pvp2v2Rating
+          member.Pvp3v3Rating = r.Pvp2v2Rating
+          member.PvpRbgRating = r.PvpRbgRating
+          member.TotalHonorableKills = r.TotalHonorableKills
+          member.AzeriteLevel = r.AzeriteLevel
+          member.RaiderIoMplusScore = r.RaiderIoMplusScore;
 
           return member;
         });

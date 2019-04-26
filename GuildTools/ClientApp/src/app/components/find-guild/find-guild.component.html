@@ -1,22 +1,35 @@
-<form class="example-form">
-  <mat-grid-list cols="3" gutter-size:>
-    <mat-grid-tile class="guild">
-        <mat-form-field>
-          <input matInput placeholder="Guild Name:" #guild  value="">
-        </mat-form-field>
-    </mat-grid-tile>
-    <mat-grid-tile class="realm">
-      <mat-form-field>
-        <input matInput placeholder="Realm:" #realm value="">
-      </mat-form-field>
-    </mat-grid-tile>
-    <mat-grid-tile class="region">
-        <mat-form-field>
-          <mat-label>Region</mat-label>
-          <mat-select [(value)]="selectedRegionName" name="regionName">
-              <mat-option *ngFor="let region of regions" [value]="region.Name">{{region.Name}}</mat-option>
-          </mat-select>
-      </mat-form-field>
-    </mat-grid-tile>
-  </mat-grid-list>
-</form>
+<mat-card>
+    <form class="example-form" [formGroup]="searchForm">
+        <mat-card-title class='header'>Find Guild</mat-card-title>
+
+        <mat-divider></mat-divider>
+
+        <div fxLayout="row" fxLayoutAlign="space-between" fxLayoutGap="10px" class='selection-container' style='margin-top: 25px;'>
+
+            <mat-form-field class="region">
+                <mat-label>Region</mat-label>
+                <mat-select formControlName="region" name="regionName">
+                    <mat-option *ngFor="let region of regions" [value]="region">{{region.Name}}</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field class="guild">
+                <input matInput placeholder="Guild Name:" #guild formControlName="guild" [value]="selectedGuild">
+            </mat-form-field>
+            <mat-form-field>
+                <input type="text" placeholder="Realm" matInput [matAutocomplete]="auto" [formControl]="searchForm.controls.realm">
+
+                <mat-autocomplete #auto="matAutocomplete" [displayWith]='displayRealm'>
+                    <mat-option *ngFor="let realm of filteredRealms | async" [value]="realm">{{realm.name}}</mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+        </div>
+
+        <mat-card-actions>
+            <div fxLayout="row" fxLayoutAlign="end" class="buttons-container">
+                <button mat-raised-button [disabled]="!canContinue">Use</button>
+                <button mat-raised-button [ngClass]='searchStateClasses' (click)="search()" style="margin-left: 17px">{{ searchStateText }}</button>
+                <button mat-raised-button style="margin-left: 10px">Cancel</button>
+            </div>
+        </mat-card-actions>
+    </form>
+</mat-card>

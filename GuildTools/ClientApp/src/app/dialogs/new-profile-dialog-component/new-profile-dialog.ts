@@ -15,6 +15,6 @@ export class NewProfileDialogComponent implements OnInit {
   }
 
   ngOnInit() {
-
+    
   }
 }

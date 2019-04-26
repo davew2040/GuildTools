@@ -8,18 +8,16 @@ using System.Threading.Tasks;
 
 namespace GuildTools.Cache
 {
-    public class DatabaseCache<T>
+    public class DatabaseCache : IDatabaseCache
     {
         private GuildToolsContext context;
-        private TimeSpan duration;
 
-        public DatabaseCache(GuildToolsContext context, TimeSpan duration)
+        public DatabaseCache(GuildToolsContext context)
         {
             this.context = context;
-            this.duration = duration;
         }
 
-        public async Task<T> TryGetValueAsync(string key)
+        public async Task<T> TryGetValueAsync<T>(string key)
         {
             var result = await context.BigValueCache.FirstOrDefaultAsync(x => x.Id == key);
 
@@ -39,12 +37,12 @@ namespace GuildTools.Cache
             return JsonConvert.DeserializeObject<T>(result.Value);
         }
 
-        public async Task InsertValueAsync(string key, T newValue)
+        public async Task InsertValueAsync<T>(string key, T newValue, TimeSpan duration)
         {
             var existingValue = await context.BigValueCache.FirstOrDefaultAsync(x => x.Id == key);
             if (existingValue != null)
             {
-                existingValue.ExpiresOn = DateTime.Now + this.duration;
+                existingValue.ExpiresOn = DateTime.Now + duration;
                 existingValue.Value = JsonConvert.SerializeObject(newValue);
             }
             else
@@ -53,7 +51,7 @@ namespace GuildTools.Cache
                 {
                     Id = key,
                     Value = JsonConvert.SerializeObject(newValue),
-                    ExpiresOn = DateTime.Now + this.duration
+                    ExpiresOn = DateTime.Now + duration
                 });
             }
 

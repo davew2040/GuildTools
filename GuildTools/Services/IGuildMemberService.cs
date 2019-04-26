@@ -9,6 +9,6 @@ namespace GuildTools.Services
 {
     public interface IGuildMemberService
     {
-        Task<IEnumerable<GuildMember>> GetGuildMemberDataAsync(Region region, string guild, string realm);
+        Task<IEnumerable<GuildMember>> GetGuildMemberDataAsync(BlizzardRegion region, string guild, string realm);
     }
 }

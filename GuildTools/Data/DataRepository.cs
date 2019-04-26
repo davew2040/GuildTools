@@ -25,7 +25,7 @@ namespace GuildTools.Data
             this.context = context;
         }
 
-        public async Task CreateGuildProfileAsync(string creatorId, string guild, string realm, BlizzardService.Region region)
+        public async Task CreateGuildProfileAsync(string creatorId, string guild, string realm, BlizzardService.BlizzardRegion region)
         {
             using (var transaction = await this.context.Database.BeginTransactionAsync())
             {
@@ -34,7 +34,7 @@ namespace GuildTools.Data
                     CreatorId = creatorId,
                     GuildName = guild,
                     Realm = realm,
-                    RegionId = (int)BlizzardUtilities.Utilities.GetEfRegionFromBlizzardRegion(region)
+                    RegionId = (int)BlizzardUtilities.BlizzardUtilities.GetEfRegionFromBlizzardRegion(region)
                 };
 
                 this.context.GuildProfile.Add(newProfile);
@@ -50,6 +50,31 @@ namespace GuildTools.Data
 
                 await this.context.SaveChangesAsync();
             }
+        }
+
+        public async Task<CachedValue> GetCachedValueAsync(string key)
+        {
+            var result = await this.context.BigValueCache.FindAsync(key);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            if (result.ExpiresOn < DateTime.Now)
+            {
+                this.context.Remove(result);
+                await this.context.SaveChangesAsync();
+
+                return null;
+            }
+
+            return new CachedValue()
+            {
+                Key = result.Id,
+                Value = result.Value,
+                ExpiresOn = result.ExpiresOn
+            };
         }
 
         public async Task<IEnumerable<GuildProfile>> GetGuildProfilesForUserAsync(string userId)

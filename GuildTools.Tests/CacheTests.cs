@@ -11,12 +11,25 @@ using System.Threading.Tasks;
 using GuildTools.EF;
 using GuildTools.ExternalServices;
 using static GuildTools.ExternalServices.Blizzard.BlizzardService;
+using GuildTools.ExternalServices.Blizzard;
+using Microsoft.Extensions.Configuration;
+using System.IO;
+using GuildTools.Configuration;
 
 namespace GuildTools.Tests
 {
     [TestClass]
     public class CacheTests
     {
+        private IConfiguration config;
+
+        [TestInitialize]
+        public void SetupTests()
+        {
+            var executingDirectory = Directory.GetCurrentDirectory();
+            this.config = GetApplicationConfiguration(executingDirectory);
+        }
+
         [TestMethod]
         public async Task MemoryCache()
         {
@@ -44,26 +57,53 @@ namespace GuildTools.Tests
 
             IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
             GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
-            DatabaseCache<string> dbCache = new DatabaseCache<string>(context, TimeSpan.FromSeconds(60));
-            DatabaseCacheWithMemoryCache<string> cache = new DatabaseCacheWithMemoryCache<string>(TimeSpan.FromSeconds(30), dbCache, memoryCache);
+            DatabaseCache dbCache = new DatabaseCache(context);
+            DatabaseCacheWithMemoryCache<string> cache = new DatabaseCacheWithMemoryCache<string>(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(230), dbCache, memoryCache);
 
             TestKeyedResource keyedResource = new TestKeyedResource(manager, cache);
 
             List<Task<string>> tasks = new List<Task<string>>();
 
-            var startTime = DateTime.Now;
-
-            for (int i=0; i<1000000; i++)
-            {
-                tasks.Add(keyedResource.Get("Longanimity", "burning-blade", Region.US));
-            }
-
-            Task.WaitAll(tasks.ToArray());
-
-            var endTime = DateTime.Now;
+            await keyedResource.Get("Longanimity", "burning-blade", BlizzardRegion.US);
 
             int x = 42;
         }
+
+
+        [TestMethod]
+        public async Task TetRealmsGetter()
+        {
+            const string connectionString = "Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=GuildTools;Integrated Security=True";
+            KeyedResourceManager manager = new KeyedResourceManager();
+
+            BlizzardApiSecrets blizzardSecrets = new BlizzardApiSecrets()
+            {
+                ClientId = this.config.GetValue<string>("BlizzardApiSecrets:ClientId"),
+                ClientSecret = this.config.GetValue<string>("BlizzardApiSecrets:ClientSecret")
+            };
+
+            IBlizzardService blizzardService = new BlizzardService(connectionString, blizzardSecrets);
+            IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+            GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
+            DatabaseCache dbCache = new DatabaseCache(context);
+
+            RealmsCache cache = new RealmsCache(blizzardService, memoryCache, dbCache, manager);
+
+            DateTime initial = DateTime.Now;
+
+            var realms = await cache.GetRealms(EF.Models.Enums.GameRegion.US);
+
+            DateTime second = DateTime.Now;
+            TimeSpan sinceInitial = second - initial;
+
+            var realms2 = await cache.GetRealms(EF.Models.Enums.GameRegion.US);
+
+            DateTime third = DateTime.Now;
+            TimeSpan sinceSecond = third - second;
+
+            int x = 42;
+        }
+
 
         private async Task<string> SingleThreadTest(SemaphoreSlim sem)
         {
@@ -97,6 +137,20 @@ namespace GuildTools.Tests
             var endTime = DateTime.Now;
 
             int x = 42;
+        }
+
+        public static IConfigurationRoot GetIConfigurationRoot(string outputPath)
+        {
+            return new ConfigurationBuilder()
+                .SetBasePath(outputPath)
+                .AddUserSecrets("57626c94-03e6-4856-86fc-3777d11151c4")
+                .AddEnvironmentVariables()
+                .Build();
+        }
+
+        public static IConfiguration GetApplicationConfiguration(string outputPath)
+        {
+            return GetIConfigurationRoot(outputPath);
         }
     }
 }

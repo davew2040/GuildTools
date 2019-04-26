@@ -9,6 +9,7 @@ using GuildTools.Configuration;
 using GuildTools.Data;
 using GuildTools.EF.Models.Enums;
 using GuildTools.Models;
+using GuildTools.Permissions;
 using GuildTools.Services;
 using GuildTools.Services.Mail;
 using JWT;
@@ -70,6 +71,8 @@ namespace GuildTools.Controllers
 
                 if (result.Succeeded)
                 {
+                    await this.userManager.AddToRoleAsync(user, GuildToolsRoles.StandardUser.Name);
+
                     this.accountsSql.UpdateUsername(user.Id, credentials.Username, connectionStrings.Database);
                     await this.signInManager.SignInAsync(user, isPersistent: false);
 

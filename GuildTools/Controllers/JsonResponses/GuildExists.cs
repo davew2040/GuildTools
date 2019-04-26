@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace GuildTools.Controllers.JsonResponses
 {
-    public class GuildFound
+    public class GuildExists
     {
         public bool Found { get; set; }
         public string RealmName { get; set; }

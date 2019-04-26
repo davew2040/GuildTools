@@ -54,6 +54,7 @@ export class MyGuildProfilesComponent implements OnInit {
 
   public addProfile(): void {
     let dialogRef = this.dialog.open(NewProfileDialogComponent, {
+      disableClose: true,
       width: '600px',
       height: '500px'
     });

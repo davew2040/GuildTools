@@ -27,7 +27,7 @@ namespace GuildTools.Cache
             this.updatingSet = new HashSet<string>();
         }
 
-        public string Get(Region region, string realm, string guild)
+        public string Get(BlizzardRegion region, string realm, string guild)
         {
             string key = this.GetKey(region, realm, guild);
 
@@ -59,7 +59,7 @@ namespace GuildTools.Cache
             return null;
         }
 
-        public void Refresh(Region region, string guild, string realm)
+        public void Refresh(BlizzardRegion region, string guild, string realm)
         {
             string key = this.GetKey(region, realm, guild);
 
@@ -81,7 +81,7 @@ namespace GuildTools.Cache
         }
 
 
-        private void Add(Region region, string realm, string guild, string value, TimeSpan duration)
+        private void Add(BlizzardRegion region, string realm, string guild, string value, TimeSpan duration)
         {
             string key = this.GetKey(region, realm, guild);
 
@@ -89,7 +89,7 @@ namespace GuildTools.Cache
             this.sqlData.SetCachedValue(this.GetKey(region, realm, guild), value, SqlCacheType, duration);
         }
         
-        private string GetKey(Region region, string realm, string guild)
+        private string GetKey(BlizzardRegion region, string realm, string guild)
         {
             return $"{BlizzardService.GetRegionString(region)}:{realm}:{guild}";
         }

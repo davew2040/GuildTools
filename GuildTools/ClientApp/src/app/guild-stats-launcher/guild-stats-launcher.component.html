@@ -16,7 +16,7 @@
     </div>
   </div>
   <div class="row button-container">
-    <button class="btn btn-success btn-lg" style="width:200px" (click)="search(selectedRegion, guild.value, realm.value)">Search</button>
+    <button class="btn btn-success btn-lg" style="width:200px" (click)="search(selectedRegionName, guild.value, realm.value)">Search</button>
   </div>
 
    <div *ngIf="guildNotFound" class="alert alert-danger guild-not-found"><span>Guild not found!</span></div>

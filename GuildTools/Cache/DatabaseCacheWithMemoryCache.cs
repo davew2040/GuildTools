@@ -11,12 +11,14 @@ namespace GuildTools.Cache
     public class DatabaseCacheWithMemoryCache<T> : Cache<T>
     {
         private TimeSpan memoryDuration;
+        private TimeSpan dbDuration;
         private IMemoryCache memoryCache;
-        private DatabaseCache<T> dbCache;
+        private IDatabaseCache dbCache;
 
-        public DatabaseCacheWithMemoryCache(TimeSpan memoryDuration, DatabaseCache<T> databaseCache, IMemoryCache memoryCache)
+        public DatabaseCacheWithMemoryCache(TimeSpan memoryDuration, TimeSpan dbDuration, IDatabaseCache databaseCache, IMemoryCache memoryCache)
         {
             this.memoryDuration = memoryDuration;
+            this.dbDuration = dbDuration;
             this.memoryCache = memoryCache;
             this.dbCache = databaseCache;
         }
@@ -32,7 +34,7 @@ namespace GuildTools.Cache
                 return tryValue;
             }
 
-            tryValue = await this.dbCache.TryGetValueAsync(key);
+            tryValue = await this.dbCache.TryGetValueAsync<T>(key);
 
             if (!EqualityComparer<T>.Default.Equals(tryValue, default(T)))
             {
@@ -46,7 +48,7 @@ namespace GuildTools.Cache
         {
             this.SetMemoryCacheEntry(key, newValue);
 
-            await this.dbCache.InsertValueAsync(key, newValue);
+            await this.dbCache.InsertValueAsync(key, newValue, this.dbDuration);
         }
 
         public void SetMemoryCacheEntry(string key, T newValue)

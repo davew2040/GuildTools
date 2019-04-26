@@ -9,7 +9,7 @@ namespace GuildTools.Cache
 {
     public interface IGuildMemberCache
     {
-        IEnumerable<GuildMember> Get(Region region, string realm, string guild);
-        Task Refresh(Region reigon, string guild, string realm);
+        Task<IEnumerable<GuildMember>> GetAsync(BlizzardRegion region, string realm, string guild);
+        Task Refresh(BlizzardRegion reigon, string guild, string realm);
     }
 }

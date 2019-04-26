@@ -13,8 +13,8 @@ import { map } from 'rxjs/operators';
 })
 export class ResetPasswordWithTokenComponent implements OnInit {
 
-  private model: ResetPasswordWithTokenModel;
-  private errors: Array<string>;
+  public model: ResetPasswordWithTokenModel;
+  public errors: Array<string>;
   private userId: string;
   private token: string;
   private passwordChangedSuccessfully = false;

@@ -8,6 +8,6 @@ namespace GuildTools.Cache
 {
     public interface IGuildCache
     {
-        string Get(Region region, string realm, string guild);
+        string Get(BlizzardRegion region, string realm, string guild);
     }
 }

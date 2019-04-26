@@ -6,10 +6,9 @@ using EfEnums = GuildTools.EF.Models.Enums;
 
 namespace GuildTools.Data.RepositoryModels
 {
-    public class CachedValue
+    public class ProfilePermission
     {
-        public string Key { get; set; }
-        public string Value { get; set; }
-        public DateTime ExpiresOn { get; set; }
+        public int ProfileId { get; set; }
+        public EfEnums.GuildProfilePermissionLevel PermissionLevel { get; set; }
     }
 }

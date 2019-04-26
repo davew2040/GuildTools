@@ -20,7 +20,7 @@ namespace GuildTools.Cache
             this.resourceManager = resourceManager;
         }
 
-        public async Task<string> Get(string guild, string realm, BlizzardService.Region region)
+        public async Task<string> Get(string guild, string realm, BlizzardService.BlizzardRegion region)
         {
             string key = this.getKey(guild, realm, region);
 
@@ -44,14 +44,14 @@ namespace GuildTools.Cache
             return retrievedValue;
         }
 
-        private async Task<string> GetResource(string guild, string realm, BlizzardService.Region region)
+        private async Task<string> GetResource(string guild, string realm, BlizzardService.BlizzardRegion region)
         {
-            await Task.Delay(10000);
+            await Task.Delay(2000);
 
             return this.getKey(guild, realm, region) + "_" + DateTime.Now.ToString();
         }
 
-        private string getKey(string guild, string realm, BlizzardService.Region region)
+        private string getKey(string guild, string realm, BlizzardService.BlizzardRegion region)
         {
             return $"{keyPrefix}:{guild}:{realm}:{region.ToString()}";
         }

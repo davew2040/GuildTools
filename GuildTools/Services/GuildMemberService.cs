@@ -23,7 +23,7 @@ namespace GuildTools.Services
             this.blizzardService = blizzardService;
         }
 
-        public async Task<IEnumerable<GuildMember>> GetGuildMemberDataAsync(Region region, string guild, string realm)
+        public async Task<IEnumerable<GuildMember>> GetGuildMemberDataAsync(BlizzardRegion region, string guild, string realm)
         {
             var guildDataJson = await this.blizzardService.GetGuildMembersAsync(guild, realm, region);
 
@@ -49,7 +49,7 @@ namespace GuildTools.Services
             return validMembers;
         }
 
-        private async Task<bool> PopulateMemberDataAsync(GuildMember member, Region region)
+        private async Task<bool> PopulateMemberDataAsync(GuildMember member, BlizzardRegion region)
         {
             var itemsTask = this.blizzardService.GetPlayerItemsAsync(member.Name, member.Realm, region);
             var mountsTask = this.blizzardService.GetPlayerMountsAsync(member.Name, member.Realm, region);

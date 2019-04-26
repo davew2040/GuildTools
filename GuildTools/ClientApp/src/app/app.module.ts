@@ -1,6 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
@@ -26,9 +26,11 @@ import { ResetPasswordWithTokenComponent } from './reset-password-token/reset-pa
 import { AccountService } from './services/account-service';
 import { NewProfileDialogComponent } from './dialogs/new-profile-dialog-component/new-profile-dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MatDialog, MatDialogModule, MatInputModule, MatSelectModule, MatGridListModule } from '@angular/material';
-import { OverlayModule } from "@angular/cdk/overlay";
+import { MatDialog, MatDialogModule, MatInputModule, MatSelectModule, MatGridListModule, MatAutocompleteModule } from '@angular/material';
 import { FindGuildComponent } from './components/find-guild/find-guild.component';
+import { FlexLayoutModule } from '@angular/flex-layout';
+import { BusyDirective } from './directives/busy.directive';
+import { MaterialModule } from './material.module';
 
 @NgModule({
   declarations: [
@@ -46,7 +48,8 @@ import { FindGuildComponent } from './components/find-guild/find-guild.component
     GuildProfileComponent,
     MyGuildProfilesComponent,
     NewProfileDialogComponent,
-    FindGuildComponent
+    FindGuildComponent,
+    BusyDirective
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -54,11 +57,9 @@ import { FindGuildComponent } from './components/find-guild/find-guild.component
     FormsModule,
     RouterModule.forRoot(ROUTES),
     BrowserAnimationsModule,
-    OverlayModule,
-    MatDialogModule,
-    MatInputModule,
-    MatSelectModule,
-    MatGridListModule
+    MaterialModule,
+    ReactiveFormsModule,
+    FlexLayoutModule
   ],
   providers: [AuthService, BlizzardService, DataService, AccountService, BusyService, MatDialog],
   bootstrap: [AppComponent],

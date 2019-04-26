@@ -3,6 +3,7 @@ import { AuthService } from './auth/auth.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BusyService } from './shared-services/busy-service';
+import { BusyDirective } from './directives/busy.directive'
 
 @Component({
   selector: 'app-root',
@@ -18,10 +19,9 @@ export class AppComponent {
       public auth: AuthService,
       public router: Router,
       public busyService: BusyService) {
-
+    this.auth.appInitialization();
   }
 
   ngOnInit(): void {
-    //this.auth.appInitialization();
   }
 }

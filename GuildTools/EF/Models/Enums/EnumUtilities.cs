@@ -13,5 +13,23 @@ namespace GuildTools.EF.Models.Enums
 
             return values;
         }
+
+        public static class GameRegionUtilities
+        {
+            public static GameRegion GetGameRegionFromString(string region)
+            {
+                var upper = region.ToUpper();
+
+                switch (upper)
+                {
+                    case "US":
+                        return GameRegion.US;
+                    case "EU":
+                        return GameRegion.EU;
+                    default:
+                        throw new ArgumentException("Unrecognized region type!");
+                }
+            }
+        }
     }
 }

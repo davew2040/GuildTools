@@ -1,5 +1,6 @@
 ﻿using GuildTools.Configuration;
 using GuildTools.Controllers.JsonResponses;
+using GuildTools.Data;
 using GuildTools.ExternalServices;
 using GuildTools.ExternalServices.Blizzard;
 using GuildTools.Scheduler;
@@ -26,11 +27,13 @@ namespace GuildTools.Cache
         private const string SqlCacheType = "GuildMember";
         private readonly TimeSpan CacheEntryDuration = new TimeSpan(24, 0, 0);
         private readonly IBackgroundTaskQueue backgroundQueue;
+        private readonly IDataRepository dataRepository;
 
         public GuildMemberCache(
             IConfiguration configuration, 
             IGuildMemberService guildMemberService,
-            IBackgroundTaskQueue backgroundQueue)
+            IBackgroundTaskQueue backgroundQueue, 
+            IDataRepository dataRepository)
         {
             this.cache = new Dictionary<string, ExpiringData<IEnumerable<GuildMember>>>();
             this.guildMemberService = guildMemberService;
@@ -38,9 +41,10 @@ namespace GuildTools.Cache
             sqlData = new Sql.Data(connectionString);
             this.updatingSet = new HashSet<string>();
             this.backgroundQueue = backgroundQueue;
+            this.dataRepository = dataRepository;
         }
 
-        public IEnumerable<GuildMember> Get(Region region, string realm, string guild)
+        public async Task<IEnumerable<GuildMember>> GetAsync(BlizzardRegion region, string realm, string guild)
         {
             string key = this.GetKey(realm, guild);
 
@@ -58,7 +62,7 @@ namespace GuildTools.Cache
             }
             else
             {
-                var sqlCachedData = this.sqlData.GetCachedValue(key, SqlCacheType);
+                var sqlCachedData = await this.dataRepository.GetCachedValueAsync(key);
 
                 if (null != sqlCachedData)
                 {
@@ -79,7 +83,7 @@ namespace GuildTools.Cache
             return null;
         }
 
-        public async Task Refresh(Region region, string guild, string realm)
+        public async Task Refresh(BlizzardRegion region, string guild, string realm)
         {
             string key = this.GetKey(realm, guild);
 

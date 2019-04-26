@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using AspNetAngularTemplate.Controllers.JsonResponses;
+using GuildTools.Controllers.JsonResponses;
 using GuildTools.Cache;
 using GuildTools.Data;
 using GuildTools.ExternalServices;
@@ -18,6 +18,10 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using static GuildTools.ExternalServices.Blizzard.BlizzardService;
+using GuildTools.Controllers.Models;
+using GuildTools.Cache.SpecificCaches;
+using GuildTools.ExternalServices.Blizzard.Utilities;
+using GuildTools.EF.Models.Enums;
 
 namespace GuildTools.Controllers
 {
@@ -30,6 +34,7 @@ namespace GuildTools.Controllers
         private readonly IBlizzardService blizzardService;
         private readonly IGuildMemberCache guildMemberCache;
         private readonly IDataRepository dataRepo;
+        private readonly RealmsCache realmsCache;
         private readonly UserManager<IdentityUser> userManager;
 
         public DataController(
@@ -37,8 +42,8 @@ namespace GuildTools.Controllers
             IOptions<ConnectionStrings> connectionStrings,
             IDataRepository repository,
             IBlizzardService blizzardService, 
-            IGuildCache guildCache, 
             IGuildMemberCache guildMemberCache,
+            RealmsCache realmsCache,
             UserManager<IdentityUser> userManager)
         {
             this.configuration = configuration;
@@ -48,6 +53,7 @@ namespace GuildTools.Controllers
             this.guildMemberCache = guildMemberCache;
             this.dataRepo = repository;
             this.userManager = userManager;
+            this.realmsCache = realmsCache;
         }
 
         [HttpGet]
@@ -89,24 +95,24 @@ namespace GuildTools.Controllers
         }
 
         [HttpGet("getGuildMemberStats")]
-        public async Task<IActionResult> GetGuildMemberStats(string region, string guild, string realm)
+        public async Task<IEnumerable<JsonResponses.GuildMember>> GetGuildMemberStats(string region, string guild, string realm)
         {
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
-            Region regionEnum = BlizzardService.GetRegionFromString(region);
+            BlizzardRegion regionEnum = BlizzardService.GetRegionFromString(region);
 
-            var guildData = this.guildMemberCache.Get(regionEnum, realm, guild);
+            var guildData = await this.guildMemberCache.GetAsync(regionEnum, realm, guild);
 
             if (guildData == null)
             {
-                return new EmptyResult();
+                return new List<JsonResponses.GuildMember>();
             }
 
-            return Json(guildData);
+            return guildData;
         }
 
         [HttpGet("guildExists")]
-        public async Task<ActionResult> GuildExists(string region, string guild, string realm)
+        public async Task<GuildFound> GuildExists(string region, string guild, string realm)
         {
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
@@ -116,18 +122,18 @@ namespace GuildTools.Controllers
             var jobject = JsonConvert.DeserializeObject(result) as JObject;
             if (jobject["status"] != null && jobject["status"].ToString() == "nok")
             {
-                return Json(new GuildFound()
+                return new GuildFound()
                 {
                     Found = false
-                });
+                };
             }
 
-            return Json(new GuildFound()
+            return new GuildFound()
             {
                 Found = true,
-                Realm = jobject["realm"].ToString(),
-                Name = jobject["name"].ToString()
-            });
+                RealmName = jobject["realm"].ToString(),
+                GuildName = jobject["name"].ToString()
+            };
         }
 
         [Authorize]
@@ -175,6 +181,12 @@ namespace GuildTools.Controllers
             });
 
             return jsonProfiles;
+        }
+
+        [HttpGet("getRealms")]
+        public async Task<IEnumerable<Realm>> GetRealms(string region)
+        {
+            return await this.realmsCache.GetRealms(EnumUtilities.GameRegionUtilities.GetGameRegionFromString(region));
         }
 
         private bool CheckGuildOkay(string jsonResponse)

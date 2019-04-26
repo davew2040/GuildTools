@@ -33,9 +33,9 @@ namespace GuildTools.Sql
                         UPDATE {table}
                            SET Username = '{username}'
                            WHERE UserId = '{userId}';
- 
+
                         ELSE 
- 
+
                             INSERT {table} ( UserId, Username )
                             VALUES ( '{userId}', '{username}' );";
 
