@@ -169,7 +169,12 @@ namespace GuildTools
             IApplicationBuilder app, 
             IHostingEnvironment env, 
             IServiceProvider serviceProvider) 
-        { 
+        {
+            if (!env.IsDevelopment())
+            {
+                this.MigrateDatabase(app);
+            }
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -212,11 +217,6 @@ namespace GuildTools
             });
 
             this.UpdateClaims(serviceProvider);
-
-            if (!env.IsDevelopment())
-            {
-                this.MigrateDatabase(app);
-            }
         }
 
         private void InitializeCaches(IServiceCollection services)
@@ -269,6 +269,20 @@ namespace GuildTools
             if (!adminUserRoles.Contains(GuildToolsRoles.AdminRole.Name))
             {
                 userManager.AddToRoleAsync(adminUser, GuildToolsRoles.AdminRole.Name).Wait();
+            }
+
+            var context = serviceProvider.GetRequiredService<GuildToolsContext>();
+
+            if (context.UserData.FirstOrDefault(u => u.UserId == adminUser.Id) == null)
+            {
+                context.UserData.Add(new EF.Models.UserData()
+                {
+                    UserId = adminUser.Id,
+                    GuildName = "Longanimity",
+                    Username = "Krom",
+                    GuildRealm = "burning-blade"
+                });
+                context.SaveChanges();
             }
         }
 

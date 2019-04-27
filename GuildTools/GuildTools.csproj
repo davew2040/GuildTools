@@ -57,6 +57,14 @@
     <Compile Remove="Migrations\20190426234222_ProfileKey.Designer.cs" />
     <Compile Remove="Migrations\20190426234336_ProfileKey.cs" />
     <Compile Remove="Migrations\20190426234336_ProfileKey.Designer.cs" />
+    <Compile Remove="Migrations\20190427000923_Initial.cs" />
+    <Compile Remove="Migrations\20190427000923_Initial.Designer.cs" />
+    <Compile Remove="Migrations\20190427001726_Initial.cs" />
+    <Compile Remove="Migrations\20190427001726_Initial.Designer.cs" />
+    <Compile Remove="Migrations\20190427002405_Initial.cs" />
+    <Compile Remove="Migrations\20190427002405_Initial.Designer.cs" />
+    <Compile Remove="Migrations\20190427002622_Initial.cs" />
+    <Compile Remove="Migrations\20190427002622_Initial.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -140,6 +140,13 @@ namespace GuildTools.ExternalServices.Blizzard
             return epoch.AddMilliseconds(unixTime);
         }
 
+        public static bool DidGetGuildFail(string jsonResponse)
+        {
+            var jobject = JsonConvert.DeserializeObject(jsonResponse) as JObject;
+
+            return (jobject["status"] != null && jobject["status"].ToString() != "nok");
+        }
+
         private async Task<string> QueryAccessToken(BlizzardRegion region)
         {
             string url = $"https://{GetRegionString(region)}.battle.net/oauth/token?grant_type=client_credentials";

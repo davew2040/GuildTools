@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
+import { RoutePaths } from 'app/data/route-paths';
 
 @Component({
   selector: 'app-nav-menu',
@@ -26,5 +27,17 @@ export class NavMenuComponent {
 
   logout() {
     this.auth.logOut();
+  }
+
+  navigateToLogin() {
+    this.router.navigate(['/' + RoutePaths.Login]);
+  }
+
+  navigateToRegister() {
+    this.router.navigate(['/' + RoutePaths.Register]);
+  }
+
+  navigateToUserSettings() {
+    this.router.navigate(['/' + RoutePaths.UserSettings]);
   }
 }

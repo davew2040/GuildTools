@@ -51,27 +51,6 @@ namespace GuildTools.Tests
         }
 
         [TestMethod]
-        public async Task TestKeyedResource()
-        {
-            const string connectionString = "Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=GuildTools;Integrated Security=True";
-            KeyedResourceManager manager = new KeyedResourceManager();
-
-            IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
-            GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
-            DatabaseCache dbCache = new DatabaseCache(context);
-            DatabaseCacheWithMemoryCache<string> cache = new DatabaseCacheWithMemoryCache<string>(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(230), dbCache, memoryCache);
-
-            TestKeyedResource keyedResource = new TestKeyedResource(manager, cache);
-
-            List<Task<string>> tasks = new List<Task<string>>();
-
-            await keyedResource.Get("Longanimity", "burning-blade", BlizzardRegion.US);
-
-            int x = 42;
-        }
-
-
-        [TestMethod]
         public async Task TetRealmsGetter()
         {
             const string connectionString = "Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=GuildTools;Integrated Security=True";

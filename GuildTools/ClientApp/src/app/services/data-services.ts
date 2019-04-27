@@ -5,6 +5,8 @@ import { Observable } from 'rxjs/Observable';
 import 'rxjs/Rx';
 import { AuthService } from '../auth/auth.service';
 import { Realm, IRealm, IGuildProfile, GuildProfile, IGuildMember, GuildMember, GuildFound, IGuildFound } from './ServiceTypes/service-types';
+import { BlizzardRegionDefinition } from '../data/blizzard-realms';
+import { BlizzardService } from '../blizzard-services/blizzard-services';
 
 @Injectable()
 export class DataService {
@@ -58,6 +60,23 @@ export class DataService {
       });
   }
 
+  public createNewGuildProfile(name: string, guild: string, realm: string, region: BlizzardRegionDefinition): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    const params = new HttpParams()
+      .append('name', name)
+      .append('guild', guild)
+      .append('realm', realm)
+      .append('region', region.Name);
+
+    return this.http.post(this.baseUrl + `api/data/createGuildProfile`, null, { headers: headers, params: params })
+      .map(response  => {
+        const mappedResult = (response as Array<IGuildMember>).map(i => new GuildMember(i));
+
+        return mappedResult;
+      });
+  }
+
   public postPasswordReset(userId: string, token: string, newPassword: string): Observable<Object> {
     return this.http.post(this.getResetUrl(this.baseUrl),
       {
@@ -75,7 +94,7 @@ export class DataService {
   private getAuthorizeHeader(): HttpHeaders {
     const authBearer = 'Bearer ' + this.auth.getAccessToken();
 
-    const headers = new HttpHeaders().set('Authorization', authBearer);
+    const headers = new HttpHeaders().append('Authorization', authBearer);
 
     return headers;
   }

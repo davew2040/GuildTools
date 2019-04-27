@@ -4,9 +4,9 @@ import { DataService } from '../../services/data-services';
 import { BlizzardService } from '../../blizzard-services/blizzard-services';
 import { AuthService } from '../../auth/auth.service';
 import { BusyService } from '../../shared-services/busy-service';
-import { MatDialogRef, MatDialog } from '@angular/material';
-import { FindGuildDialogComponent } from '../../dialogs/find-guild-dialog.component/find-guild-dialog.component';
+import {  MatDialog } from '@angular/material';
 import { GuildProfile } from '../../services/ServiceTypes/service-types';
+import { RoutePaths } from 'app/data/route-paths';
 
 @Component({
   selector: 'app-my-guild-profiles',
@@ -16,7 +16,7 @@ import { GuildProfile } from '../../services/ServiceTypes/service-types';
 export class MyGuildProfilesComponent implements OnInit {
 
   private isLoaded = false;
-  private myGuildProfiles = Array<GuildProfile>();
+  public myGuildProfiles = Array<GuildProfile>();
 
   constructor(
     public route: ActivatedRoute,
@@ -24,8 +24,9 @@ export class MyGuildProfilesComponent implements OnInit {
     public blizzardService: BlizzardService,
     public authService: AuthService,
     private busyService: BusyService,
-    private dialog: MatDialog,
-    private router: Router) { }
+    private router: Router) {
+      this.myGuildProfiles = [];
+    }
 
   ngOnInit() {
     if (!this.authService.isAuthenticated) {
@@ -48,17 +49,16 @@ export class MyGuildProfilesComponent implements OnInit {
   }
 
   public navigateToLogin(): void {
-    this.router.navigate(['/login']);
+    this.router.navigate(['/' + RoutePaths.Login]);
   }
 
   public addProfile(): void {
-    const dialogRef = this.dialog.open(FindGuildDialogComponent, {
-      disableClose: true,
-      width: '600px'
-    });
+    this.router.navigate(['/' + RoutePaths.NewProfile]);
+  }
 
-    dialogRef.afterClosed().subscribe(result => {
-
-    });
+  public navigateToProfile(profileId: number): boolean {
+    const path = `/${RoutePaths.ViewProfile}/${profileId}`;
+    this.router.navigate([path]);
+    return false;
   }
 }

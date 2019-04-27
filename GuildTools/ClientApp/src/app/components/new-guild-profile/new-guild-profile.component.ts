@@ -65,9 +65,22 @@ export class NewGuildProfileComponent implements OnInit {
       return;
     }
 
-    //FIXME
-    //this.dataService.
-    this.created.emit();
+    this.busyService.setBusy();
+
+    this.dataService.createNewGuildProfile(
+      this.newProfileForm.controls['profileName'].value,
+      this.selectedGuild.name,
+      this.selectedGuild.realm,
+      this.selectedGuild.region)
+      .subscribe(
+        success => {
+          this.created.emit();
+          this.busyService.unsetBusy();
+        },
+        error => {
+          this.errors = ['An error occurred while creating this profile.'];
+          this.busyService.unsetBusy();
+        })
   }
 
   private buildForm(): FormGroup {

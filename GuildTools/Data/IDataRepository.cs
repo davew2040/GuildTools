@@ -13,7 +13,7 @@ namespace GuildTools.Data
     public interface IDataRepository
     {
         Task<IEnumerable<ProfilePermission>> GetProfilePermissionsForUserAsync(string userId);
-        Task CreateGuildProfileAsync(string creatorId, string guild, string realm, BlizzardRegion region);
+        Task CreateGuildProfileAsync(string creatorId, string name, string guild, string realm, BlizzardRegion region);
         Task<IdentityUser> GetUserByEmailAddressAsync(string email);
         Task<IEnumerable<GuildProfile>> GetGuildProfilesForUserAsync(string userId);
         Task<CachedValue> GetCachedValueAsync(string key);

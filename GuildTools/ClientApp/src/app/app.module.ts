@@ -8,7 +8,6 @@ import { ROUTES } from './app.routes';
 
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
-import { HomeComponent } from './home/home.component';
 import { AuthService } from './auth/auth.service';
 import { CallbackComponent } from './callback/callback.component';
 import { UserSettingsComponent } from './user-settings/user-settings.component';
@@ -26,20 +25,19 @@ import { ResetPasswordWithTokenComponent } from './reset-password-token/reset-pa
 import { AccountService } from './services/account-service';
 import { FindGuildDialogComponent } from './dialogs/find-guild-dialog.component/find-guild-dialog.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MatDialog, MatDialogModule, MatInputModule, MatSelectModule, MatGridListModule, MatAutocompleteModule } from '@angular/material';
 import { FindGuildComponent } from './components/find-guild/find-guild.component';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { BusyDirective } from './directives/busy.directive';
 import { MaterialModule } from './material.module';
 import { NewGuildProfileComponent } from './components/new-guild-profile/new-guild-profile.component';
 import { NewProfilePageComponent } from './components/new-profile-page/new-profile-page.component';
+import { ViewGuildProfileComponent } from './components/view-guild-profile/view-guild-profile.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     CallbackComponent,
     NavMenuComponent,
-    HomeComponent,
     UserSettingsComponent,
     RegisterUserComponent,
     LoginComponent,
@@ -54,7 +52,8 @@ import { NewProfilePageComponent } from './components/new-profile-page/new-profi
     NewGuildProfileComponent,
     FindGuildComponent,
     BusyDirective,
-    NewProfilePageComponent
+    NewProfilePageComponent,
+    ViewGuildProfileComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -66,7 +65,7 @@ import { NewProfilePageComponent } from './components/new-profile-page/new-profi
     ReactiveFormsModule,
     FlexLayoutModule
   ],
-  providers: [AuthService, BlizzardService, DataService, AccountService, BusyService, MatDialog],
+  providers: [AuthService, BlizzardService, DataService, AccountService, BusyService],
   bootstrap: [AppComponent],
   entryComponents: [FindGuildDialogComponent]
 })

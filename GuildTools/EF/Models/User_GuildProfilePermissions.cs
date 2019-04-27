@@ -9,7 +9,6 @@ namespace GuildTools.EF.Models
         public int PermissionLevelId { get; set; }
         public int ProfileId { get; set; }
 
-        public virtual AspNetUsers User { get; set; }
         public virtual GuildProfile Profile { get; set; }
         public virtual GuildProfilePermissionLevel PermissionLevel { get; set; }
     }

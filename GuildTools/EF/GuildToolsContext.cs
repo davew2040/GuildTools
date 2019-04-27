@@ -8,6 +8,7 @@ using GuildTools.EF.Models;
 using EfEnums = GuildTools.EF.Models.Enums;
 using EfModels = GuildTools.EF.Models;
 using GuildTools.EF.Models.Enums;
+using GuildTools.EF.Models.StoredBlizzardModels;
 
 namespace GuildTools.EF
 {
@@ -24,6 +25,11 @@ namespace GuildTools.EF
         public virtual DbSet<User_GuildProfilePermissions> User_GuildProfilePermissions { get; set; }
         public virtual DbSet<UserData> UserData { get; set; }
         public virtual DbSet<ValueStore> ValueStore { get; set; }
+        public virtual DbSet<PlayerMain> PlayerMains { get; set; }
+        public virtual DbSet<PlayerAlt> PlayerAlts { get; set; }
+        public virtual DbSet<StoredRealm> StoredRealms { get; set; }
+        public virtual DbSet<StoredPlayer> StoredPlayers { get; set; }
+        public virtual DbSet<StoredGuild> StoredGuilds { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -54,7 +60,8 @@ namespace GuildTools.EF
 
             modelBuilder.Entity<GuildProfile>(entity =>
             {
-                entity.Property(e => e.Id).ValueGeneratedNever();
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Id);
 
                 entity.Property(e => e.CreatorId)
                     .IsRequired()
@@ -75,11 +82,11 @@ namespace GuildTools.EF
                     .OnDelete(DeleteBehavior.Restrict)
                     .HasConstraintName("FK_GuildProfile_GameRegion");
 
-                entity.HasOne(d => d.Creator)
-                    .WithMany(p => p.GuildProfile)
-                    .HasForeignKey(d => d.CreatorId)
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .HasConstraintName("FK_GuildProfile_ToTable");
+                entity
+                    .HasOne(e => e.Creator)
+                    .WithMany(f => f.GuildProfiles)
+                    .HasForeignKey(e => e.CreatorId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<UserData>(entity =>
@@ -97,12 +104,6 @@ namespace GuildTools.EF
                 entity.Property(e => e.GuildRealm).HasMaxLength(50);
 
                 entity.Property(e => e.Username).HasMaxLength(50);
-
-                entity.HasOne(d => d.User)
-                    .WithOne(p => p.UserData)
-                    .HasForeignKey<UserData>(d => d.UserId)
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .HasConstraintName("FK_Users_AspNetUsers");
             });
 
             modelBuilder.Entity<ValueStore>(entity =>
@@ -131,21 +132,92 @@ namespace GuildTools.EF
                     .HasForeignKey(e => e.ProfileId)
                     .OnDelete(DeleteBehavior.Restrict)
                     .HasConstraintName("FK__GuildProfilePermissions_GuildProfiles");
-
-                entity
-                    .HasOne(e => e.User)
-                    .WithMany(f => f.GuildProfilePermissions)
-                    .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .HasConstraintName("FK__GuildProfilePermissions_AspNetUsers");
             });
 
-            modelBuilder.Ignore<AspNetRoleClaims>();
-            modelBuilder.Ignore<AspNetRoles>();
-            modelBuilder.Ignore<AspNetUserClaims>();
-            modelBuilder.Ignore<AspNetUserLogins>();
-            modelBuilder.Ignore<AspNetUserRoles>();
-            modelBuilder.Ignore<AspNetUsers>();
+            modelBuilder.Entity<StoredRealm>(entity =>
+            {
+                entity.HasKey(e => new { e.Id, e.RegionId });
+
+                entity.HasIndex(e => new { e.Id, e.RegionId });
+
+                entity.HasOne(e => e.Region)
+                    .WithMany(f => f.Realms)
+                    .HasForeignKey(e => e.RegionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<StoredGuild>(entity =>
+            {
+                entity.HasKey(e => new { e.Id, e.ProfileId, e.RealmId });
+
+                entity.HasIndex(e => new { e.Id, e.ProfileId, e.RealmId });
+
+                entity.HasOne(e => e.Profile)
+                    .WithMany(f => f.Guilds)
+                    .HasForeignKey(e => e.ProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Realm)
+                    .WithMany(f => f.Guilds)
+                    .HasForeignKey(e => e.RealmId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<StoredPlayer>(entity =>
+            {
+                entity.HasKey(e => new { e.Id, e.ProfileId, e.RealmId });
+
+                entity.HasIndex(e => new { e.Id, e.ProfileId, e.RealmId });
+
+                entity.HasOne(e => e.Profile)
+                    .WithMany(f => f.Players)
+                    .HasForeignKey(e => e.ProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Realm)
+                    .WithMany(f => f.Players)
+                    .HasForeignKey(e => e.RealmId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+
+            modelBuilder.Entity<PlayerMain>(entity =>
+            {
+                entity.HasKey(e => new { e.Id, e.PlayerId });
+
+                entity.HasIndex(e => new { e.Id, e.PlayerId });
+
+                entity.HasOne(e => e.Profile)
+                    .WithMany(f => f.PlayerMains)
+                    .HasForeignKey(e => e.ProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Player)
+                    .WithOne(f => f.Main)
+                    .HasPrincipalKey<PlayerMain>(e => e.PlayerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.Alts)
+                    .WithOne(f => f.PlayerMain)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<PlayerAlt>(entity =>
+            {
+                entity.HasKey(e => new { e.Id, e.PlayerId, e.PlayerMainId });
+
+                entity.HasIndex(e => new { e.Id, e.PlayerId, e.PlayerMainId });
+
+                entity.HasOne(e => e.Profile)
+                    .WithMany(f => f.PlayerAlts)
+                    .HasForeignKey(e => e.ProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Player)
+                    .WithOne(f => f.Alt)
+                    .HasPrincipalKey<PlayerAlt>(e => e.PlayerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             this.AddStaticEnumData(modelBuilder);
         }

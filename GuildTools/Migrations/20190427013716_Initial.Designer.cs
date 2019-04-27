@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GuildTools.Migrations
 {
     [DbContext(typeof(GuildToolsContext))]
-    [Migration("20190423172509_GameRegions")]
-    partial class GameRegions
+    [Migration("20190427013716_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -66,7 +66,9 @@ namespace GuildTools.Migrations
 
             modelBuilder.Entity("GuildTools.EF.Models.GuildProfile", b =>
                 {
-                    b.Property<int>("Id");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("CreatorId")
                         .IsRequired()
@@ -76,6 +78,10 @@ namespace GuildTools.Migrations
                         .IsRequired()
                         .HasMaxLength(200);
 
+                    b.Property<string>("ProfileName")
+                        .IsRequired()
+                        .HasMaxLength(150);
+
                     b.Property<string>("Realm")
                         .IsRequired()
                         .HasMaxLength(100);
@@ -83,6 +89,10 @@ namespace GuildTools.Migrations
                     b.Property<int>("RegionId");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatorId");
+
+                    b.HasIndex("Id");
 
                     b.HasIndex("RegionId");
 
@@ -131,12 +141,6 @@ namespace GuildTools.Migrations
                     b.Property<string>("GuildName")
                         .HasMaxLength(50);
 
-                    b.Property<int?>("GuildPermissionsPermissionLevelId");
-
-                    b.Property<int?>("GuildPermissionsProfileId");
-
-                    b.Property<string>("GuildPermissionsUserId");
-
                     b.Property<string>("GuildRealm")
                         .HasMaxLength(50);
 
@@ -148,8 +152,6 @@ namespace GuildTools.Migrations
 
                     b.HasIndex("UserId")
                         .HasName("IX_Users_Column");
-
-                    b.HasIndex("GuildPermissionsUserId", "GuildPermissionsPermissionLevelId", "GuildPermissionsProfileId");
 
                     b.ToTable("UserData");
                 });
@@ -347,18 +349,16 @@ namespace GuildTools.Migrations
 
             modelBuilder.Entity("GuildTools.EF.Models.GuildProfile", b =>
                 {
+                    b.HasOne("GuildTools.EF.Models.UserData", "Creator")
+                        .WithMany("GuildProfiles")
+                        .HasForeignKey("CreatorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("GuildTools.EF.Models.GameRegion", "Region")
                         .WithMany("GuildProfiles")
                         .HasForeignKey("RegionId")
                         .HasConstraintName("FK_GuildProfile_GameRegion")
                         .OnDelete(DeleteBehavior.Restrict);
-                });
-
-            modelBuilder.Entity("GuildTools.EF.Models.UserData", b =>
-                {
-                    b.HasOne("GuildTools.EF.Models.User_GuildProfilePermissions", "GuildPermissions")
-                        .WithMany()
-                        .HasForeignKey("GuildPermissionsUserId", "GuildPermissionsPermissionLevelId", "GuildPermissionsProfileId");
                 });
 
             modelBuilder.Entity("GuildTools.EF.Models.User_GuildProfilePermissions", b =>

@@ -138,7 +138,7 @@ namespace GuildTools.Controllers
 
         [Authorize]
         [HttpPost("createGuildProfile")]
-        public async Task<ActionResult> CreateGuildProfile(string guild, string realm, string region)
+        public async Task<ActionResult> CreateGuildProfile(string name, string guild, string realm, string region)
         {
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
@@ -146,14 +146,14 @@ namespace GuildTools.Controllers
 
             var blizzardGuild = await this.blizzardService.GetGuildAsync(guild, realm, regionEnum);
 
-            if (!this.CheckGuildOkay(blizzardGuild))
+            if (BlizzardService.DidGetGuildFail(blizzardGuild))
             {
                 throw new ArgumentException("Could not locate this guild!");
             }
 
             var user = await this.userManager.GetUserAsync(HttpContext.User);
 
-            await this.dataRepo.CreateGuildProfileAsync(user.Id, guild, realm, BlizzardService.GetRegionFromString(region));
+            await this.dataRepo.CreateGuildProfileAsync(user.Id, name, guild, realm, BlizzardService.GetRegionFromString(region));
 
             return Ok();
         }
@@ -171,6 +171,7 @@ namespace GuildTools.Controllers
             }
 
             var profiles = await this.dataRepo.GetGuildProfilesForUserAsync(user.Id);
+            //var profiles = await this.dataRepo.GetGuildProfilesForUserAsync(user.Id);
 
             var jsonProfiles = profiles.Select(p => new GuildProfile()
             {
@@ -181,9 +182,9 @@ namespace GuildTools.Controllers
                 Region = p.Region.RegionName,
                 Creator = new CreatorStub()
                 {
-                    Id = p.Creator.Id,
-                    Email = p.Creator.Email,
-                    Username = p.Creator.UserData.Username
+                    Id = p.Creator.UserId,
+                    Email = user.Email,
+                    Username = p.Creator.Username
                 }
             });
 
@@ -194,13 +195,6 @@ namespace GuildTools.Controllers
         public async Task<IEnumerable<Realm>> GetRealms(string region)
         {
             return await this.realmsCache.GetRealms(EnumUtilities.GameRegionUtilities.GetGameRegionFromString(region));
-        }
-
-        private bool CheckGuildOkay(string jsonResponse)
-        {
-            var jobject = JsonConvert.DeserializeObject(jsonResponse) as JObject;
-
-            return (jobject["status"] != null && jobject["status"].ToString() != "nok");
         }
     }
 }

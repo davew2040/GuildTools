@@ -4,12 +4,13 @@ import { AuthService } from '../auth/auth.service';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
+import { RoutePaths } from '../data/route-paths';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
-}) 
+})
 export class LoginComponent implements OnInit {
 
   model: LoginModel;
@@ -40,6 +41,6 @@ export class LoginComponent implements OnInit {
   }
 
   forgotPassword(): void {
-    this.router.navigate(['/resetpassword']);
+    this.router.navigate(['/' + RoutePaths.ResetPassword]);
   }
 }

@@ -9,11 +9,11 @@
     <div class="auth-content" fxLayout="column" fxLayoutAlign="start">
         <div *ngIf="!auth.isAuthenticated">
             <div fxLayout="row" fxLayoutAlign="end">
-                <button id="btnLogin" mat-button-raised class="btn btn-primary" (click)="this.router.navigate(['/login'])" type="button">
+                <button id="btnLogin" mat-button-raised class="btn btn-primary" (click)="navigateToLogin()" type="button">
                   Log In
                 </button>
 
-                <button id="btnRegister" class="btn btn-primary" (click)="this.router.navigate(['/register'])" type="button">
+                <button id="btnRegister" class="btn btn-primary" (click)="navigateToRegister()" type="button">
         Register
       </button>
             </div>
@@ -24,7 +24,7 @@
           Log Out
         </button>
 
-                <button id="btnUserAccount" mat-button-raised class="btn btn-primary" (click)="this.router.navigate(['/userSettings'])" type="button">
+                <button id="btnUserAccount" mat-button-raised class="btn btn-primary" (click)="navigateToUserSettings()" type="button">
           User Settings
         </button>
             </div>

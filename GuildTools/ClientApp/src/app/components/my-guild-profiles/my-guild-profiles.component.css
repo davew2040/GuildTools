@@ -1,4 +1,12 @@
 .must-be-logged-in {
-  text-align: center;
-  font-size: 25px;
+    text-align: center;
+    font-size: 25px;
+}
+
+.list-holder {
+    background-color: hsl(0, 0%, 91%);
+}
+
+a:hover {
+    cursor: pointer;
 }

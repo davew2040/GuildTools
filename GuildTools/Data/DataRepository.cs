@@ -25,7 +25,7 @@ namespace GuildTools.Data
             this.context = context;
         }
 
-        public async Task CreateGuildProfileAsync(string creatorId, string guild, string realm, BlizzardService.BlizzardRegion region)
+        public async Task CreateGuildProfileAsync(string creatorId, string name, string guild, string realm, BlizzardService.BlizzardRegion region)
         {
             using (var transaction = await this.context.Database.BeginTransactionAsync())
             {
@@ -33,6 +33,7 @@ namespace GuildTools.Data
                 {
                     CreatorId = creatorId,
                     GuildName = guild,
+                    ProfileName = name,
                     Realm = realm,
                     RegionId = (int)BlizzardUtilities.BlizzardUtilities.GetEfRegionFromBlizzardRegion(region)
                 };
@@ -49,6 +50,8 @@ namespace GuildTools.Data
                 });
 
                 await this.context.SaveChangesAsync();
+
+                transaction.Commit();
             }
         }
 
@@ -80,8 +83,8 @@ namespace GuildTools.Data
         public async Task<IEnumerable<GuildProfile>> GetGuildProfilesForUserAsync(string userId)
         {
             return await this.context.GuildProfile
-                .Include(g => g.Creator)
                 .Include(g => g.Region)
+                .Include(g => g.Creator)
                 .Where(g => g.CreatorId == userId)
                 .ToListAsync();
         }

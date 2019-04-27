@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { RoutePaths } from 'app/data/route-paths';
 
 @Component({
   selector: 'app-new-profile-page',
@@ -6,8 +8,12 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./new-profile-page.component.css']
 })
 export class NewProfilePageComponent implements OnInit {
-  constructor() { }
+  constructor(private router: Router) { }
 
   ngOnInit() {
+  }
+
+  public profileCreated(): void{
+    this.router.navigate(['/' + RoutePaths.MyProfiles]);
   }
 }
