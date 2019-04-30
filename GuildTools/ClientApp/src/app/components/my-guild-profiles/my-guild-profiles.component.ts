@@ -17,6 +17,7 @@ export class MyGuildProfilesComponent implements OnInit {
 
   private isLoaded = false;
   public myGuildProfiles = Array<GuildProfile>();
+  public displayedColumns: Array<string> = ['profileName', 'guildName', 'realmName'];
 
   constructor(
     public route: ActivatedRoute,
@@ -54,6 +55,15 @@ export class MyGuildProfilesComponent implements OnInit {
 
   public addProfile(): void {
     this.router.navigate(['/' + RoutePaths.NewProfile]);
+  }
+
+  public getGuildUrl(profileId: number): string {
+    const foundProfile = this.myGuildProfiles.find(profile => profile.id === profileId);
+    if (!foundProfile){
+      return '';
+    }
+
+    return BlizzardService.GetGuildUrl(foundProfile.guildName, foundProfile.realm, foundProfile.region);
   }
 
   public navigateToProfile(profileId: number): boolean {

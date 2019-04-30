@@ -48,17 +48,19 @@ export class FindGuildComponent implements OnInit {
     const realmsControlValueChanges = this.realmsControl.valueChanges.pipe(
       startWith(''),
       map(value => {
-        return typeof value === 'string' ? value : value.name;}
-        )
-      );
+        return typeof value === 'string' ? value : value.name;
+      })
+    );
 
-      this.searchForm.valueChanges.subscribe(() => {
-        this.searchState = SearchState.Waiting;
-      });
+    this.searchForm.valueChanges.subscribe(() => {
+      this.searchState = SearchState.Waiting;
+    });
 
     this.filteredRealms = combineLatest(
-        [this.realmsSubject.pipe(startWith([])),
-        realmsControlValueChanges])
+        [
+          this.realmsSubject.pipe(startWith([])),
+          realmsControlValueChanges
+        ])
       .pipe(
         map(([realms, typedSearch]) => {
           if (typeof typedSearch !== 'string') {
@@ -66,7 +68,6 @@ export class FindGuildComponent implements OnInit {
           }
           return this.filterRealms(typedSearch, realms);
         }));
-
 
     this.searchForm.controls['region'].valueChanges.subscribe((newValue : BlizzardRegionDefinition) => {
       this.busyService.setBusy();

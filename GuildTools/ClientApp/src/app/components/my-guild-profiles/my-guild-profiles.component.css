@@ -10,3 +10,11 @@
 a:hover {
     cursor: pointer;
 }
+
+.profile-table mat-row:nth-child(even) {
+    background: #CCC;
+}
+
+.profile-table mat-row:nth-child(odd) {
+    background: #DDD;
+}

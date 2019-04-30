@@ -10,7 +10,6 @@ namespace GuildTools.Cache
     public class MemoryCachedDatabaseValue<T> where T : class
     {
         protected IKeyedResourceManager resourceManager;
-
         protected IMemoryCache cache;
         protected TimeSpan memoryDuration;
 
@@ -24,10 +23,8 @@ namespace GuildTools.Cache
             this.resourceManager = resourceManager;
         }
 
-        public async Task<T> GetOrCacheAsync(
+        public async Task<T> GetAsync(
             Func<Task<T>> databaseRetriever,
-            Func<Task<CacheResult<T>>> sourceRetriever,
-            Func<T, Task> databaseStorer,
             Func<string> keyCreator)
         {
             var key = keyCreator();
@@ -50,17 +47,7 @@ namespace GuildTools.Cache
                     return foundInDatabase;
                 }
 
-                var foundFromSource = await sourceRetriever();
-                if (!foundFromSource.Found)
-                {
-                    this.SetMemoryCacheEntry(key, null);
-                    return null;
-                }
-
-                this.SetMemoryCacheEntry(key, foundFromSource.Result);
-                await databaseStorer(foundFromSource.Result);
-
-                return foundFromSource.Result;
+                return null;
             }
             finally
             {

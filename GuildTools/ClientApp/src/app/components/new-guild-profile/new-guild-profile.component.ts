@@ -80,7 +80,7 @@ export class NewGuildProfileComponent implements OnInit {
         error => {
           this.errors = ['An error occurred while creating this profile.'];
           this.busyService.unsetBusy();
-        })
+        });
   }
 
   private buildForm(): FormGroup {

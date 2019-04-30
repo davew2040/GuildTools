@@ -10,7 +10,7 @@ namespace GuildTools.Cache
 {
     public interface IDatabaseCache
     {
-        Task<T> TryGetValueAsync<T>(string key);
+        Task<CacheResult<T>> TryGetValueAsync<T>(string key);
         Task InsertValueAsync<T>(string key, T newValue, TimeSpan duration);
     }
 }

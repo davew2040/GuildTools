@@ -11,6 +11,10 @@ using System.Threading.Tasks;
 using GuildTools.EF.Models;
 using EfEnums = GuildTools.EF.Models.Enums;
 using Microsoft.AspNetCore.Identity;
+using GuildTools.Controllers.Models;
+using GuildTools.EF.Models.StoredBlizzardModels;
+using EfModels = GuildTools.EF.Models;
+using ControllerModels = GuildTools.Controllers.Models;
 
 namespace GuildTools.Data
 {
@@ -19,28 +23,40 @@ namespace GuildTools.Data
         GuildToolsContext context;
 
         public DataRepository(
-            GuildToolsContext context, 
-            IBlizzardService blizzardService)
+            GuildToolsContext context)
         {
             this.context = context;
         }
 
-        public async Task CreateGuildProfileAsync(string creatorId, string name, string guild, string realm, BlizzardService.BlizzardRegion region)
+        public async Task CreateGuildProfileAsync(
+            string creatorId, 
+            string profileName, 
+            GuildSlim guild,
+            EfModels.StoredBlizzardModels.StoredRealm realm, 
+            EfEnums.GameRegion region)
         {
             using (var transaction = await this.context.Database.BeginTransactionAsync())
             {
                 var newProfile = new EF.Models.GuildProfile()
                 {
                     CreatorId = creatorId,
-                    GuildName = guild,
-                    ProfileName = name,
-                    Realm = realm,
-                    RegionId = (int)BlizzardUtilities.BlizzardUtilities.GetEfRegionFromBlizzardRegion(region)
+                    ProfileName = profileName,
+                    RealmId = realm.Id
                 };
 
                 this.context.GuildProfile.Add(newProfile);
 
                 await this.context.SaveChangesAsync();
+
+                EfModels.StoredBlizzardModels.StoredGuild storedGuild = new EfModels.StoredBlizzardModels.StoredGuild()
+                {
+                    Name = guild.Name,
+                    RealmId = realm.Id,
+                    ProfileId = newProfile.Id
+                };
+
+                this.context.StoredGuilds.Add(storedGuild);
+                newProfile.CreatorGuild = storedGuild;
 
                 this.context.User_GuildProfilePermissions.Add(new EF.Models.User_GuildProfilePermissions()
                 {
@@ -80,32 +96,107 @@ namespace GuildTools.Data
             };
         }
 
-        public async Task<IEnumerable<GuildProfile>> GetGuildProfilesForUserAsync(string userId)
+        public async Task SetCachedValueAsync(string key, string value, TimeSpan duration)
+        {
+            using (var transaction = await this.context.Database.BeginTransactionAsync())
+            {
+                var result = await this.context.BigValueCache.FindAsync(key);
+
+                if (result != null)
+                {
+                    this.context.BigValueCache.Remove(result);
+                }
+
+                if (result.ExpiresOn < DateTime.Now)
+                {
+                    this.context.BigValueCache.Remove(result);
+                }
+
+                await this.context.SaveChangesAsync();
+
+                this.context.BigValueCache.Add(new BigValueCache()
+                {
+                    Value = value,
+                    ExpiresOn = DateTime.Now + duration
+                });
+
+                await this.context.SaveChangesAsync();
+
+                transaction.Commit();
+            }
+        }
+
+        public async Task<IEnumerable<EfModels.GuildProfile>> GetGuildProfilesForUserAsync(string userId)
         {
             return await this.context.GuildProfile
-                .Include(g => g.Region)
+                .Include(g => g.Realm)
+                .ThenInclude(g => g.Region)
+                .Include(g => g.CreatorGuild)
                 .Include(g => g.Creator)
                 .Where(g => g.CreatorId == userId)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<ProfilePermission>> GetProfilePermissionsForUserAsync(string userId)
+        public async Task<EfEnums.GuildProfilePermissionLevel?> GetProfilePermissionForUserAsync(int profileId, string userId)
         {
             var query = await this.context.User_GuildProfilePermissions
-                .Where(p => p.UserId == userId)
-                .ToListAsync();
+                .Include(p => p.PermissionLevel)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.ProfileId == profileId);
 
-            return query
-                .Select(p => new ProfilePermission()
-                {
-                    ProfileId = p.ProfileId,
-                    PermissionLevel = Enum.Parse<EfEnums.GuildProfilePermissionLevel>(p.PermissionLevelId.ToString())
-                });
+            if (query == null)
+            {
+                return null;
+            }
+
+            return (EfEnums.GuildProfilePermissionLevel)query.PermissionLevel.Id;
         }
 
         public async Task<IdentityUser> GetUserByEmailAddressAsync(string email)
         {
             return await this.context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task<RepositoryModels.FullGuildProfile> GetFullGuildProfile(int id)
+        {
+            var profile = await this.context.GuildProfile
+                .Include(x => x.Creator)
+                .Include(x => x.CreatorGuild)
+                .Include(x => x.PlayerMains)
+                    .ThenInclude(y => y.Alts)
+                        .ThenInclude(z => z.Player)
+                .Include(x => x.PlayerMains)
+                    .ThenInclude(y => y.Player)
+                .Include(x => x.Realm)
+                    .ThenInclude(y => y.Region)
+                .Include(x => x.User_GuildProfilePermissions)
+                    .ThenInclude(y => y.PermissionLevel)
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            return new RepositoryModels.FullGuildProfile()
+            {
+                Profile = profile
+            };
+        }
+
+        public async Task<EfModels.PlayerMain> AddMainToProfileAsync(int playerId, int profileId)
+        {
+            var profile = await this.context.GuildProfile
+                .Include(x => x.PlayerMains)
+                .SingleOrDefaultAsync(x => x.Id == profileId);
+
+            var newPlayer = new EfModels.PlayerMain()
+            {
+                ProfileId = profileId,
+                PlayerId = playerId
+            };
+
+            profile.PlayerMains.Add(newPlayer);
+
+            await this.context.SaveChangesAsync();
+
+            return newPlayer;
         }
     }
 }

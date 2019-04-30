@@ -30,6 +30,8 @@ using System.IO;
 using System.Reflection;
 using GuildTools.Cache.SpecificCaches;
 using System.Security.Claims;
+using GuildTools.Cache.SpecificCaches.CacheInterfaces;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace GuildTools
 {
@@ -123,7 +125,7 @@ namespace GuildTools
                 Configuration.GetValue<string>("ConnectionStrings:Database"), 
                 blizzardSecrets);
 
-            IGuildMemberService guildMemberService = new GuildMemberService(blizzardService);
+            IGuildService guildMemberService = new GuildService(blizzardService);
             IRaiderIoService raiderIoService = new RaiderIoService();
 
             services.AddScoped<IKeyedResourceManager, KeyedResourceManager>();
@@ -132,9 +134,13 @@ namespace GuildTools
             services.AddScoped<IDataRepository, DataRepository>();
             services.AddSingleton(blizzardService);
             services.AddSingleton(raiderIoService);
-            services.AddSingleton<IGuildCache>(new GuildCache(Configuration, blizzardService));
+            services.AddScoped<IGuildStatsCache, GuildStatsCache>();
             services.AddScoped<IDataRepository, DataRepository>();
+            services.AddScoped<IOldGuildMemberCache, OldGuildMemberCache>();
             services.AddScoped<IGuildMemberCache, GuildMemberCache>();
+            services.AddScoped<IRealmStoreByValues, RealmStoreByValues>();
+            services.AddScoped<IPlayerStoreByValue, PlayerStoreByValue>();
+            services.AddScoped<IGuildStoreByName, GuildStoreByName>();
 
             this.InitializeCaches(services);
 
@@ -184,7 +190,16 @@ namespace GuildTools
                 app.UseExceptionHandler("/Error");
                 app.UseHsts();
             }
-            
+
+            app.UseExceptionHandler(appError =>
+            {
+                appError.Run(async context =>
+                {
+                    var errors = context.Features.Get<IExceptionHandlerFeature>();
+                    //Console.WriteLine(context.)
+                });
+            });
+
             //app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
@@ -221,7 +236,8 @@ namespace GuildTools
 
         private void InitializeCaches(IServiceCollection services)
         {
-            services.AddScoped<RealmsCache>();
+            services.AddScoped<IRealmsCache, RealmsCache>();
+            services.AddScoped<IGuildCache, GuildCache>();
         }
 
         private void UpdateClaims(IServiceProvider serviceProvider)

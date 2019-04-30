@@ -4,12 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using EfEnums = GuildTools.EF.Models.Enums;
 
+using EfModels = GuildTools.EF.Models;
+
 namespace GuildTools.Data.RepositoryModels
 {
-    public class CachedValue
+    public class FullGuildProfile
     {
-        public string Key { get; set; }
-        public string Value { get; set; }
-        public DateTime ExpiresOn { get; set; }
+        public string Name { get; set; }
+        public EfModels.GuildProfile Profile { get; set; }
     }
 }

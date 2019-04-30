@@ -120,42 +120,6 @@ namespace GuildTools.Sql
             }
         }
 
-        public CachedValue GetCachedValue(string key, string type)
-        {
-            using (SqlConnection connection = new SqlConnection())
-            using (SqlCommand command = new SqlCommand("GetCachedValue"))
-            {
-                connection.ConnectionString = this.connectionString;
-
-                command.Connection = connection;
-                command.CommandType = System.Data.CommandType.StoredProcedure;
-
-                command.Parameters.Add(new SqlParameter("@id", key));
-                command.Parameters.Add(new SqlParameter("@type", type));
-                command.Parameters.Add("@Out_Id", SqlDbType.NVarChar, 50).Direction = ParameterDirection.Output;
-                command.Parameters.Add("@Out_Type", SqlDbType.NVarChar, 50).Direction = ParameterDirection.Output;
-                command.Parameters.Add("@Out_Value", SqlDbType.NVarChar, -1).Direction = ParameterDirection.Output;
-                command.Parameters.Add("@Out_ExpiresOn", SqlDbType.DateTime).Direction = ParameterDirection.Output;
-                
-                connection.Open();
-
-                int result = command.ExecuteNonQuery();
-
-                if (command.Parameters["@Out_Id"].Value is DBNull)
-                {
-                    return null;
-                }
-
-                return new CachedValue()
-                {
-                    Key = command.Parameters["@Out_Id"].Value.ToString(),
-                    Type = command.Parameters["@Out_Type"].Value.ToString(),
-                    Value = command.Parameters["@Out_Value"].Value.ToString(),
-                    ExpiresOn = (DateTime)command.Parameters["@Out_ExpiresOn"].Value
-                };
-            }
-        }
-
         public GuildProfile GetGuildProfile(int id)
         {
             using (SqlConnection connection = new SqlConnection())

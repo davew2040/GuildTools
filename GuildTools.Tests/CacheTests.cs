@@ -16,6 +16,9 @@ using Microsoft.Extensions.Configuration;
 using System.IO;
 using GuildTools.Configuration;
 using GuildTools.Cache.SpecificCaches;
+using GuildTools.Services;
+using GuildTools.EF.Models.StoredBlizzardModels;
+using GuildTools.EF.Models;
 
 namespace GuildTools.Tests
 {
@@ -51,7 +54,7 @@ namespace GuildTools.Tests
         }
 
         [TestMethod]
-        public async Task TetRealmsGetter()
+        public async Task TestRealmsGetter()
         {
             const string connectionString = "Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=GuildTools;Integrated Security=True";
             KeyedResourceManager manager = new KeyedResourceManager();
@@ -84,6 +87,94 @@ namespace GuildTools.Tests
             int x = 42;
         }
 
+        [TestMethod]
+        public async Task CachedStoredValueTest()
+        {
+            const string connectionString = "Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=GuildTools;Integrated Security=True";
+            KeyedResourceManager manager = new KeyedResourceManager();
+
+            BlizzardApiSecrets blizzardSecrets = new BlizzardApiSecrets()
+            {
+                ClientId = this.config.GetValue<string>("BlizzardApiSecrets:ClientId"),
+                ClientSecret = this.config.GetValue<string>("BlizzardApiSecrets:ClientSecret")
+            };
+
+            IBlizzardService blizzardService = new BlizzardService(connectionString, blizzardSecrets);
+            IGuildService guildService = new GuildService(blizzardService);
+            IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+            GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
+
+            RealmStoreByValues store = new RealmStoreByValues(guildService, memoryCache, context, manager);
+
+            DateTime initial = DateTime.Now;
+
+            var realms = await store.GetRealmAsync("Burning Blade", EF.Models.Enums.GameRegion.US);
+
+            DateTime second = DateTime.Now;
+            TimeSpan sinceInitial = second - initial;
+
+            var realms2 = await store.GetRealmAsync("Burning Blade", EF.Models.Enums.GameRegion.US);
+
+            DateTime third = DateTime.Now;
+            TimeSpan sinceSecond = third - second;
+
+            var realms3 = await store.GetRealmAsync("Akama", EF.Models.Enums.GameRegion.US);
+
+            DateTime fourth = DateTime.Now;
+            TimeSpan sinceThird = fourth - third;
+
+            int x = 42;
+        }
+
+        [TestMethod]
+        public async Task PlayerStoreTest()
+        {
+            const string connectionString = "Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=GuildTools;Integrated Security=True";
+            KeyedResourceManager manager = new KeyedResourceManager();
+
+            BlizzardApiSecrets blizzardSecrets = new BlizzardApiSecrets()
+            {
+                ClientId = this.config.GetValue<string>("BlizzardApiSecrets:ClientId"),
+                ClientSecret = this.config.GetValue<string>("BlizzardApiSecrets:ClientSecret")
+            };
+
+            IBlizzardService blizzardService = new BlizzardService(connectionString, blizzardSecrets);
+            IGuildService guildService = new GuildService(blizzardService);
+            IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+            GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
+
+            int profileId = 1;
+
+            GameRegion region = new GameRegion()
+            {
+                Id = 1,
+                RegionName = "US"
+            };
+
+            StoredRealm realm = context.StoredRealms.Include(a => a.Region).First();
+            StoredGuild guild = context.StoredGuilds.First();
+
+            PlayerStoreByValue playerStore = new PlayerStoreByValue(guildService, memoryCache, context, manager);
+
+            DateTime initial = DateTime.Now;
+
+            var realms = await playerStore.GetPlayerAsync("Kromp", realm, guild, profileId);
+
+            DateTime second = DateTime.Now;
+            TimeSpan sinceInitial = second - initial;
+
+            var realms2 = await playerStore.GetPlayerAsync("Kromp", realm, guild, profileId);
+
+            DateTime third = DateTime.Now;
+            TimeSpan sinceSecond = third - second;
+
+            var realms3 = await playerStore.GetPlayerAsync("Kromp", realm, guild, profileId);
+
+            DateTime fourth = DateTime.Now;
+            TimeSpan sinceThird = fourth - third;
+
+            int x = 42;
+        }
 
         private async Task<string> SingleThreadTest(SemaphoreSlim sem)
         {

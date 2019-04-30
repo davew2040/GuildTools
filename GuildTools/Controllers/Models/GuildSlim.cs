@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace GuildTools.Controllers.JsonResponses
+namespace GuildTools.Controllers.Models
 {
     public class GuildSlim
     {

@@ -57,7 +57,7 @@ namespace GuildTools.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__BigValue__8D8F664F9682143E", x => x.Id);
+                    table.PrimaryKey("PK_BigValueCache", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -97,7 +97,7 @@ namespace GuildTools.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__UserData__1788CC4C5D60148F", x => x.UserId);
+                    table.PrimaryKey("PK_UserData", x => x.UserId);
                 });
 
             migrationBuilder.CreateTable(
@@ -219,16 +219,37 @@ namespace GuildTools.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "StoredRealms",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(nullable: false),
+                    Slug = table.Column<string>(nullable: false),
+                    RegionId = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StoredRealms", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StoredRealms_GameRegions_RegionId",
+                        column: x => x.RegionId,
+                        principalTable: "GameRegions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "GuildProfile",
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
                         .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
                     ProfileName = table.Column<string>(maxLength: 150, nullable: false),
-                    GuildName = table.Column<string>(maxLength: 200, nullable: false),
-                    Realm = table.Column<string>(maxLength: 100, nullable: false),
-                    CreatorId = table.Column<string>(maxLength: 450, nullable: false),
-                    RegionId = table.Column<int>(nullable: false)
+                    CreatorId = table.Column<string>(nullable: false),
+                    RealmId = table.Column<int>(nullable: false),
+                    CreatorGuildId = table.Column<int>(nullable: true),
+                    GameRegionId = table.Column<int>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -240,9 +261,42 @@ namespace GuildTools.Migrations
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_GuildProfile_GameRegion",
-                        column: x => x.RegionId,
+                        name: "FK_GuildProfile_GameRegions_GameRegionId",
+                        column: x => x.GameRegionId,
                         principalTable: "GameRegions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_GuildProfile_StoredRealms_RealmId",
+                        column: x => x.RealmId,
+                        principalTable: "StoredRealms",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StoredGuilds",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(nullable: false),
+                    RealmId = table.Column<int>(nullable: false),
+                    ProfileId = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StoredGuilds", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StoredGuilds_GuildProfile_ProfileId",
+                        column: x => x.ProfileId,
+                        principalTable: "GuildProfile",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_StoredGuilds_StoredRealms_RealmId",
+                        column: x => x.RealmId,
+                        principalTable: "StoredRealms",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -266,6 +320,96 @@ namespace GuildTools.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK__GuildProfilePermissions_GuildProfiles",
+                        column: x => x.ProfileId,
+                        principalTable: "GuildProfile",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PlayerAlts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    PlayerMainId = table.Column<int>(nullable: false),
+                    PlayerId = table.Column<int>(nullable: false),
+                    ProfileId = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PlayerAlts", x => x.Id);
+                    table.UniqueConstraint("AK_PlayerAlts_PlayerId", x => x.PlayerId);
+                    table.ForeignKey(
+                        name: "FK_PlayerAlts_GuildProfile_ProfileId",
+                        column: x => x.ProfileId,
+                        principalTable: "GuildProfile",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StoredPlayers",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(nullable: false),
+                    RealmId = table.Column<int>(nullable: false),
+                    ProfileId = table.Column<int>(nullable: false),
+                    GuildId = table.Column<int>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StoredPlayers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StoredPlayers_StoredGuilds_GuildId",
+                        column: x => x.GuildId,
+                        principalTable: "StoredGuilds",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_StoredPlayers_PlayerAlts_Id",
+                        column: x => x.Id,
+                        principalTable: "PlayerAlts",
+                        principalColumn: "PlayerId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_StoredPlayers_GuildProfile_ProfileId",
+                        column: x => x.ProfileId,
+                        principalTable: "GuildProfile",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_StoredPlayers_StoredRealms_RealmId",
+                        column: x => x.RealmId,
+                        principalTable: "StoredRealms",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PlayerMains",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    ProfileId = table.Column<int>(nullable: false),
+                    PlayerId = table.Column<int>(nullable: true),
+                    Notes = table.Column<string>(maxLength: 4000, nullable: true),
+                    OfficerNotes = table.Column<string>(maxLength: 4000, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PlayerMains", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PlayerMains_StoredPlayers_PlayerId",
+                        column: x => x.PlayerId,
+                        principalTable: "StoredPlayers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PlayerMains_GuildProfile_ProfileId",
                         column: x => x.ProfileId,
                         principalTable: "GuildProfile",
                         principalColumn: "Id",
@@ -332,9 +476,19 @@ namespace GuildTools.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_GuildProfile_CreatorGuildId",
+                table: "GuildProfile",
+                column: "CreatorGuildId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_GuildProfile_CreatorId",
                 table: "GuildProfile",
                 column: "CreatorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GuildProfile_GameRegionId",
+                table: "GuildProfile",
+                column: "GameRegionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GuildProfile_Id",
@@ -342,9 +496,92 @@ namespace GuildTools.Migrations
                 column: "Id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_GuildProfile_RegionId",
+                name: "IX_GuildProfile_RealmId",
                 table: "GuildProfile",
+                column: "RealmId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlayerAlts_Id",
+                table: "PlayerAlts",
+                column: "Id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlayerAlts_PlayerMainId",
+                table: "PlayerAlts",
+                column: "PlayerMainId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlayerAlts_ProfileId",
+                table: "PlayerAlts",
+                column: "ProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlayerMains_Id",
+                table: "PlayerMains",
+                column: "Id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlayerMains_PlayerId",
+                table: "PlayerMains",
+                column: "PlayerId",
+                unique: true,
+                filter: "[PlayerId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlayerMains_ProfileId",
+                table: "PlayerMains",
+                column: "ProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredGuilds_Id",
+                table: "StoredGuilds",
+                column: "Id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredGuilds_ProfileId",
+                table: "StoredGuilds",
+                column: "ProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredGuilds_RealmId",
+                table: "StoredGuilds",
+                column: "RealmId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredPlayers_GuildId",
+                table: "StoredPlayers",
+                column: "GuildId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredPlayers_Id",
+                table: "StoredPlayers",
+                column: "Id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredPlayers_ProfileId",
+                table: "StoredPlayers",
+                column: "ProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredPlayers_RealmId",
+                table: "StoredPlayers",
+                column: "RealmId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredRealms_Id",
+                table: "StoredRealms",
+                column: "Id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredRealms_RegionId",
+                table: "StoredRealms",
                 column: "RegionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StoredRealms_Id_RegionId",
+                table: "StoredRealms",
+                columns: new[] { "Id", "RegionId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_User_GuildProfilePermissions_PermissionLevelId",
@@ -360,10 +597,58 @@ namespace GuildTools.Migrations
                 name: "IX_Users_Column",
                 table: "UserData",
                 column: "UserId");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_GuildProfile_StoredGuilds_CreatorGuildId",
+                table: "GuildProfile",
+                column: "CreatorGuildId",
+                principalTable: "StoredGuilds",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_PlayerAlts_PlayerMains_PlayerMainId",
+                table: "PlayerAlts",
+                column: "PlayerMainId",
+                principalTable: "PlayerMains",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Restrict);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_GuildProfile_StoredGuilds_CreatorGuildId",
+                table: "GuildProfile");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_StoredPlayers_StoredGuilds_GuildId",
+                table: "StoredPlayers");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_GuildProfile_UserData_CreatorId",
+                table: "GuildProfile");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_GuildProfile_GameRegions_GameRegionId",
+                table: "GuildProfile");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_StoredRealms_GameRegions_RegionId",
+                table: "StoredRealms");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_GuildProfile_StoredRealms_RealmId",
+                table: "GuildProfile");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_StoredPlayers_StoredRealms_RealmId",
+                table: "StoredPlayers");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_PlayerAlts_PlayerMains_PlayerMainId",
+                table: "PlayerAlts");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -398,13 +683,28 @@ namespace GuildTools.Migrations
                 name: "GuildProfilePermissionLevels");
 
             migrationBuilder.DropTable(
-                name: "GuildProfile");
+                name: "StoredGuilds");
 
             migrationBuilder.DropTable(
                 name: "UserData");
 
             migrationBuilder.DropTable(
                 name: "GameRegions");
+
+            migrationBuilder.DropTable(
+                name: "StoredRealms");
+
+            migrationBuilder.DropTable(
+                name: "PlayerMains");
+
+            migrationBuilder.DropTable(
+                name: "StoredPlayers");
+
+            migrationBuilder.DropTable(
+                name: "PlayerAlts");
+
+            migrationBuilder.DropTable(
+                name: "GuildProfile");
         }
     }
 }

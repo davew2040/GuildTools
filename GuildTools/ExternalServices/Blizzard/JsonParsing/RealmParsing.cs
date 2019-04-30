@@ -26,5 +26,19 @@ namespace GuildTools.ExternalServices.Blizzard.JsonParsing
 
             return realms;
         }
+
+        public static Realm GetRSingleRealm(string realmJson)
+        {
+            var jObject = JsonConvert.DeserializeObject(realmJson) as JObject;
+
+            var realm = new Realm()
+            {
+                Id = int.Parse(jObject.SelectToken("id").ToString()),
+                Name = jObject.SelectToken("name").ToString(),
+                Slug = jObject.SelectToken("slug").ToString()
+            };
+
+            return realm;
+        }
     }
 }

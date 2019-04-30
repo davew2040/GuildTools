@@ -26,16 +26,12 @@ namespace GuildTools.Cache
             {
                 var foundValue = await this.cache.TryGetValueAsync(key);
 
-                if (foundValue != null)
+                if (foundValue.Found)
                 {
-                    return foundValue;
+                    return foundValue.Result;
                 }
 
                 var newValue = await dataRetriever();
-                if (newValue == null)
-                {
-                    return default(T);
-                }
 
                 await this.cache.InsertValueAsync(key, newValue);
 

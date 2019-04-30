@@ -7,9 +7,8 @@ using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 
 namespace GuildTools.Cache
 {
-    public interface IGuildMemberCache
+    public interface IOldGuildMemberCache
     {
-        Task<IEnumerable<GuildMember>> GetAsync(BlizzardRegion region, string realm, string guild);
-        Task Refresh(BlizzardRegion reigon, string guild, string realm);
+        Task<IEnumerable<GuildMemberStats>> GetAsync(BlizzardRegion region, string realm, string guild);
     }
 }

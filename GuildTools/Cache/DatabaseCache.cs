@@ -10,6 +10,8 @@ namespace GuildTools.Cache
 {
     public class DatabaseCache : IDatabaseCache
     {
+        private const string EmptyStringValue = "null";
+
         private GuildToolsContext context;
 
         public DatabaseCache(GuildToolsContext context)
@@ -17,13 +19,16 @@ namespace GuildTools.Cache
             this.context = context;
         }
 
-        public async Task<T> TryGetValueAsync<T>(string key)
+        public async Task<CacheResult<T>> TryGetValueAsync<T>(string key)
         {
             var result = await context.BigValueCache.FirstOrDefaultAsync(x => x.Id == key);
 
             if (result == null)
             {
-                return default(T);
+                return new CacheResult<T>()
+                {
+                    Found = false
+                };
             }
 
             if (DateTime.Now > result.ExpiresOn)
@@ -31,10 +36,28 @@ namespace GuildTools.Cache
                 context.BigValueCache.Remove(result);
                 await context.SaveChangesAsync();
 
-                return default(T);
+                return new CacheResult<T>()
+                {
+                    Found = false
+                };
             }
 
-            return JsonConvert.DeserializeObject<T>(result.Value);
+            if (result.Value == EmptyStringValue)
+            {
+                return new CacheResult<T>()
+                {
+                    Found = true,
+                    Result = default(T)
+                };
+            }
+
+            var deserialized = JsonConvert.DeserializeObject<T>(result.Value);
+
+            return new CacheResult<T>()
+            {
+                Found = true,
+                Result = deserialized
+            };
         }
 
         public async Task InsertValueAsync<T>(string key, T newValue, TimeSpan duration)

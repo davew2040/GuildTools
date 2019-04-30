@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using GuildTools.Configuration;
+using GuildTools.Controllers.Models;
 using GuildTools.Data;
 using GuildTools.EF.Models.Enums;
 using GuildTools.Models;
@@ -180,25 +181,11 @@ namespace GuildTools.Controllers
 
         private async Task<Dictionary<string, object>> GetAuthenticationResponse(IdentityUser user)
         {
-            var profilePermissions = await this.GetAllProfilePermissions(user);
-
             return new Dictionary<string, object>
             {
                 { "access_token", this.GetJwt(user.Id, user.Email) },
-                { "email", user.Email },
-                { "permissions", profilePermissions }
+                { "email", user.Email }
             };
-        }
-
-        private async Task<IEnumerable<JsonResponses.ProfilePermission>> GetAllProfilePermissions(IdentityUser user)
-        {
-            var result = await this.dataRepository.GetProfilePermissionsForUserAsync(user.Id);
-
-            return result.Select(x => new JsonResponses.ProfilePermission()
-            {
-                PermissionLevel = (int)x.PermissionLevel,
-                ProfileId = x.ProfileId
-            });
         }
 
         private string GetJwt(string userId, string email)

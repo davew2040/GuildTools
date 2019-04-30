@@ -1,0 +1,66 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import './scss/variables.scss';
+.loginRegisterBlock {
+    text-align: right;
+    padding-right: 10px;
+    padding-top: 10px;
+}
+
+.background-warrior {
+    background-color: $warrior;
+}
+
+.background-druid {
+    background-color: $druid;
+}
+
+.background-rogue {
+    background-color: $rogue;
+}
+
+.background-paladin {
+    background-color: $paladin;
+}
+
+.background-mage {
+    background-color: $mage;
+}
+
+.background-warlock {
+    background-color: $warlock;
+}
+
+.background-priest {
+    background-color: $priest;
+}
+
+.background-monk {
+    background-color: $monk;
+}
+
+.background-dk {
+    background-color: $dk;
+}
+
+.background-dh {
+    background-color: $dh;
+}
+
+.background-hunter {
+    background-color: $hunter;
+}
+
+.background-shaman {
+    background-color: $shaman;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+}

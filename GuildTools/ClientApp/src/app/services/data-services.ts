@@ -4,9 +4,29 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/Rx';
 import { AuthService } from '../auth/auth.service';
-import { Realm, IRealm, IGuildProfile, GuildProfile, IGuildMember, GuildMember, GuildFound, IGuildFound } from './ServiceTypes/service-types';
+import { Realm, IRealm, IGuildProfile, GuildProfile, IGuildMemberStats, GuildMemberStats, GuildFound, IGuildFound, FullGuildProfile, BlizzardPlayer, PlayerMain, IPlayerMain, AddMainToProfile } from './ServiceTypes/service-types';
 import { BlizzardRegionDefinition } from '../data/blizzard-realms';
-import { BlizzardService } from '../blizzard-services/blizzard-services';
+
+export enum WowClass {
+   Warrior = 1,
+   Paladin = 2,
+   Hunter = 3,
+   Rogue = 4,
+   Priest = 5,
+   DK = 6,
+   Shaman = 7,
+   Mage = 8,
+   Warlock = 9,
+   Monk = 10,
+   Druid = 11,
+   DH = 12
+}
+
+export class WowClassTags {
+  constructor() {
+
+  }
+}
 
 @Injectable()
 export class DataService {
@@ -51,10 +71,10 @@ export class DataService {
       });
   }
 
-  public getGuildMemberStats(region: string, guild: string, realm: string): Observable<Array<GuildMember>> {
+  public getGuildMemberStats(region: string, guild: string, realm: string): Observable<Array<GuildMemberStats>> {
     return this.http.get(this.baseUrl + `api/data/getGuildMemberStats?region=${region}&guild=${guild}&realm=${realm}`)
       .map(response  => {
-        const mappedResult = (response as Array<IGuildMember>).map(i => new GuildMember(i));
+        const mappedResult = (response as Array<IGuildMemberStats>).map(i => new GuildMemberStats(i));
 
         return mappedResult;
       });
@@ -69,11 +89,31 @@ export class DataService {
       .append('realm', realm)
       .append('region', region.Name);
 
-    return this.http.post(this.baseUrl + `api/data/createGuildProfile`, null, { headers: headers, params: params })
-      .map(response  => {
-        const mappedResult = (response as Array<IGuildMember>).map(i => new GuildMember(i));
+    return this.http.post(this.baseUrl + `api/data/createGuildProfile`, null, { headers: headers, params: params });
+  }
 
-        return mappedResult;
+  public getFullGuildProfile(profileId: number): Observable<FullGuildProfile> {
+    return this.http.get(this.baseUrl + `api/data/getGuildProfile?profileId=${profileId}`)
+      .map(response  => {
+        return new FullGuildProfile(response);
+      });
+  }
+
+  public addPlayerMainToProfile(player: BlizzardPlayer, profile: FullGuildProfile): Observable<PlayerMain> {
+    const headers = this.getAuthorizeHeader();
+
+    const input = new AddMainToProfile();
+
+    input.playerName = player.playerName;
+    input.guildName = player.guildName;
+    input.playerRealmName = player.realmName;
+    input.guildRealmName = profile.realm.name;
+    input.regionName = profile.region;
+    input.profileId = profile.id;
+
+    return this.http.post(this.baseUrl + `api/data/addMainToProfile`, input, { headers: headers })
+      .map(response => {
+        return new PlayerMain(response as IPlayerMain);
       });
   }
 

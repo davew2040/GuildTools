@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router'
 import { DataService } from '../services/data-services';
 import { BlizzardService } from '../blizzard-services/blizzard-services';
-import { GuildMember } from '../services/ServiceTypes/service-types';
+import { GuildMemberStats } from '../services/ServiceTypes/service-types';
 
 enum GuildStatsStatus {
   Loading,
@@ -19,7 +19,7 @@ enum GuildStatsStatus {
 export class GuildStatsComponent implements OnInit {
 
   pageStatus: GuildStatsStatus = GuildStatsStatus.Loading;
-  guildMembers: GuildMember[] = [];
+  guildMembers: GuildMemberStats[] = [];
   guild: string;
   realm: string;
   region: string;
@@ -209,7 +209,7 @@ export class GuildStatsComponent implements OnInit {
     return this.pageStatus === GuildStatsStatus.Ready;
   }
 
-  getPlayerArmoryLink(player: GuildMember): string {
+  getPlayerArmoryLink(player: GuildMemberStats): string {
     let url = `https://worldofwarcraft.com/${this.getPlayerRegionUrlSegment(this.region)}/character/${BlizzardService.FormatRealm(player.realm)}/${player.name}`;
     return url;
   }
@@ -261,7 +261,7 @@ export class GuildStatsComponent implements OnInit {
 }
 
 class StatsTable {
-  constructor(private members: GuildMember[]) {
+  constructor(private members: GuildMemberStats[]) {
     this.RowsDisplayed = 10;
     this.Sorter = (g1, g2) => {
       if (g1 === g2) {
@@ -279,10 +279,10 @@ class StatsTable {
 
   RowsDisplayed: number;
   Title: string;
-  NameDisplayer: (g: GuildMember) => string;
-  Sorter: (g1: GuildMember, g2: GuildMember) => number;
-  Filter: (g: GuildMember) => boolean;
-  SortedMembers(): GuildMember[] {
+  NameDisplayer: (g: GuildMemberStats) => string;
+  Sorter: (g1: GuildMemberStats, g2: GuildMemberStats) => number;
+  Filter: (g: GuildMemberStats) => boolean;
+  SortedMembers(): GuildMemberStats[] {
     return this.members
       .filter(g => this.Filter(g))
       .sort(this.Sorter)

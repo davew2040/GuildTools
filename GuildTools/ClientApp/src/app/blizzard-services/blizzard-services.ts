@@ -20,4 +20,20 @@ export class BlizzardService {
 
     return name;
   }
+
+  public static FormatGuild(name: string): string {
+    name = name.trim();
+
+    name = name.replace(/ /g, "-");
+    name = name.replace(/`/g, "");
+
+    return name;
+  }
+
+  public static GetGuildUrl(guildName: string, realm: string, region: string): string {
+    realm = BlizzardService.FormatRealm(realm);
+    guildName = BlizzardService.FormatGuild(guildName);
+
+    return `http://${region}.battle.net/wow/en/guild/${realm}/${guildName}/`;
+  }
 }

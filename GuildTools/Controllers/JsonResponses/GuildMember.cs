@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace GuildTools.Controllers.JsonResponses
 {
-    public class GuildMember
+    public class GuildMemberStats
     {
         public string Name { get; set; }
         public string Realm { get; set; }

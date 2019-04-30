@@ -76,7 +76,15 @@ namespace GuildTools.ExternalServices.Blizzard
 
         public async Task<string> GetGuildAsync(string guild, string realm, BlizzardRegion region)
         {   
-            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?locale=en-US&access_token={{0}}&fields=pets";
+            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?locale=en-US&access_token={{0}}";
+
+            return await DoBlizzardGet(url, region);
+        }
+
+        public async Task<string> GetPlayerAsync(string player, string realm, BlizzardRegion region)
+        {
+            var regionString = GetRegionString(region);
+            var url = $"https://{regionString}.api.blizzard.com/wow/character/{realm}/{player}?locale=en_US&access_token={{0}}";
 
             return await DoBlizzardGet(url, region);
         }
@@ -124,6 +132,16 @@ namespace GuildTools.ExternalServices.Blizzard
             return name;
         }
 
+        public static string BuildRealmSlug(string realmName)
+        {
+            realmName = realmName.Trim().ToLower();
+
+            realmName = realmName.Replace('\'', '-');
+            realmName = realmName.Replace(' ', '-');
+
+            return realmName;
+        }
+
         public static string FormatRealmName(string name)
         {
             name = name.Trim().ToLower();
@@ -140,11 +158,11 @@ namespace GuildTools.ExternalServices.Blizzard
             return epoch.AddMilliseconds(unixTime);
         }
 
-        public static bool DidGetGuildFail(string jsonResponse)
+        public static bool DidGetFail(string jsonResponse)
         {
             var jobject = JsonConvert.DeserializeObject(jsonResponse) as JObject;
 
-            return (jobject["status"] != null && jobject["status"].ToString() != "nok");
+            return (jobject["status"] != null && jobject["status"].ToString() == "nok");
         }
 
         private async Task<string> QueryAccessToken(BlizzardRegion region)
@@ -206,6 +224,16 @@ namespace GuildTools.ExternalServices.Blizzard
             var jsonResponse = await response.Content.ReadAsStringAsync();
 
             return jsonResponse;
+        }
+
+        public async Task<string> GetRealmAsync(string realmName, BlizzardRegion region)
+        {
+            var realmSlug = BuildRealmSlug(realmName);
+            var regionString = GetRegionString(region);
+
+            var url = $"https://{regionString}.api.blizzard.com/data/wow/realm/{realmSlug}?namespace=dynamic-us&locale=en_US&access_token={{0}}";
+
+            return await DoBlizzardGet(url, region);
         }
     }
 }

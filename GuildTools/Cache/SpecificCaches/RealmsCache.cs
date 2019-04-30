@@ -1,5 +1,7 @@
-﻿using GuildTools.Controllers.JsonResponses;
+﻿using GuildTools.Cache.SpecificCaches.CacheInterfaces;
+using GuildTools.Controllers.JsonResponses;
 using GuildTools.Controllers.Models;
+using GuildTools.EF.Models.Enums;
 using GuildTools.ExternalServices;
 using GuildTools.ExternalServices.Blizzard;
 using GuildTools.ExternalServices.Blizzard.JsonParsing;
@@ -15,7 +17,7 @@ using EfEnums = GuildTools.EF.Models.Enums;
 
 namespace GuildTools.Cache.SpecificCaches
 {
-    public class RealmsCache
+    public class RealmsCache : IRealmsCache
     {
         private DbMemCachedResource<IEnumerable<Realm>> cache;
         private IBlizzardService blizzardService;
@@ -34,12 +36,14 @@ namespace GuildTools.Cache.SpecificCaches
 
                 return RealmParsing.GetRealms(json);
             },
-            () => this.GetKey(region.ToString()));
+            () => this.GetKey(region));
         }
 
-        private string GetKey(string region)
+        private string GetKey(GameRegion region)
         {
-            return $"realms:{region}";
+            var regionKey = Keyifier.GetRegionKey(region);
+
+            return Keyifier.GetKey("realm", new List<string>() { regionKey });
         }
     }
 }

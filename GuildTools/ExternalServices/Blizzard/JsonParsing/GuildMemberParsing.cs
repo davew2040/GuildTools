@@ -12,11 +12,11 @@ namespace GuildTools.ExternalServices.Blizzard.JsonParsing
 {
     public class GuildMemberParsing
     {
-        public static IEnumerable<GuildMember> GetSlimPlayersFromGuildPlayerList(string guildJson)
+        public static IEnumerable<GuildMemberStats> GetSlimPlayersFromGuildPlayerList(string guildJson)
         {
             var jObject = JsonConvert.DeserializeObject(guildJson) as JObject;
 
-            var members = jObject.SelectToken("members").Select(c => new GuildMember()
+            var members = jObject.SelectToken("members").Select(c => new GuildMemberStats()
             {
                 Name = c.SelectToken("character.name").ToString(),
                 GuildRank = int.Parse(c.SelectToken("rank").ToString()),
@@ -94,7 +94,30 @@ namespace GuildTools.ExternalServices.Blizzard.JsonParsing
             return stats;
         }
 
+        public static SinglePlayer GetSinglePlayerFromJson(string json)
+        {
+            var jObject = JsonConvert.DeserializeObject(json) as JObject;
+
+            var name = jObject["name"].ToString();
+            var playerClass = int.Parse(jObject["class"].ToString());
+            var level = int.Parse(jObject["level"].ToString());
+
+            return new SinglePlayer()
+            {
+                Name = name,
+                Class = playerClass,
+                Level = level
+            };
+        }
+
         /* Parsed objects */
+
+        public class SinglePlayer
+        {
+            public string Name { get; set; }
+            public int Class { get; set; }
+            public int Level { get; set; }
+        }
 
         public class PlayerItemDetails
         {

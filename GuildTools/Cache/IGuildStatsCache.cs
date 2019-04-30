@@ -6,8 +6,8 @@ using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 
 namespace GuildTools.Cache
 {
-    public interface IGuildCache
+    public interface IGuildStatsCache
     {
-        string Get(BlizzardRegion region, string realm, string guild);
+        Task<string> Get(BlizzardRegion region, string realm, string guild);
     }
 }

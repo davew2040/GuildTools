@@ -1,7 +1,9 @@
 ﻿using GuildTools.Controllers.JsonResponses;
+using GuildTools.Controllers.Models;
 using GuildTools.ExternalServices;
 using GuildTools.ExternalServices.Blizzard;
 using GuildTools.ExternalServices.Blizzard.JsonParsing;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,24 +14,24 @@ using static GuildTools.ExternalServices.Blizzard.JsonParsing.GuildMemberParsing
 
 namespace GuildTools.Services
 {
-    public class GuildMemberService : IGuildMemberService
+    public class GuildService : IGuildService
     {
         private readonly TimeSpan FilterPlayersOlderThan = new TimeSpan(90, 0, 0, 0);
 
         private IBlizzardService blizzardService;
 
-        public GuildMemberService(IBlizzardService blizzardService)
+        public GuildService(IBlizzardService blizzardService)
         {
             this.blizzardService = blizzardService;
         }
 
-        public async Task<IEnumerable<GuildMember>> GetGuildMemberDataAsync(BlizzardRegion region, string guild, string realm)
+        public async Task<IEnumerable<GuildMemberStats>> GetLargeGuildMembersDataAsync(BlizzardRegion region, string guild, string realm)
         {
             var guildDataJson = await this.blizzardService.GetGuildMembersAsync(guild, realm, region);
 
             var members = GuildMemberParsing.GetSlimPlayersFromGuildPlayerList(guildDataJson).ToList();
 
-            List<GuildMember> validMembers = new List<GuildMember>();
+            List<GuildMemberStats> validMembers = new List<GuildMemberStats>();
 
             foreach (var member in members)
             {
@@ -49,7 +51,7 @@ namespace GuildTools.Services
             return validMembers;
         }
 
-        private async Task<bool> PopulateMemberDataAsync(GuildMember member, BlizzardRegion region)
+        private async Task<bool> PopulateMemberDataAsync(GuildMemberStats member, BlizzardRegion region)
         {
             var itemsTask = this.blizzardService.GetPlayerItemsAsync(member.Name, member.Realm, region);
             var mountsTask = this.blizzardService.GetPlayerMountsAsync(member.Name, member.Realm, region);
@@ -100,7 +102,7 @@ namespace GuildTools.Services
             return true;
         }
 
-        private void PopulateItemsDetails(GuildMember member, PlayerItemDetails itemDetails)
+        private void PopulateItemsDetails(GuildMemberStats member, PlayerItemDetails itemDetails)
         {
             member.EquippedIlvl = itemDetails.EquippedIlvl;
             member.MaximumIlvl = itemDetails.MaximumIlvl;
@@ -108,7 +110,7 @@ namespace GuildTools.Services
             member.AzeriteLevel = itemDetails.AzeriteLevel.HasValue ? itemDetails.AzeriteLevel.Value : 0;
         }
 
-        private void PopulatePvpStats(GuildMember member, PvpStats pvpStats)
+        private void PopulatePvpStats(GuildMemberStats member, PvpStats pvpStats)
         {
             member.Pvp2v2Rating = pvpStats.Pvp2v2Rating;
             member.Pvp3v3Rating = pvpStats.Pvp3v3Rating;
@@ -116,5 +118,61 @@ namespace GuildTools.Services
             member.TotalHonorableKills = pvpStats.TotalHonorableKills;
         }
 
+        public async Task<GuildSlim> GetGuild(BlizzardRegion region, string guild, string realm)
+        {
+            guild = BlizzardService.FormatGuildName(guild);
+            realm = BlizzardService.FormatRealmName(realm);
+
+            var result = await this.blizzardService.GetGuildAsync(guild, realm, region);
+
+            if (BlizzardService.DidGetFail(result))
+            {
+                return null;
+            }
+
+            return GuildParsing.GetGuild(result);
+        }
+
+        public async Task<Realm> GetRealmAsync(string realmName, BlizzardRegion region)
+        {
+            var result = await this.blizzardService.GetRealmAsync(realmName, region);
+
+            if (BlizzardService.DidGetFail(result))
+            {
+                return null;
+            }
+
+            return RealmParsing.GetRSingleRealm(result);
+        }
+
+        public async Task<IEnumerable<BlizzardPlayer>> GetSlimGuildMembersDataAsync(BlizzardRegion region, string guild, string realm)
+        {
+            var guildDataJson = await this.blizzardService.GetGuildMembersAsync(guild, realm, region);
+
+            var members = GuildMemberParsing.GetSlimPlayersFromGuildPlayerList(guildDataJson).ToList();
+
+            return members.Select(x => new BlizzardPlayer()
+            {
+                GuildName = guild,
+                PlayerName = x.Name,
+                RealmName = x.Realm,
+                Class = x.Class,
+                Level = x.Level
+            });
+        }
+
+        public async Task<BlizzardPlayer> GetSingleGuildMemberAsync(BlizzardRegion region, string realmName, string playerName)
+        {
+            var playerJson = await this.blizzardService.GetPlayerAsync(playerName, realmName, region);
+
+            var player = PlayerParsing.GetSinglePlayerFromJson(playerJson);
+
+            return new BlizzardPlayer()
+            {
+                PlayerName = player.Name,
+                Class = player.Class,
+                Level = player.Level
+            };
+        }
     }
 }

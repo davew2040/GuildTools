@@ -14,54 +14,51 @@ using EfEnums = GuildTools.EF.Models.Enums;
 
 namespace GuildTools.Cache.SpecificCaches
 {
-    public class GuildStore
+    public class GuildStoreByName : IGuildStoreByName
     {
         private readonly TimeSpan MemoryDuration;
-        private MemoryCachedDatabaseValue<StoredGuild> cache;
+        private MemoryCachedDatabaseValueWithSource<StoredGuild> cache;
         private IBlizzardService blizzardService;
         private GuildToolsContext context;
 
-        public GuildStore(IBlizzardService blizzardService, IMemoryCache memoryCache, GuildToolsContext context, IKeyedResourceManager resourceManager)
+        public GuildStoreByName(IBlizzardService blizzardService, IMemoryCache memoryCache, GuildToolsContext context, IKeyedResourceManager resourceManager)
         {
             this.MemoryDuration = TimeSpan.FromDays(1);
             this.blizzardService = blizzardService;
             this.context = context;
-            this.cache = new MemoryCachedDatabaseValue<StoredGuild>(memoryCache, this.MemoryDuration, resourceManager);
+            this.cache = new MemoryCachedDatabaseValueWithSource<StoredGuild>(memoryCache, this.MemoryDuration, resourceManager);
         }
 
-        public async Task<StoredGuild> Get(string name, int profileId, int realmId)
+        public async Task<StoredGuild> GetGuildAsync(string guildName, StoredRealm realm, int profileId)
         {
             return await this.cache.GetOrCacheAsync(
-                this.GetFromDatabase(name, profileId, realmId),
-                this.GetFromSource(name, profileId, realmId),
+                this.GetFromDatabase(guildName, profileId, realm),
+                this.GetFromSource(guildName, profileId, realm),
                 this.Store(),
-                this.GetKey(name, profileId, realmId));
+                this.GetKey(guildName, profileId, realm.Id));
         }
 
-        private Func<Task<StoredGuild>> GetFromDatabase(string name, int profileId, int realmId)
+        private Func<Task<StoredGuild>> GetFromDatabase(string guildName, int profileId, StoredRealm realm)
         {
             return (async () =>
             {
                 return await this.context.StoredGuilds.SingleOrDefaultAsync(
-                    x => x.Name == name 
+                    x => x.Name == guildName 
                         && x.ProfileId == profileId
-                        && x.RealmId == realmId);
+                        && x.RealmId == realm.Id);
             });
         }
 
-        private Func<Task<CacheResult<StoredGuild>>> GetFromSource(string name, int profileId, int realmId)
+        private Func<Task<CacheResult<StoredGuild>>> GetFromSource(string guildName, int profileId, StoredRealm realm)
         {
-            //FIXME
-            realmId = 42;
-            EfEnums.GameRegion region = EfEnums.GameRegion.US;
             return (async () =>
             {
                 var json = await this.blizzardService.GetGuildAsync(
-                    name, 
-                    "Burning Blade", 
-                    BlizzardUtilities.GetBlizzardRegionFromEfRegion((EfEnums.GameRegion)region));
+                    guildName, 
+                    realm.Name, 
+                    BlizzardUtilities.GetBlizzardRegionFromEfRegion((EfEnums.GameRegion)realm.Region.Id));
 
-                if (BlizzardService.DidGetGuildFail(json))
+                if (BlizzardService.DidGetFail(json))
                 {
                     return null;
                 }
@@ -74,7 +71,7 @@ namespace GuildTools.Cache.SpecificCaches
                     {
                         Name = guild.Name,
                         ProfileId = profileId,
-                        RealmId = realmId
+                        RealmId = realm.Id
                     }};
             });
         }
@@ -89,13 +86,13 @@ namespace GuildTools.Cache.SpecificCaches
             };
         }
 
-        private Func<string> GetKey(string name, int profileId, int realmId)
+        private Func<string> GetKey(string guildName, int profileId, int realmId)
         {
             return () =>
             {
-                var guildKey = Keyifier.GetGuildKey(name);
+                var guildKey = Keyifier.GetGuildKey(guildName);
 
-                return $"guild_{guildKey}_{profileId}_{realmId}";
+                return Keyifier.GetKey("guildstore", new List<string>() { guildKey, profileId.ToString(), realmId.ToString() });
             };
         }
     }

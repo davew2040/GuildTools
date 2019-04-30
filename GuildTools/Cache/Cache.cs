@@ -7,7 +7,7 @@ namespace GuildTools.Cache
 {
     public abstract class Cache<T>
     {
-        public abstract Task<T> TryGetValueAsync(string key);
+        public abstract Task<CacheResult<T>> TryGetValueAsync(string key);
         public abstract Task InsertValueAsync(string key, T newValue);
     }
 }

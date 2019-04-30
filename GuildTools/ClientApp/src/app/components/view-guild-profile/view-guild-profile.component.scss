@@ -1,0 +1,78 @@
+@import 'scss/variables.scss';
+h2 {
+    font-weight: bold;
+}
+
+.secondary-container {
+    width: 1000px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 10px 10px;
+    background: #f7f7f7;
+    height: 600px;
+}
+
+.main-list {}
+
+.player-table-container {
+  overflow-y: auto;
+  overflow-x: none;
+}
+
+.player-table {
+    border: 1px solid #cfcfcf;
+}
+
+.player-table mat-header-row {
+    height: 25px;
+    min-height: 25px;
+}
+
+.player-table mat-row {}
+
+.player-filter {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.player-row {
+    height: 25px;
+    min-height: 25px;
+    padding-top: 2px;
+}
+
+.player-name-header {
+    font-weight: bold;
+    justify-content: flex-start;
+    font-size: 12px !important;
+    padding-left: 8px;
+}
+
+.player-name-cell {
+    justify-content: flex-start;
+    padding-left: 10px !important;
+    font-size: 11px;
+}
+
+.level-header {
+    font-weight: bold;
+    justify-content: flex-end;
+    padding-right: 10px;
+    flex: 0 0 60px;
+}
+
+.level-cell {
+    justify-content: flex-end;
+    padding-right: 10px;
+    flex: 0 0 60px;
+    font-size: 11px;
+}
+
+.dragover-class {
+  background: #96ce9d;
+}
+
+.my-draggable {
+}
