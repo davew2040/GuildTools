@@ -1,12 +1,14 @@
-    <div *ngIf="authService.isAuthenticated" fxLayout="column">
+    <div fxLayout="column">
       <div fxLayout="column" fxLayoutAlign="start center" >
-    <div *ngIf="!authService.isAuthenticated" class="must-be-logged-in">
-        <div>You must be authenticated to view your profiles!</div>
-        <div style="margin-top:10px;"><a (click)="navigateToLogin()">Log In</a></div>
-    </div>
+        <div *ngIf="!authService.isAuthenticated" class="must-be-logged-in">
+            <div>You must be authenticated to view your profiles!</div>
+            <div style="margin-top:10px;"><a (click)="navigateToLogin()">Log In</a></div>
+        </div>
 
-    <div *ngIf="authService.isAuthenticated" fxLayout="column">
-        <div style="width:600px" height="400px" fxLayout="row" fxLayoutAlign="start center" class="list-holder">
+    <div *ngIf="authService.isAuthenticated" fxLayout="column" class="list-holder">
+        <h2>My Guild Profiles</h2>
+
+        <div fxLayout="column" fxLayoutAlign="start stretch">
             <div *ngIf="myGuildProfiles.length === 0">You have no guild profiles!</div>
             <!--
             <div *ngIf="myGuildProfiles.length > 0" fxFlex>
@@ -15,27 +17,32 @@
                 </mat-list>
             </div> -->
 
-            <mat-table [dataSource]="myGuildProfiles" fxFill *ngIf="myGuildProfiles.length > 0" class="profile-table">
-
+            <mat-table [dataSource]="tableDataSource" *ngIf="myGuildProfiles.length > 0" class="profile-table">
                 <ng-container matColumnDef="profileName">
-                    <mat-header-cell mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
-                    <mat-cell mat-cell *matCellDef="let profile">
+                    <mat-header-cell class="profilename-header-cell" mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+                    <mat-cell class="profilename-main-cell"  mat-cell *matCellDef="let profile">
                         <a href="" (click)="navigateToProfile(profile.id)">{{ profile.profileName }} </a>
                     </mat-cell>
                 </ng-container>
                 <ng-container matColumnDef="guildName">
-                    <mat-header-cell mat-header-cell *matHeaderCellDef> Guild </mat-header-cell>
-                    <mat-cell mat-cell *matCellDef="let profile">
+                    <mat-header-cell class="guild-header-cell" mat-header-cell *matHeaderCellDef> Guild </mat-header-cell>
+                    <mat-cell class="guild-main-cell" mat-cell *matCellDef="let profile">
                         <a [href]="getGuildUrl(profile.id)">{{profile.guildName}}  </a>
                     </mat-cell>
                 </ng-container>
                 <ng-container matColumnDef="realmName">
-                    <mat-header-cell mat-header-cell *matHeaderCellDef> Realm </mat-header-cell>
-                    <mat-cell mat-cell *matCellDef="let profile"> {{profile.realm}}</mat-cell>
+                    <mat-header-cell class="realm-header-cell" mat-header-cell *matHeaderCellDef> Realm </mat-header-cell>
+                    <mat-cell class="realm-main-cell" mat-cell *matCellDef="let profile"> {{profile.realm}}</mat-cell>
+                </ng-container>
+                <ng-container matColumnDef="delete">
+                    <mat-header-cell class="delete-header-cell" mat-header-cell *matHeaderCellDef> </mat-header-cell>
+                    <mat-cell class="delete-main-cell" mat-cell *matCellDef="let profile">
+                      <a class='delete-profile-a hidden' (click)="deleteProfile(profile)">Delete</a>
+                    </mat-cell>
                 </ng-container>
 
                 <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-                <mat-row *matRowDef="let profile; columns: displayedColumns;"></mat-row>
+                <mat-row *matRowDef="let profile; columns: displayedColumns;" (mouseenter)="onMouseEnter($event)" (mouseleave)="onMouseLeave($event)"></mat-row>
             </mat-table>
         </div>
 

@@ -15,12 +15,14 @@ using GuildTools.Controllers.Models;
 using GuildTools.EF.Models.StoredBlizzardModels;
 using EfModels = GuildTools.EF.Models;
 using ControllerModels = GuildTools.Controllers.Models;
+using GuildTools.ErrorHandling;
+using System.Net;
 
 namespace GuildTools.Data
 {
     public class DataRepository : IDataRepository
     {
-        GuildToolsContext context;
+        private GuildToolsContext context;
 
         public DataRepository(
             GuildToolsContext context)
@@ -180,6 +182,48 @@ namespace GuildTools.Data
             };
         }
 
+        public async Task DeleteProfile(int id)
+        {
+            var profileTask = this.context.GuildProfile.FirstOrDefaultAsync(p => p.Id == id);
+            var playersTask = this.context.StoredPlayers.Where(x => x.ProfileId == id).ToListAsync();
+            var guildsTask = this.context.StoredGuilds.Where(x => x.ProfileId == id).ToListAsync();
+            var mainsTask = this.context.PlayerMains.Where(x => x.ProfileId == id).ToListAsync();
+            var altsTask = this.context.PlayerAlts.Where(x => x.ProfileId == id).ToListAsync();
+            var permissionsTask = this.context.User_GuildProfilePermissions.Where(x => x.ProfileId == id).ToListAsync();
+
+            Task.WaitAll(profileTask, playersTask, guildsTask, mainsTask, altsTask, permissionsTask);
+
+            using (var transaction = await this.context.Database.BeginTransactionAsync())
+            {
+                this.context.User_GuildProfilePermissions.RemoveRange(permissionsTask.Result);
+                profileTask.Result.CreatorGuildId = null;
+
+                await this.context.SaveChangesAsync();
+
+                this.context.PlayerAlts.RemoveRange(altsTask.Result);
+
+                await this.context.SaveChangesAsync();
+
+                this.context.PlayerMains.RemoveRange(mainsTask.Result);
+
+                await this.context.SaveChangesAsync();
+
+                this.context.StoredPlayers.RemoveRange(playersTask.Result);
+
+                await this.context.SaveChangesAsync();
+
+                this.context.StoredGuilds.RemoveRange(guildsTask.Result);
+
+                await this.context.SaveChangesAsync();
+
+                this.context.GuildProfile.Remove(profileTask.Result);
+
+                await this.context.SaveChangesAsync();
+
+                transaction.Commit();
+            }
+        }
+
         public async Task<EfModels.PlayerMain> AddMainToProfileAsync(int playerId, int profileId)
         {
             var profile = await this.context.GuildProfile
@@ -196,7 +240,119 @@ namespace GuildTools.Data
 
             await this.context.SaveChangesAsync();
 
+            await context.Entry(newPlayer).Reference(x => x.Player).LoadAsync();
+
             return newPlayer;
+        }
+
+        public async Task<EfModels.PlayerAlt> AddAltToMainAsync(int playerId, int mainId, int profileId)
+        {
+            var profileTask = this.context.GuildProfile
+                .Include(x => x.PlayerMains)
+                .SingleOrDefaultAsync(x => x.Id == profileId);
+
+            var mainTask = this.context.PlayerMains
+                .SingleOrDefaultAsync(x => x.Id == mainId);
+
+            var playerTask = this.context.PlayerMains
+                .SingleOrDefaultAsync(x => x.Id == playerId);
+
+            Task.WaitAll(profileTask, mainTask, playerTask);
+
+            var newAlt = new EfModels.PlayerAlt()
+            {
+                ProfileId = profileId,
+                PlayerId = playerId,
+                PlayerMainId = mainId
+            };
+
+            this.context.PlayerAlts.Add(newAlt);
+
+            await this.context.SaveChangesAsync();
+
+            await context.Entry(newAlt).Reference(x => x.Player).LoadAsync();
+
+            return newAlt;
+        }
+
+        public async Task RemoveAltFromMainAsync(int mainId, int altId, int profileId)
+        {
+            var mainTask = this.context.PlayerMains.Include(p => p.Alts)
+                .SingleOrDefaultAsync(x => x.Id == mainId);
+
+            var altTask = this.context.PlayerAlts.Include(p => p.PlayerMain)
+                .SingleOrDefaultAsync(x => x.Id == altId);
+
+            Task.WaitAll(mainTask, mainTask);
+
+            if (mainTask.Result == null)
+            {
+                throw new UserReportableError($"No main player found with ID of '{mainId}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (altTask.Result == null)
+            {
+                throw new UserReportableError($"No alt player found with ID of '{altId}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (!mainTask.Result.Alts.Any(x => x.Id == altId))
+            {
+                throw new UserReportableError($"Main player '{mainId}' does not own alt '{altId}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            mainTask.Result.Alts.Remove(altTask.Result);
+            this.context.PlayerAlts.Remove(altTask.Result);
+
+            await this.context.SaveChangesAsync();
+        }
+
+        public async Task RemoveMainAsync(int mainId, int profileId)
+        {
+            var mainTask = this.context.PlayerMains.Include(p => p.Alts)
+                .SingleOrDefaultAsync(x => x.Id == mainId);
+
+            var altsTask = this.context.PlayerAlts
+                .Where(x => x.PlayerMainId == mainId)
+                .ToListAsync();
+
+            Task.WaitAll(mainTask, altsTask);
+
+            if (mainTask.Result == null)
+            {
+                throw new UserReportableError($"No main player found with ID of '{mainId}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            this.context.PlayerAlts.RemoveRange(altsTask.Result);
+            this.context.PlayerMains.Remove(mainTask.Result);
+
+            await this.context.SaveChangesAsync();
+        }
+
+        public async Task<string> GetStoredValueAsync(string key)
+        {
+            var item = await this.context.ValueStore.SingleOrDefaultAsync(x => x.Id == key);
+
+            return item?.Value;
+        }
+
+        public async Task CreateOrUpdateStoredValueAsync(string key, string value)
+        {
+            var item = await this.context.ValueStore.SingleOrDefaultAsync(x => x.Id == key);
+
+            if (item == null)
+            {
+                this.context.ValueStore.Add(new ValueStore()
+                {
+                    Id = key,
+                    Value = value
+                });
+                await this.context.SaveChangesAsync();
+                return;
+            }
+
+            item.Value = value;
+            await this.context.SaveChangesAsync();
+            return;
         }
     }
 }

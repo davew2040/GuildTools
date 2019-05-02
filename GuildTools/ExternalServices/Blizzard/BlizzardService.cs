@@ -1,4 +1,6 @@
 ﻿using GuildTools.Configuration;
+using GuildTools.Data;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -18,7 +20,7 @@ namespace GuildTools.ExternalServices.Blizzard
 
         private Dictionary<BlizzardRegion, string> regionAccessTokens;
         private HttpClient client;
-        private readonly Sql.Data dataSql;
+        private IDataRepository dataRepo;
         private readonly BlizzardApiSecrets secrets;
 
         public enum BlizzardRegion
@@ -27,16 +29,26 @@ namespace GuildTools.ExternalServices.Blizzard
             EU
         }
 
-        public BlizzardService(string connectionString, BlizzardApiSecrets secrets)
+        public BlizzardService(IDataRepository dataRepository, IConfiguration configuration)
         {
             client = new HttpClient();
+            this.dataRepo = dataRepository;
 
-            this.secrets = secrets;
-            this.dataSql = new Sql.Data(connectionString);
+            this.secrets = new BlizzardApiSecrets()
+            {
+                ClientId = configuration.GetValue<string>("BlizzardApiSecrets:ClientId"),
+                ClientSecret = configuration.GetValue<string>("BlizzardApiSecrets:ClientSecret")
+            };
 
             this.regionAccessTokens = new Dictionary<BlizzardRegion, string>();
-            this.regionAccessTokens[BlizzardRegion.US] = this.dataSql.GetStoredValue(this.AccessTokenCacheKeys[BlizzardRegion.US]) ?? string.Empty;
-            this.regionAccessTokens[BlizzardRegion.EU] = this.dataSql.GetStoredValue(this.AccessTokenCacheKeys[BlizzardRegion.EU]) ?? string.Empty;
+
+            var usKeyTask = this.dataRepo.GetStoredValueAsync(this.AccessTokenCacheKeys[BlizzardRegion.US]);
+            var euKeyTask = this.dataRepo.GetStoredValueAsync(this.AccessTokenCacheKeys[BlizzardRegion.EU]);
+
+            Task.WaitAll(usKeyTask, euKeyTask);
+
+            this.regionAccessTokens[BlizzardRegion.US] = usKeyTask.Result ?? string.Empty;
+            this.regionAccessTokens[BlizzardRegion.EU] = euKeyTask.Result ?? string.Empty;
         }
 
         public async Task<string> GetGuildMembersAsync(string guild, string realm, BlizzardRegion region)
@@ -196,7 +208,7 @@ namespace GuildTools.ExternalServices.Blizzard
             if (string.IsNullOrEmpty(this.regionAccessTokens[region]))
             {
                 this.regionAccessTokens[region] = await this.QueryAccessToken(region);
-                this.dataSql.SetStoredValue(this.AccessTokenCacheKeys[region], this.regionAccessTokens[region]);
+                await this.dataRepo.CreateOrUpdateStoredValueAsync(this.AccessTokenCacheKeys[region], this.regionAccessTokens[region]);
             }
 
             client.DefaultRequestHeaders.Clear();
@@ -208,7 +220,7 @@ namespace GuildTools.ExternalServices.Blizzard
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 this.regionAccessTokens[region] = await this.QueryAccessToken(region);
-                this.dataSql.SetStoredValue(this.AccessTokenCacheKeys[region], this.regionAccessTokens[region]);
+                await this.dataRepo.CreateOrUpdateStoredValueAsync(this.AccessTokenCacheKeys[region], this.regionAccessTokens[region]);
 
                 response = await client.GetAsync(string.Format(url, this.regionAccessTokens[region]));
 

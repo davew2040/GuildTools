@@ -1,0 +1,28 @@
+<div class="player-main-content" fxLayout="column">
+  <div fxLayout="row" fxLayoutAlign="end">
+    <a (click)="removeMain(playerMain)">Delete Main</a>
+  </div>
+  <div fxLayout="column" *ngIf="playerMain.alts && playerMain.alts.length > 0">
+    <div class="alts-title">Alts:</div>
+    <table fxFlex class="alts-table">
+      <tr *ngFor="let alt of playerMain.alts" [ngClass]="getRowClass(alt)" (mouseenter)="onMouseEnter($event)" (mouseleave)="onMouseLeave($event)">
+        <td class="player-name-col">
+          {{alt.player.name}}
+        </td>
+        <td class="player-desc-col">
+          {{ getAltDescription(alt) }}
+        </td>
+        <td class="player-actions-col">
+          <div class="hidden" fxLayout="row" fxLayoutAlign="end" fxLayoutGap="5px">
+              <a (click)="removeAlt(playerMain, alt)">Delete</a>
+              <div>|</div>
+              <a>Promote</a>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="no-alts" fxLayout="column" fxLayoutAlign="center" *ngIf="!playerMain.alts || playerMain.alts.length === 0">
+    Player has no alts.
+  </div>
+</div>

@@ -1,6 +1,7 @@
 ﻿using GuildTools.Configuration;
 using GuildTools.Controllers.JsonResponses;
 using GuildTools.Data;
+using GuildTools.EF;
 using GuildTools.ExternalServices;
 using GuildTools.ExternalServices.Blizzard;
 using GuildTools.Scheduler;
@@ -23,7 +24,6 @@ namespace GuildTools.Cache
         private HashSet<string> updatingSet;
         private Dictionary<string, ExpiringData<IEnumerable<GuildMemberStats>>> cache;
         private IGuildService guildMemberService;
-        private Sql.Data sqlData;
         private const string SqlCacheType = "GuildMember";
         private readonly TimeSpan CacheEntryDuration = new TimeSpan(24, 0, 0);
         private readonly IBackgroundTaskQueue backgroundQueue;
@@ -37,8 +37,6 @@ namespace GuildTools.Cache
         {
             this.cache = new Dictionary<string, ExpiringData<IEnumerable<GuildMemberStats>>>();
             this.guildMemberService = guildMemberService;
-            string connectionString = configuration.GetValue<string>(ConfigurationKeys.DatabaseConnection);
-            sqlData = new Sql.Data(connectionString);
             this.updatingSet = new HashSet<string>();
             this.backgroundQueue = backgroundQueue;
             this.dataRepository = dataRepository;
@@ -96,17 +94,17 @@ namespace GuildTools.Cache
 
             var guildPlayers = await this.guildMemberService.GetLargeGuildMembersDataAsync(region, guild, realm);
 
-            this.Add(realm, guild, guildPlayers, CacheEntryDuration);
+            await this.AddAsync(realm, guild, guildPlayers, CacheEntryDuration);
 
             this.updatingSet.Remove(key);
         }
 
-        private void Add(string realm, string guild, IEnumerable<GuildMemberStats> value, TimeSpan duration)
+        private async Task AddAsync(string realm, string guild, IEnumerable<GuildMemberStats> value, TimeSpan duration)
         {
             string key = this.GetKey(realm, guild);
 
             this.cache[key] = new ExpiringData<IEnumerable<GuildMemberStats>>(DateTime.Now + duration, value);
-            this.sqlData.SetCachedValue(this.GetKey(realm, guild), JsonConvert.SerializeObject(value), SqlCacheType, duration);
+            await this.dataRepository.SetCachedValueAsync(this.GetKey(realm, guild), JsonConvert.SerializeObject(value), duration);
         }
 
         private string GetKey(string realm, string guild)

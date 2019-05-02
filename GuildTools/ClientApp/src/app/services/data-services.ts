@@ -2,9 +2,27 @@ import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/Rx';
+import { map,} from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
-import { Realm, IRealm, IGuildProfile, GuildProfile, IGuildMemberStats, GuildMemberStats, GuildFound, IGuildFound, FullGuildProfile, BlizzardPlayer, PlayerMain, IPlayerMain, AddMainToProfile } from './ServiceTypes/service-types';
+import {
+    Realm,
+    IRealm,
+    IGuildProfile,
+    GuildProfile,
+    IGuildMemberStats,
+    GuildMemberStats,
+    GuildFound,
+    IGuildFound,
+    FullGuildProfile,
+    BlizzardPlayer,
+    PlayerMain,
+    IPlayerMain,
+    AddMainToProfile,
+    PlayerAlt,
+    AddAltToMain,
+    IPlayerAlt,
+    RemoveAltFromMain,
+    RemoveMain} from './ServiceTypes/service-types';
 import { BlizzardRegionDefinition } from '../data/blizzard-realms';
 
 export enum WowClass {
@@ -41,43 +59,48 @@ export class DataService {
 
   public getGuildProfile(profileId: number): Observable<GuildProfile> {
     return this.http.get(this.baseUrl + `api/data/guildProfile?id=${profileId}`)
-      .map(response => {
-        return new GuildProfile(response as IGuildProfile);
-      });
+      .pipe(
+        map(response => {
+          return new GuildProfile(response as IGuildProfile);
+        }));
   }
 
   public getGuildExists(region: string, guild: string, realm: string): Observable<GuildFound> {
     return this.http.get(this.baseUrl + `api/data/guildExists?region=${region}&guild=${guild}&realm=${realm}`)
-      .map(response => {
-        const guildExists = new GuildFound(response as IGuildFound);
+      .pipe(
+        map(response => {
+          const guildExists = new GuildFound(response as IGuildFound);
 
-        return guildExists;
-      });
+          return guildExists;
+        }));
   }
 
   public getGuildProfilesForUser(): Observable<Array<GuildProfile>> {
     const headers = this.getAuthorizeHeader();
 
     return this.http.get(this.baseUrl + `api/data/getGuildProfiles`, { headers: headers })
-      .map(response => {
-        return (response as Array<IGuildProfile>).map(i => new GuildProfile(i));
-      });
+      .pipe(
+        map(response => {
+          return (response as Array<IGuildProfile>).map(i => new GuildProfile(i));
+        }));
   }
 
   public getRealms(regionName: string): Observable<Array<Realm>> {
     return this.http.get(this.baseUrl + `api/data/getRealms?region=${regionName}`)
-      .map(response => {
-        return (response as Array<IRealm>).map(i => new Realm(i));
-      });
+      .pipe(
+        map(response => {
+          return (response as Array<IRealm>).map(i => new Realm(i));
+      }));
   }
 
   public getGuildMemberStats(region: string, guild: string, realm: string): Observable<Array<GuildMemberStats>> {
     return this.http.get(this.baseUrl + `api/data/getGuildMemberStats?region=${region}&guild=${guild}&realm=${realm}`)
-      .map(response  => {
-        const mappedResult = (response as Array<IGuildMemberStats>).map(i => new GuildMemberStats(i));
+      .pipe(
+        map(response  => {
+          const mappedResult = (response as Array<IGuildMemberStats>).map(i => new GuildMemberStats(i));
 
-        return mappedResult;
-      });
+          return mappedResult;
+        }));
   }
 
   public createNewGuildProfile(name: string, guild: string, realm: string, region: BlizzardRegionDefinition): Observable<Object> {
@@ -93,10 +116,13 @@ export class DataService {
   }
 
   public getFullGuildProfile(profileId: number): Observable<FullGuildProfile> {
-    return this.http.get(this.baseUrl + `api/data/getGuildProfile?profileId=${profileId}`)
-      .map(response  => {
-        return new FullGuildProfile(response);
-      });
+    const headers = this.getAuthorizeHeader();
+
+    return this.http.get(this.baseUrl + `api/data/getGuildProfile?profileId=${profileId}`, { headers: headers })
+      .pipe(
+        map(response  => {
+          return new FullGuildProfile(response);
+        }));
   }
 
   public addPlayerMainToProfile(player: BlizzardPlayer, profile: FullGuildProfile): Observable<PlayerMain> {
@@ -112,23 +138,59 @@ export class DataService {
     input.profileId = profile.id;
 
     return this.http.post(this.baseUrl + `api/data/addMainToProfile`, input, { headers: headers })
-      .map(response => {
-        return new PlayerMain(response as IPlayerMain);
-      });
+      .pipe(
+        map(response => {
+          return new PlayerMain(response as IPlayerMain);
+        }));
   }
 
-  public postPasswordReset(userId: string, token: string, newPassword: string): Observable<Object> {
-    return this.http.post(this.getResetUrl(this.baseUrl),
-      {
-        userId: userId,
-        token: token,
-        newPassword: btoa(newPassword)
-      }
-    );
+  public addAltToMain(player: BlizzardPlayer, main: PlayerMain, profile: FullGuildProfile): Observable<PlayerAlt> {
+    const headers = this.getAuthorizeHeader();
+
+    const input = new AddAltToMain();
+
+    input.playerName = player.playerName;
+    input.guildName = player.guildName;
+    input.playerRealmName = player.realmName;
+    input.guildRealmName = profile.realm.name;
+    input.regionName = profile.region;
+    input.profileId = profile.id;
+    input.mainId = main.id;
+
+    return this.http.post(this.baseUrl + `api/data/addAltToMain`, input, { headers: headers })
+      .pipe(
+        map(response => {
+          return new PlayerAlt(response as IPlayerAlt);
+        }));
   }
 
-  private getResetUrl(baseUrl: string) {
-    return `${baseUrl}/api/account/resetpasswordtoken`;
+  public removeAltFromMain(main: PlayerMain, alt: PlayerAlt, profile: FullGuildProfile): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    const input = new RemoveAltFromMain();
+
+    input.mainId = main.id;
+    input.altId = alt.id;
+    input.profileId = profile.id;
+
+    return this.http.post(this.baseUrl + `api/data/removeAltFromMain`, input, { headers: headers });
+  }
+
+  public removeMain(main: PlayerMain, profile: FullGuildProfile): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    const input = new RemoveMain();
+
+    input.mainId = main.id;
+    input.profileId = profile.id;
+
+    return this.http.post(this.baseUrl + `api/data/removeMain`, input, { headers: headers });
+  }
+
+  public deleteProfile(profile: GuildProfile): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    return this.http.delete(this.baseUrl + `api/data/deleteProfile?profileId=${profile.id}`, { headers: headers });
   }
 
   private getAuthorizeHeader(): HttpHeaders {

@@ -6,6 +6,7 @@ using GuildTools.Controllers.JsonResponses;
 using GuildTools.Controllers.Models;
 using GuildTools.Data;
 using GuildTools.EF.Models.Enums;
+using GuildTools.ErrorHandling;
 using GuildTools.ExternalServices.Blizzard;
 using GuildTools.Permissions;
 using GuildTools.Services;
@@ -20,6 +21,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -157,14 +159,14 @@ namespace GuildTools.Controllers
             var locatedRealm = await this.realmStoreByValues.GetRealmAsync(realm, regionEnum);
             if (locatedRealm == null)
             {
-                throw new ArgumentException($"Couldn't locate realm '{realm}'.");
+                throw new UserReportableError($"Couldn't locate realm '{realm}'.", 404);
             }
 
             var locatedGuild = await this.guildCache.GetGuild(regionEnum, guild, realm);
 
             if (locatedGuild == null)
             {
-                return new JsonResult("Could not locate this guild.") { StatusCode = 404 };
+                throw new UserReportableError("Could not locate this guild.", 404);
             }
 
             var user = await this.userManager.GetUserAsync(HttpContext.User);
@@ -182,7 +184,7 @@ namespace GuildTools.Controllers
 
             if (!await this.UserCanAddMainAsync(user, input.ProfileId))
             {
-                throw new Exception("This user doesn't have permissions to perform this operation.");
+                throw new UserReportableError("This user doesn't have permissions to perform this operation.", 401);
             }
 
             InputValidators.ValidateProfileName(input.PlayerName);
@@ -196,25 +198,25 @@ namespace GuildTools.Controllers
             var locatedPlayerRealm = await this.realmStoreByValues.GetRealmAsync(input.PlayerRealmName, regionEnum);
             if (locatedPlayerRealm == null)
             {
-                throw new Exception($"Couldn't locate realm '{input.PlayerRealmName}'.");
+                throw new UserReportableError($"Couldn't locate player realm '{input.PlayerRealmName}'.", 404);
             }
 
             var locatedGuildRealm = await this.realmStoreByValues.GetRealmAsync(input.GuildRealmName, regionEnum);
             if (locatedGuildRealm == null)
             {
-                throw new Exception($"Couldn't locate realm '{input.GuildRealmName}'.");
+                throw new UserReportableError($"Couldn't locate guild realm '{input.GuildRealmName}'.", 404);
             }
 
             var locatedPlayerGuild = await this.guildStore.GetGuildAsync(input.GuildName, locatedGuildRealm, input.ProfileId);
             if (locatedPlayerGuild == null)
             {
-                throw new Exception("Could not locate this guild.");
+                throw new UserReportableError($"Could not locate guild {input.GuildName}.", 404);
             }
 
             var player = await this.playerStore.GetPlayerAsync(input.PlayerName, locatedPlayerRealm, locatedPlayerGuild, input.ProfileId);
             if (player == null)
             {
-                throw new Exception("Could not locate this player.");
+                throw new UserReportableError($"Could not locate player {input.PlayerName}-{locatedPlayerRealm.Name}.", 404);
             }
 
             var newPlayer = await this.dataRepo.AddMainToProfileAsync(player.Id, input.ProfileId);
@@ -222,35 +224,103 @@ namespace GuildTools.Controllers
             return new PlayerMain()
             {
                 Id = newPlayer.Id,
-                Name = newPlayer.Player.Name
+                Notes = newPlayer.Notes,
+                Player = new StoredPlayer()
+                {
+                    Id = newPlayer.Player.Id,
+                    Name = newPlayer.Player.Name,
+                    Class = newPlayer.Player.Class,
+                    Level = newPlayer.Player.Level
+                }
             };
         }
 
-        private async Task<bool> UserCanAddMainAsync(IdentityUser user, int profileId)
+        [Authorize]
+        [HttpPost("addAltToMain")]
+        public async Task<PlayerAlt> AddAltToMain([FromBody] AddAltToMain input)
         {
-            if (this.GetRolesForUser().Any(r => r == GuildToolsRoles.AdminRole.Name))
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!await this.UserCanAddAltAsync(user, input.ProfileId))
             {
-                return true;
+                throw new UserReportableError("This user doesn't have permissions to perform this operation.", 401);
             }
 
-            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+            InputValidators.ValidateProfileName(input.PlayerName);
+            InputValidators.ValidateGuildName(input.GuildName);
+            InputValidators.ValidateRealmName(input.PlayerRealmName);
 
-            if (!permissionsForProfile.HasValue)
+            input.GuildName = BlizzardService.FormatGuildName(input.GuildName);
+            input.PlayerRealmName = BlizzardService.FormatRealmName(input.PlayerRealmName);
+            var regionEnum = GameRegionUtilities.GetGameRegionFromString(input.RegionName);
+
+            var locatedPlayerRealm = await this.realmStoreByValues.GetRealmAsync(input.PlayerRealmName, regionEnum);
+            if (locatedPlayerRealm == null)
             {
-                return false;
+                throw new UserReportableError($"Couldn't locate player realm '{input.PlayerRealmName}'.", 404);
             }
 
-            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
-                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+            var locatedGuildRealm = await this.realmStoreByValues.GetRealmAsync(input.GuildRealmName, regionEnum);
+            if (locatedGuildRealm == null)
+            {
+                throw new UserReportableError($"Couldn't locate guild realm '{input.GuildRealmName}'.", 404);
+            }
 
+            var locatedPlayerGuild = await this.guildStore.GetGuildAsync(input.GuildName, locatedGuildRealm, input.ProfileId);
+            if (locatedPlayerGuild == null)
+            {
+                throw new UserReportableError($"Could not locate guild {input.GuildName}.", 404);
+            }
+
+            var player = await this.playerStore.GetPlayerAsync(input.PlayerName, locatedPlayerRealm, locatedPlayerGuild, input.ProfileId);
+            if (player == null)
+            {
+                throw new UserReportableError($"Could not locate player {input.PlayerName}-{locatedPlayerRealm.Name}.", 404);
+            }
+
+            var newAlt = await this.dataRepo.AddAltToMainAsync(player.Id, input.MainId, input.ProfileId);
+
+            return new PlayerAlt()
+            {
+                Id = newAlt.Id,
+                Player = new StoredPlayer()
+                {
+                    Id = newAlt.Player.Id,
+                    Name = newAlt.Player.Name,
+                    Class = newAlt.Player.Class,
+                    Level = newAlt.Player.Level
+                }
+            };
         }
 
-        private IEnumerable<string> GetRolesForUser()
+        [Authorize]
+        [HttpPost("removeAltFromMain")]
+        public async Task RemoveAltFromMain([FromBody] RemoveAltFromMain input)
         {
-            return ((ClaimsIdentity)User.Identity).Claims
-                .Where(c => c.Type == ClaimTypes.Role)
-                .Select(c => c.Value);
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!await this.UserCanRemoveAltAsync(user, input.ProfileId))
+            {
+                throw new UserReportableError("This user doesn't have permissions to perform this operation.", 401);
+            }
+
+            await this.dataRepo.RemoveAltFromMainAsync(input.MainId, input.AltId, input.ProfileId);
         }
+
+        [Authorize]
+        [HttpPost("removeMain")]
+        public async Task RemoveMain([FromBody] RemoveMain input)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!await this.UserCanRemoveMain(user, input.ProfileId))
+            {
+                throw new UserReportableError("This user doesn't have permissions to perform this operation.", 401);
+            }
+
+            await this.dataRepo.RemoveMainAsync(input.MainId, input.ProfileId);
+        }
+
 
         [Authorize]
         [HttpGet("getGuildProfiles")]
@@ -288,6 +358,14 @@ namespace GuildTools.Controllers
         {
             var user = await this.userManager.GetUserAsync(HttpContext.User);
 
+            var permissionLevel = user != null
+                ? await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id)
+                : null;
+            bool isOfficer = permissionLevel.HasValue
+                ? PermissionsOrder.GreaterThanOrEqual(permissionLevel.Value,
+                    GuildProfilePermissionLevel.Officer)
+                : false;
+
             var repoProfile = await this.dataRepo.GetFullGuildProfile(profileId);
             var efProfile = repoProfile.Profile;
 
@@ -307,14 +385,25 @@ namespace GuildTools.Controllers
                 Mains = efProfile.PlayerMains.Select(x => new PlayerMain()
                 {
                     Id = x.Id,
-                    Name = x.Player.Name,
-                    Level = x.Player.Level,
-                    Class = x.Player.Class,
+                    Player = new StoredPlayer()
+                    {
+                        Id = x.Player.Id,
+                        Name = x.Player.Name,
+                        Class = x.Player.Class,
+                        Level = x.Player.Level
+                    },
                     Alts = x.Alts.Select(y => new PlayerAlt()
                     {
                         Id = y.Id,
-                        Name = y.Player.Name
-                    })
+                        Player = new StoredPlayer()
+                        {
+                            Id = y.Player.Id,
+                            Name = y.Player.Name,
+                            Class = y.Player.Class,
+                            Level = y.Player.Level
+                        }
+                    }),
+                    OfficerNotes = isOfficer ? x.OfficerNotes : string.Empty
                 }),
                 Realm = new StoredRealm()
                 {
@@ -333,11 +422,95 @@ namespace GuildTools.Controllers
             return returnProfile;
         }
 
+        [Authorize]
+        [HttpDelete("deleteProfile")]
+        public async Task DeleteProfile(int profileId)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!await this.CanDeleteProfile(user, profileId))
+            {
+                throw new UserReportableError("This user doesn't have permissions to perform this operation.", (int)HttpStatusCode.Unauthorized);
+            }
+
+            await this.dataRepo.DeleteProfile(profileId);
+        }
 
         [HttpGet("getRealms")]
         public async Task<IEnumerable<Realm>> GetRealms(string region)
         {
             return await this.realmsCache.GetRealms(EnumUtilities.GameRegionUtilities.GetGameRegionFromString(region));
+        }
+
+        private async Task<bool> UserCanAddMainAsync(IdentityUser user, int profileId)
+        {
+            var roles = await this.GetRolesForUser(user);
+            if (roles.Any(r => r == GuildToolsRoles.AdminRole.Name))
+            {
+                return true;
+            }
+
+            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+
+            if (!permissionsForProfile.HasValue)
+            {
+                return false;
+            }
+
+            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
+                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+        }
+
+        private async Task<bool> UserCanAddAltAsync(IdentityUser user, int profileId)
+        {
+            var roles = await this.GetRolesForUser(user);
+            if (roles.Any(r => r == GuildToolsRoles.AdminRole.Name))
+            {
+                return true;
+            }
+
+            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+
+            if (!permissionsForProfile.HasValue)
+            {
+                return false;
+            }
+
+            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
+                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+        }
+
+        private async Task<bool> UserCanRemoveAltAsync(IdentityUser user, int profileId)
+        {
+            return await this.UserCanAddAltAsync(user, profileId);
+        }
+
+        private async Task<bool> UserCanRemoveMain(IdentityUser user, int profileId)
+        {
+            return await this.UserCanAddAltAsync(user, profileId);
+        }
+
+        private async Task<bool> CanDeleteProfile(IdentityUser user, int profileId)
+        {
+            var roles = await this.GetRolesForUser(user);
+            if (roles.Any(r => r == GuildToolsRoles.AdminRole.Name))
+            {
+                return true;
+            }
+
+            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+
+            if (!permissionsForProfile.HasValue)
+            {
+                return false;
+            }
+
+            return PermissionsOrder.GreaterThanOrEqual(permissionsForProfile.Value, GuildProfilePermissionLevel.Admin);
+        }
+
+        private async Task<IEnumerable<string>> GetRolesForUser(IdentityUser user)
+        {
+            return (await this.userManager.GetRolesAsync(user));
         }
 
         private class InputValidators

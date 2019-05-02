@@ -9,10 +9,41 @@ h2 {
     border-radius: 5px;
     padding: 10px 10px;
     background: #f7f7f7;
-    height: 600px;
+    height: 800px;
+}
+
+.drag-box {
+  border-radius: 50px;
+  width: 300px;
+  text-align: center;
 }
 
 .main-list {}
+
+.player-main-panel mat-panel-title {
+  width: 200px;
+}
+
+.mains-container {
+  overflow-y: auto;
+}
+
+.player-main-panel mat-expansion-panel-header {
+
+}
+
+::ng-deep .player-main-panel:hover {
+}
+
+
+::ng-deep .player-main-panel:nth-child(odd) mat-expansion-panel-header {
+  background: #d2d9ec;
+}
+
+::ng-deep .player-main-panel:nth-child(even) mat-expansion-panel-header {
+  background: #e0e2e7;
+}
+
 
 .player-table-container {
   overflow-y: auto;

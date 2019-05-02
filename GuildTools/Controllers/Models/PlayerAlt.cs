@@ -6,6 +6,6 @@ namespace GuildTools.Controllers.Models
     public class PlayerAlt
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public StoredPlayer Player { get; set; }
     }
 }

@@ -19,6 +19,7 @@ using GuildTools.Cache.SpecificCaches;
 using GuildTools.Services;
 using GuildTools.EF.Models.StoredBlizzardModels;
 using GuildTools.EF.Models;
+using GuildTools.Data;
 
 namespace GuildTools.Tests
 {
@@ -65,10 +66,12 @@ namespace GuildTools.Tests
                 ClientSecret = this.config.GetValue<string>("BlizzardApiSecrets:ClientSecret")
             };
 
-            IBlizzardService blizzardService = new BlizzardService(connectionString, blizzardSecrets);
             IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
             GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
             DatabaseCache dbCache = new DatabaseCache(context);
+
+            IDataRepository repo = new DataRepository(context);
+            IBlizzardService blizzardService = new BlizzardService(repo, this.config);
 
             RealmsCache cache = new RealmsCache(blizzardService, memoryCache, dbCache, manager);
 
@@ -99,10 +102,12 @@ namespace GuildTools.Tests
                 ClientSecret = this.config.GetValue<string>("BlizzardApiSecrets:ClientSecret")
             };
 
-            IBlizzardService blizzardService = new BlizzardService(connectionString, blizzardSecrets);
-            IGuildService guildService = new GuildService(blizzardService);
             IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
             GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
+
+            IDataRepository repo = new DataRepository(context);
+            IBlizzardService blizzardService = new BlizzardService(repo, this.config);
+            IGuildService guildService = new GuildService(blizzardService);
 
             RealmStoreByValues store = new RealmStoreByValues(guildService, memoryCache, context, manager);
 
@@ -138,10 +143,12 @@ namespace GuildTools.Tests
                 ClientSecret = this.config.GetValue<string>("BlizzardApiSecrets:ClientSecret")
             };
 
-            IBlizzardService blizzardService = new BlizzardService(connectionString, blizzardSecrets);
-            IGuildService guildService = new GuildService(blizzardService);
             IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
             GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
+
+            IDataRepository repo = new DataRepository(context);
+            IBlizzardService blizzardService = new BlizzardService(repo, this.config);
+            IGuildService guildService = new GuildService(blizzardService);
 
             int profileId = 1;
 

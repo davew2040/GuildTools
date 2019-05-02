@@ -32,6 +32,7 @@ using GuildTools.Cache.SpecificCaches;
 using System.Security.Claims;
 using GuildTools.Cache.SpecificCaches.CacheInterfaces;
 using Microsoft.AspNetCore.Diagnostics;
+using GuildTools.ErrorHandling;
 
 namespace GuildTools
 {
@@ -115,25 +116,12 @@ namespace GuildTools
             services.AddHostedService<QueuedHostedService>();
             services.AddSingleton(backgroundTaskQueue);
 
-            BlizzardApiSecrets blizzardSecrets = new BlizzardApiSecrets()
-            {
-                ClientId = Configuration.GetValue<string>("BlizzardApiSecrets:ClientId"),
-                ClientSecret = Configuration.GetValue<string>("BlizzardApiSecrets:ClientSecret")
-            };
-
-            IBlizzardService blizzardService = new BlizzardService(
-                Configuration.GetValue<string>("ConnectionStrings:Database"), 
-                blizzardSecrets);
-
-            IGuildService guildMemberService = new GuildService(blizzardService);
-            IRaiderIoService raiderIoService = new RaiderIoService();
-
             services.AddScoped<IKeyedResourceManager, KeyedResourceManager>();
-            services.AddSingleton(guildMemberService);
             services.AddScoped<IDatabaseCache, DatabaseCache>();
             services.AddScoped<IDataRepository, DataRepository>();
-            services.AddSingleton(blizzardService);
-            services.AddSingleton(raiderIoService);
+            services.AddScoped<IAccountRepository, AccountRepository>();
+            services.AddScoped<IBlizzardService, BlizzardService>();
+            services.AddScoped<IGuildService, GuildService>();
             services.AddScoped<IGuildStatsCache, GuildStatsCache>();
             services.AddScoped<IDataRepository, DataRepository>();
             services.AddScoped<IOldGuildMemberCache, OldGuildMemberCache>();
@@ -191,14 +179,7 @@ namespace GuildTools
                 app.UseHsts();
             }
 
-            app.UseExceptionHandler(appError =>
-            {
-                appError.Run(async context =>
-                {
-                    var errors = context.Features.Get<IExceptionHandlerFeature>();
-                    //Console.WriteLine(context.)
-                });
-            });
+            app.ConfigureCustomExceptionMiddleware();
 
             //app.UseHttpsRedirection();
             app.UseStaticFiles();

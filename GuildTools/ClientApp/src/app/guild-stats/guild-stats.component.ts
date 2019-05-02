@@ -3,6 +3,8 @@ import { ActivatedRoute } from '@angular/router'
 import { DataService } from '../services/data-services';
 import { BlizzardService } from '../blizzard-services/blizzard-services';
 import { GuildMemberStats } from '../services/ServiceTypes/service-types';
+import { BusyService } from 'app/shared-services/busy-service';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 
 enum GuildStatsStatus {
   Loading,
@@ -29,7 +31,12 @@ export class GuildStatsComponent implements OnInit {
   dataReady: boolean = false;
   statsTables: StatsTable[];
 
-  constructor(public route: ActivatedRoute, public dataService: DataService, public blizzardService: BlizzardService) { }
+  constructor(
+    public route: ActivatedRoute,
+    public dataService: DataService,
+    public blizzardService: BlizzardService,
+    private busyService: BusyService,
+    private errorService: ErrorReportingService) { }
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -38,8 +45,12 @@ export class GuildStatsComponent implements OnInit {
       this.region = params['region'];
     });
 
+    this.busyService.setBusy()
+
     this.dataService.getGuildExists(this.region, this.guild, this.realm).subscribe(
       success => {
+        this.busyService.unsetBusy();
+
         if (success !== null) {
           if (success.found === true) {
             this.prettyGuild = success.guildName;
@@ -53,7 +64,8 @@ export class GuildStatsComponent implements OnInit {
         }
       },
       error => {
-        console.log(error);
+        this.busyService.unsetBusy();
+        this.errorService.reportApiError(error);
       });
   }
 
@@ -177,8 +189,11 @@ export class GuildStatsComponent implements OnInit {
   }
 
   loadGuildStats(region: string, realm: string, guild: string) {
+    this.busyService.setBusy();
+
     this.dataService.getGuildMemberStats(region, guild, realm).subscribe(
       success => {
+        this.busyService.unsetBusy();
         if (success && success.length > 0) {
           this.guildMembers = success;
           this.populateStatsTableDefinitions();
@@ -189,7 +204,8 @@ export class GuildStatsComponent implements OnInit {
         }
       },
       error => {
-        console.log(error);
+        this.busyService.unsetBusy();
+        this.errorService.reportApiError(error);
       });
   }
 

@@ -1,13 +1,21 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewChildren } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { FullGuildProfile, BlizzardPlayer, PlayerMain } from 'app/services/ServiceTypes/service-types';
+import { FullGuildProfile, BlizzardPlayer, PlayerMain, PlayerAlt } from 'app/services/ServiceTypes/service-types';
 import { DataService, WowClass } from 'app/services/data-services';
 import { BusyService } from 'app/shared-services/busy-service';
 import { WowService } from 'app/services/wow-service';
 import { ContextMenuComponent } from 'ngx-contextmenu';
 import { Observable, Subject, combineLatest } from 'rxjs';
-import { startWith, map } from 'rxjs/operators';
+import { startWith, map, filter } from 'rxjs/operators';
 import { DropEvent } from 'ng-drag-drop';
+import { MatExpansionModule, MatExpansionPanel } from '@angular/material';
+import { RemoveAltEvent, RemoveMainEvent } from '../view-main/view-main.component';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
+
+class DropScopes {
+  public DropMain = 'DropMain';
+  public DropAlt = 'DropAlt';
+}
 
 @Component({
   selector: 'app-view-guild-profile',
@@ -18,10 +26,16 @@ export class ViewGuildProfileComponent implements OnInit {
   public profile: FullGuildProfile = null;
   public playerColumns: Array<string> = ['playerName', 'playerLevel'];
   public unassignedPlayers = new Subject<Array<BlizzardPlayer>>();
-  public mains = new Subject<Array<PlayerMain>>();
+  public mains = new Array<PlayerMain>();
+  public mainsSubject = new Subject<Array<PlayerMain>>();
+  public altsSubject = new Subject<Array<PlayerAlt>>();
+  public altsObservable: Observable<Array<PlayerAlt>>;
+  public orderedMains = new Observable<Array<PlayerMain>>();
   public filteredPlayersObs: Observable<Array<BlizzardPlayer>>;
   public filteredPlayers: Array<BlizzardPlayer>;
   public playerFilterText: Subject<string> = new Subject<string>();
+
+  public dropScopes = new DropScopes();
 
   public items = [
     { name: 'John', otherProperty: 'Foo' },
@@ -29,12 +43,22 @@ export class ViewGuildProfileComponent implements OnInit {
   ];
 
   @ViewChild(ContextMenuComponent) public basicMenu: ContextMenuComponent;
+  @ViewChildren('playerPanel') private expansionPanels: MatExpansionPanel;
 
   constructor(
       private route: ActivatedRoute,
       private dataService: DataService,
       private busyService: BusyService,
-      private wowService: WowService) {
+      private wowService: WowService,
+      private errorService: ErrorReportingService) {
+
+    this.orderedMains = this.mainsSubject.pipe(
+      map(m => this.sortMains(m))
+    );
+
+    this.orderedMains.subscribe(mains => {
+      this.altsSubject.next(this.getAltsFromMains(mains));
+    });
 
     this.filteredPlayersObs = this.getPlayerFilterer();
 
@@ -45,7 +69,7 @@ export class ViewGuildProfileComponent implements OnInit {
 
   ngOnInit() {
     this.route.params.subscribe(params => {
-      this.updateParams(params);
+      this.updateRouteParams(params);
     });
   }
 
@@ -72,13 +96,80 @@ export class ViewGuildProfileComponent implements OnInit {
       .subscribe(
         success => {
           this.busyService.unsetBusy();
-          var result = success;
+          this.mains.push(success);
+          this.mainsSubject.next(this.mains);
         },
         error => {
           this.busyService.unsetBusy();
-          alert("Encountered error while attempting to assign this player.")
+          this.errorService.reportApiError(error);
         }
-      )
+      );
+  }
+
+  public onAltDropped($event: DropEvent, main: PlayerMain, component: MatExpansionPanel) {
+    const draggedPlayer = $event.dragData as BlizzardPlayer;
+
+    this.busyService.setBusy();
+
+    this.dataService.addAltToMain(draggedPlayer, main, this.profile)
+      .subscribe(
+        success => {
+          this.busyService.unsetBusy();
+
+          main.alts.push(success);
+          main.alts = this.sortAlts(main.alts);
+          this.altsSubject.next(this.getAltsFromMains(this.mains));
+
+          component.expanded = true;
+        },
+        error => {
+          this.busyService.unsetBusy();
+          this.errorService.reportApiError(error);
+        }
+      );
+  }
+
+  public getPlayerDescription(main: PlayerMain): string {
+    return `Level ${main.player.level} ${this.wowService.getClassLabel(main.player.class)}`;
+  }
+
+  public removeAlt(event: RemoveAltEvent): void {
+    const main = event.main;
+    const alt = event.alt;
+
+    this.busyService.setBusy();
+      this.dataService.removeAltFromMain(main, alt, this.profile)
+        .subscribe(
+          success => {
+            this.busyService.unsetBusy();
+
+            const targetIndex = main.alts.findIndex(a => a.id === alt.id);
+            main.alts.splice(targetIndex, 1);
+            this.altsSubject.next(this.getAltsFromMains(this.mains));
+          },
+          error => {
+            this.busyService.unsetBusy();
+            this.errorService.reportApiError(error);
+          });
+  }
+
+  public removeMain(event: RemoveMainEvent): void {
+    const main = event.main;
+
+    this.busyService.setBusy();
+      this.dataService.removeMain(main, this.profile)
+        .subscribe(
+          success => {
+            this.busyService.unsetBusy();
+
+            const targetIndex = this.mains.findIndex(m => m.id === main.id);
+            this.mains.splice(targetIndex, 1);
+            this.mainsSubject.next(this.mains);
+          },
+          error => {
+            this.busyService.unsetBusy();
+            this.errorService.reportApiError(error);
+          });
   }
 
   private getPlayerFilterer(): Observable<Array<BlizzardPlayer>> {
@@ -88,20 +179,32 @@ export class ViewGuildProfileComponent implements OnInit {
           startWith([]),
           map(p => {
             return this.sortPlayers(p);
-          })),
-          this.playerFilterText.pipe(
-            startWith(''),
-            map(s => s.trim())
-          )
+          })
+        ),
+        this.playerFilterText.pipe(
+          startWith(''),
+          map(
+            s => s.trim())
+        ),
+        this.orderedMains.pipe(
+          startWith([])
+        ),
+        this.altsSubject.pipe(
+          startWith([])
+        )
       ])
     .pipe(
-      map(([players, searchText]) => {
-        return players.filter(p => p.playerName.toLowerCase().includes(searchText.toLowerCase()));
+      map(([players, searchText, orderedMains, alts]) => {
+        return players
+          .filter(p => p.playerName.toLowerCase().includes(searchText.toLowerCase()))
+          .filter(p => !orderedMains.find(o => o.player.name.toLowerCase() === p.playerName.toLowerCase()))
+          .filter(p => !alts.find(a => a.player.name.toLowerCase() === p.playerName.toLowerCase()));
       }));
   }
 
-  private updateParams(params: any): void {
+  private updateRouteParams(params: any): void {
     const profileId = params['id'];
+
     this.unassignedPlayers.next([]);
 
     this.busyService.setBusy();
@@ -112,11 +215,13 @@ export class ViewGuildProfileComponent implements OnInit {
         this.profile = success;
 
         this.unassignedPlayers.next(this.profile.players);
-        this.mains.next(this.profile.mains);
+
+        this.mains = this.transformMainsList(this.profile.mains);
+        this.mainsSubject.next(this.mains);
       },
       error => {
         this.busyService.unsetBusy();
-        alert('Error retrieving guild profile.');
+        this.errorService.reportApiError(error);
       }
     );
   }
@@ -137,4 +242,54 @@ export class ViewGuildProfileComponent implements OnInit {
       return b.level - a.level;
     });
   }
+
+  private sortMains(players: PlayerMain[]): PlayerMain[] {
+    return players.sort((a, b) => {
+        if (a.player.name < b.player.name) {
+          return -1;
+        }
+        else if (a.player.name > b.player.name) {
+          return 1;
+        }
+
+        return 0;
+      });
+  }
+
+  private sortAlts(players: PlayerAlt[]): PlayerAlt[] {
+    return players.sort((a, b) => {
+        if (a.player.name < b.player.name) {
+          return -1;
+        }
+        else if (a.player.name > b.player.name) {
+          return 1;
+        }
+
+        return 0;
+      });
+  }
+
+  private getAltsFromMains(mains: Array<PlayerMain>): Array<PlayerAlt> {
+    return mains.reduce(
+      (a, b) => {
+        if (!b.alts){
+          b.alts =  [];
+        }
+        return a.concat(b.alts);
+      },
+      new Array<PlayerAlt>());
+  }
+
+  private transformMainsList(mains: Array<PlayerMain>): Array<PlayerMain> {
+    mains.forEach(main => {
+      if (!main.alts) {
+        main.alts = [];
+      }
+
+      main.alts = this.sortAlts(main.alts);
+    });
+
+    return mains;
+  }
+
 }

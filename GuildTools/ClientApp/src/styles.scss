@@ -64,3 +64,17 @@ body {
     margin: 0;
     font-family: Roboto, "Helvetica Neue", sans-serif;
 }
+
+.hidden {
+  display: none;
+}
+
+.shown {
+  display: flex;
+}
+
+h2 {
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 16px;
+  font-weight: bold !important;
+}

@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
+import { RegistrationCredentials, LoginCredentials } from './ServiceTypes/service-types';
 
 @Injectable()
 export class AccountService {
@@ -13,19 +14,32 @@ export class AccountService {
   }
 
   public login(username: string, password: string): Observable<Object> {
-    let credentials = {
-      "email": username,
-      "password": password
-    };
+    const serviceCredentials = new LoginCredentials();
 
-    return this.http.post(this.baseUrl + 'api/account/login', credentials);
+    serviceCredentials.email = username;
+    serviceCredentials.password = password;
+
+    return this.http.post(this.baseUrl + 'api/account/login', serviceCredentials);
   }
 
-  public register(model: RegistrationModel): Observable<Object> {
-    return this.http.post(this.baseUrl + 'api/account/register', model);
+  public register(inputModel: RegistrationModel): Observable<Object> {
+
+    const serviceCredentials = new RegistrationCredentials();
+
+    serviceCredentials.email = inputModel.email;
+    serviceCredentials.password = inputModel.password;
+    serviceCredentials.username = inputModel.username;
+
+    return this.http.post(this.baseUrl + 'api/account/register', serviceCredentials);
   }
 
-  public postPasswordReset(userId: string, token: string, newPassword: string): Observable<Object> {
+
+  public requestPasswordReset(email: string): Observable<Object> {
+    return this.http.get(this.baseUrl + `api/account/resetPassword?emailAddress=${email}`);
+  }
+
+
+  public postPasswordResetWithToken(userId: string, token: string, newPassword: string): Observable<Object> {
     return this.http.post(this.getResetUrl(this.baseUrl),
       {
         userId: userId,

@@ -7,6 +7,7 @@ import { FormControl, FormGroup, AbstractControl } from '@angular/forms';
 import { Observable, Subject, combineLatest } from 'rxjs';
 import { startWith, map, filter, tap } from 'rxjs/operators';
 import { SelectedGuild } from '../../models/selected-guild';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 
 enum SearchState {
   Waiting,
@@ -36,7 +37,7 @@ export class FindGuildComponent implements OnInit {
   @Output() guildSelected = new EventEmitter<SelectedGuild>()
   @Output() cancelled = new EventEmitter();
 
-  constructor(public busyService: BusyService, private dataService: DataService) {
+  constructor(public busyService: BusyService, private dataService: DataService, private errorService: ErrorReportingService) {
     this.selectedGuild = '';
 
     this.regions = BlizzardRealms.AllRealms;
@@ -80,7 +81,7 @@ export class FindGuildComponent implements OnInit {
         },
         error => {
           this.busyService.unsetBusy();
-          console.error('Failed to get realms.');
+          this.errorService.reportApiError(error);
         }
       );
     });
@@ -139,7 +140,7 @@ export class FindGuildComponent implements OnInit {
           this.busyService.unsetBusy();
         },
         error => {
-          console.error('An error occurred while fetching this guild state.');
+          this.errorService.reportApiError(error);
           this.busyService.unsetBusy();
         });
   }
@@ -148,11 +149,11 @@ export class FindGuildComponent implements OnInit {
     return realm ? realm.name : undefined;
   }
 
-  private cancel(): void {
+  public cancel(): void {
     this.cancelled.emit();
   }
 
-  private useGuild(): void {
+  public useGuild(): void {
     const selectedGuild = new SelectedGuild();
 
     selectedGuild.name = this.searchForm.controls['guild'].value;

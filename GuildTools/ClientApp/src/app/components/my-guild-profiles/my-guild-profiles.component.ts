@@ -4,9 +4,10 @@ import { DataService } from '../../services/data-services';
 import { BlizzardService } from '../../blizzard-services/blizzard-services';
 import { AuthService } from '../../auth/auth.service';
 import { BusyService } from '../../shared-services/busy-service';
-import {  MatDialog } from '@angular/material';
 import { GuildProfile } from '../../services/ServiceTypes/service-types';
 import { RoutePaths } from 'app/data/route-paths';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
+import { MatTableDataSource } from '@angular/material/table';
 
 @Component({
   selector: 'app-my-guild-profiles',
@@ -16,8 +17,9 @@ import { RoutePaths } from 'app/data/route-paths';
 export class MyGuildProfilesComponent implements OnInit {
 
   private isLoaded = false;
+  public tableDataSource = new MatTableDataSource<GuildProfile>();
   public myGuildProfiles = Array<GuildProfile>();
-  public displayedColumns: Array<string> = ['profileName', 'guildName', 'realmName'];
+  public displayedColumns: Array<string> = ['profileName', 'guildName', 'realmName', 'delete'];
 
   constructor(
     public route: ActivatedRoute,
@@ -25,6 +27,7 @@ export class MyGuildProfilesComponent implements OnInit {
     public blizzardService: BlizzardService,
     public authService: AuthService,
     private busyService: BusyService,
+    private errorService: ErrorReportingService,
     private router: Router) {
       this.myGuildProfiles = [];
     }
@@ -41,11 +44,12 @@ export class MyGuildProfilesComponent implements OnInit {
       .subscribe(
         success => {
           this.myGuildProfiles = success;
+          this.tableDataSource.data = this.myGuildProfiles;
           this.busyService.unsetBusy();
         },
         error => {
-          console.log(error);
           this.busyService.unsetBusy();
+          this.errorService.reportApiError(error);
         });
   }
 
@@ -59,7 +63,7 @@ export class MyGuildProfilesComponent implements OnInit {
 
   public getGuildUrl(profileId: number): string {
     const foundProfile = this.myGuildProfiles.find(profile => profile.id === profileId);
-    if (!foundProfile){
+    if (!foundProfile) {
       return '';
     }
 
@@ -70,5 +74,32 @@ export class MyGuildProfilesComponent implements OnInit {
     const path = `/${RoutePaths.ViewProfile}/${profileId}`;
     this.router.navigate([path]);
     return false;
+  }
+
+  public onMouseEnter(event: any): void {
+    const targetDiv = event.currentTarget.querySelector('.delete-profile-a');
+    targetDiv.classList.remove('hidden');
+  }
+
+  public onMouseLeave(event: any): void {
+    const targetDiv = event.currentTarget.querySelector('.delete-profile-a');
+    targetDiv.classList.add('hidden');
+  }
+
+  public deleteProfile(profile: GuildProfile) {
+    this.busyService.setBusy();
+
+    this.dataService.deleteProfile(profile).subscribe(
+      success => {
+        this.busyService.unsetBusy();
+        const deleteIndex = this.myGuildProfiles.findIndex(p => p.id === profile.id);
+        this.myGuildProfiles.splice(deleteIndex, 1);
+        this.tableDataSource.data = this.myGuildProfiles;
+      },
+      error => {
+        this.busyService.unsetBusy();
+        this.errorService.reportApiError(error);
+      }
+    )
   }
 }

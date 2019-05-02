@@ -54,7 +54,7 @@ export class WowClassLabels {
     this._labelMap[WowClass.Priest] = 'Priest';
     this._labelMap[WowClass.DK] = 'Death Knight';
     this._labelMap[WowClass.Shaman] = 'Shaman';
-    this._labelMap[WowClass.Mage] = 'Magemage';
+    this._labelMap[WowClass.Mage] = 'Mage';
     this._labelMap[WowClass.Warlock] = 'Warlock';
     this._labelMap[WowClass.Monk] = 'Monk';
     this._labelMap[WowClass.Druid] = 'Druid';

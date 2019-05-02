@@ -13,9 +13,18 @@ li.link-active a:focus {
 }
 
 .main-nav {
-    background-color: #193370;
     color: white;
     padding-left: 15px;
+
+    background: linear-gradient(-45deg, rgb(27, 28, 82) 0%, rgb(86, 92, 148) 25%, rgb(27, 28, 82) 50%, rgb(86, 92, 148) 75%, rgb(27, 28, 82) 100%);
+    background-size: 2000px 2000px;
+    animation:
+      NarBarBgAnimation 45s linear infinite;
+}
+
+@keyframes NarBarBgAnimation {
+  0%{background-position:0 0%}
+  100%{background-position:2000px 0}
 }
 
 .main-nav h1.page-title {

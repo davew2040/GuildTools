@@ -32,15 +32,16 @@ namespace GuildTools.Controllers
         private readonly JwtSettings jwtSettings;
         private readonly ConnectionStrings connectionStrings;
         private readonly ICommonValuesProvider commonValues;
-        private readonly Sql.Accounts accountsSql;
         private readonly IMailSender mailSender;
         private readonly IDataRepository dataRepository;
+        private readonly IAccountRepository accountRepository;
 
         public AccountController(
             UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager,
             IMailSender mailSender,
             IDataRepository dataRepository,
+            IAccountRepository accountRepository,
             ICommonValuesProvider commonValues,
             IOptions<JwtSettings> jwtSettings,
             IOptions<ConnectionStrings> connectionStrings)
@@ -49,10 +50,10 @@ namespace GuildTools.Controllers
             this.signInManager = signInManager;
             this.mailSender = mailSender;
             this.dataRepository = dataRepository;
+            this.accountRepository = accountRepository;
             this.commonValues = commonValues;
             this.jwtSettings = jwtSettings.Value;
             this.connectionStrings = connectionStrings.Value;
-            this.accountsSql = new Sql.Accounts(this.connectionStrings.Database);
         }
 
         [HttpPost]
@@ -76,7 +77,7 @@ namespace GuildTools.Controllers
 
                     await userManager.AddClaimAsync(user, new Claim(GuildToolsClaims.UserId, user.Id));
 
-                    this.accountsSql.UpdateUsername(user.Id, credentials.Username, connectionStrings.Database);
+                    await this.accountRepository.AddOrUpdateUsername(user.Id, credentials.Username);
                     await this.signInManager.SignInAsync(user, isPersistent: false);
 
                     var authenticationResponse = await this.GetAuthenticationResponse(user);

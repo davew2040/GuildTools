@@ -9,6 +9,7 @@ import { startWith, map, filter, tap } from 'rxjs/operators';
 import { SelectedGuild } from '../../models/selected-guild';
 import { MatDialog } from '@angular/material';
 import { FindGuildDialogComponent } from '../../dialogs/find-guild-dialog.component/find-guild-dialog.component';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 
 @Component({
   selector: 'app-new-guild-profile',
@@ -23,7 +24,11 @@ export class NewGuildProfileComponent implements OnInit {
   public selectedGuild: SelectedGuild;
   public errors: Array<string> = [];
 
-  constructor(public busyService: BusyService, private dataService: DataService, private dialog: MatDialog) {
+  constructor(
+    public busyService: BusyService,
+    private dataService: DataService,
+    private dialog: MatDialog,
+    private errorService: ErrorReportingService) {
 
   }
 
@@ -78,8 +83,8 @@ export class NewGuildProfileComponent implements OnInit {
           this.busyService.unsetBusy();
         },
         error => {
-          this.errors = ['An error occurred while creating this profile.'];
           this.busyService.unsetBusy();
+          this.errorService.reportApiError(error);
         });
   }
 

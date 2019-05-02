@@ -35,6 +35,8 @@ import { NewProfilePageComponent } from './components/new-profile-page/new-profi
 import { ViewGuildProfileComponent } from './components/view-guild-profile/view-guild-profile.component';
 import { WowService } from './services/wow-service';
 import { NgDragDropModule } from 'ng-drag-drop';
+import { ViewMainComponent } from './components/view-main/view-main.component';
+import { ErrorReportingService } from './shared-services/error-reporting-service';
 
 @NgModule({
   declarations: [
@@ -56,7 +58,8 @@ import { NgDragDropModule } from 'ng-drag-drop';
     FindGuildComponent,
     BusyDirective,
     NewProfilePageComponent,
-    ViewGuildProfileComponent
+    ViewGuildProfileComponent,
+    ViewMainComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -70,7 +73,7 @@ import { NgDragDropModule } from 'ng-drag-drop';
     ContextMenuModule.forRoot(),
     NgDragDropModule.forRoot()
   ],
-  providers: [AuthService, BlizzardService, DataService, AccountService, BusyService, WowService],
+  providers: [AuthService, BlizzardService, DataService, AccountService, BusyService, WowService, ErrorReportingService],
   bootstrap: [AppComponent],
   entryComponents: [FindGuildDialogComponent]
 })

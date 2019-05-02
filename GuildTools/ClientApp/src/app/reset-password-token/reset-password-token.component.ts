@@ -1,10 +1,10 @@
 import { Component, OnInit, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
 import { ResetPasswordWithTokenModel } from './reset-password-token.model';
 import { AuthService } from '../auth/auth.service';
 import { AccountService } from '../services/account-service';
-import { map } from 'rxjs/operators';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
+import { BusyService } from 'app/shared-services/busy-service';
 
 @Component({
   selector: 'app-reset-password-token',
@@ -23,7 +23,9 @@ export class ResetPasswordWithTokenComponent implements OnInit {
       public auth: AuthService,
       public router: Router,
       public route: ActivatedRoute,
-      private accountService: AccountService) {
+      private accountService: AccountService,
+      private errorService: ErrorReportingService,
+      private busyService: BusyService) {
     this.model = new ResetPasswordWithTokenModel();
     this.errors = [];
   }
@@ -54,18 +56,21 @@ export class ResetPasswordWithTokenComponent implements OnInit {
     this.model.VerifyPassword = this.model.VerifyPassword.trim();
 
     if (this.model.Password !== this.model.VerifyPassword) {
-      this.errors.push("Passwords do not match!");
+      this.errors.push('Passwords do not match!');
 
       return false;
     }
 
-    this.accountService.postPasswordReset(this.userId, this.token, this.model.Password).subscribe(
+    this.busyService.setBusy();
+    this.accountService.postPasswordResetWithToken(this.userId, this.token, this.model.Password).subscribe(
       success => {
+        this.busyService.unsetBusy();
         this.auth.logOut();
         this.passwordChangedSuccessfully = true;
       },
       error => {
-        this.errors = error.error;
+        this.busyService.unsetBusy();
+        this.errorService.reportError(error);
       });
 
     return false;

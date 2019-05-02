@@ -8,7 +8,7 @@ namespace GuildTools.Permissions
 {
     public class PermissionsOrder
     {
-        private static Dictionary<GuildProfilePermissionLevel, int> PermissionOrder =
+        private static Dictionary<GuildProfilePermissionLevel, int> PermissionOrderMap =
             new Dictionary<GuildProfilePermissionLevel, int>()
                 {
                     { GuildProfilePermissionLevel.Visitor, 1 },
@@ -19,7 +19,12 @@ namespace GuildTools.Permissions
 
         public static int GetPermissionOrder(GuildProfilePermissionLevel level)
         {
-            return PermissionOrder[level];
+            return PermissionOrderMap[level];
+        }
+
+        public static bool GreaterThanOrEqual(GuildProfilePermissionLevel target, GuildProfilePermissionLevel compareAgainst)
+        {
+            return PermissionsOrder.PermissionOrderMap[target] >= PermissionsOrder.PermissionOrderMap[compareAgainst];
         }
     }
 }

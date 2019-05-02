@@ -1,29 +1,29 @@
 <div fxLayout="row" fxLayoutAlign="center" class="main-container">
     <div fxLayout="row" fxLayoutAlign="space-between" class="secondary-container" fxLayoutGap="10px">
-        <div class="main-list" fxLayout="column" fxLayoutAlign="start stretch" fxLayoutGap="5px;" fxFlex>
+        <div class="main-list" fxLayout="column" fxLayoutAlign="start center" fxLayoutGap="15px" fxFlex>
             <h2>Mains</h2>
 
-            <mat-card  droppable [dragOverClass]="'dragover-class'" (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
+            <mat-card class="drag-box" droppable [dragOverClass]="'dragover-class'" [dropScope]="dropScopes.DropMain" (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
 
-            <mat-accordion>
-              <mat-expansion-panel *ngFor="let main of mains | async">
+            <mat-accordion fxFlexAlign="stretch" class="mains-container">
+              <mat-expansion-panel class="player-main-panel" #playerPanel *ngFor="let main of orderedMains | async" droppable [dropScope]="dropScopes.DropAlt" (onDrop)="onAltDropped($event, main, playerPanel)">
                   <mat-expansion-panel-header>
                       <mat-panel-title>
-                        {{main.name}}
+                        {{main.player.name}}
                       </mat-panel-title>
                       <mat-panel-description>
-                        {{main.level}}
+                        {{ getPlayerDescription(main) }}
                       </mat-panel-description>
                     </mat-expansion-panel-header>
 
-                    <div>{{ getWowClassLabel(main.class) }}</div>
+                    <app-view-main [playerMain]="main" (altRemoved)="removeAlt($event)" (mainRemoved)="removeMain($event)"></app-view-main>
               </mat-expansion-panel>
           </mat-accordion>
         </div>
-        <div fxFlex="200px" fxLayout="column" class="player-table-container">
+        <div fxFlex="200px" fxLayout="column" class="players-container" >
             <input class="player-filter" type="text" matInput placeholder="Filter" (change)="playersFilterChanged($event)" (keydown)="playersFilterChanged($event)" autocomplete="off" />
 
-            <div>
+            <div class="player-table-container">
               <mat-table *ngIf="profile" [dataSource]="filteredPlayers" class="player-table">
                   <ng-container matColumnDef="playerName">
                       <mat-header-cell mat-header-cell class="player-name-header" *matHeaderCellDef> Name </mat-header-cell>
@@ -42,14 +42,23 @@
                   </ng-container>
 
                   <mat-header-row *matHeaderRowDef="playerColumns"></mat-header-row>
-                  <mat-row class="player-row" [contextMenu]="basicMenu" [contextMenuSubject]="player" [ngClass]="getPlayerCssClass(player)" *matRowDef="let player; columns: playerColumns;" draggable [dragClass]="'my-draggable'" [dragData]="player">
+                  <mat-row
+                    class="player-row"
+                    [contextMenu]="basicMenu"
+                    [contextMenuSubject]="player"
+                    [ngClass]="getPlayerCssClass(player)"
+                    *matRowDef="let player; columns: playerColumns;"
+                    draggable
+                    [dragClass]="'my-draggable'"
+                    [dragScope]="[dropScopes.DropMain, dropScopes.DropAlt]"
+                    [dragData]="player">
                   </mat-row>
               </mat-table>
             </div>
         </div>
     </div>
 
-    <context-menu>
+  <!-- FIXME: Re-implement when done  <context-menu>
         <ng-template contextMenuItem (execute)="showMessage('Hi, ' + $event.item.name)">
             Say hi!
         </ng-template>
@@ -57,7 +66,8 @@
         <ng-template contextMenuItem let-item (execute)="showMessage($event.item.name + ' said: ' + $event.item.otherProperty)">
             Bye, {{item?.name}}
         </ng-template>
-        <!-- <ng-template contextMenuItem passive="true">
+         <ng-template contextMenuItem passive="true">
     Input something: <input type="text">
-  </ng-template> -->
+  </ng-template>
     </context-menu>
+  -->

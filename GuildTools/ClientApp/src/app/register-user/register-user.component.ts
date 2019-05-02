@@ -5,6 +5,7 @@ import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
 import { AccountService, RegistrationModel } from '../services/account-service';
 import { BusyService } from '../shared-services/busy-service';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 
 @Component({
   selector: 'app-register-user',
@@ -19,10 +20,10 @@ export class RegisterUserComponent implements OnInit {
   constructor(
       private http: HttpClient,
       public auth: AuthService,
+      public router: Router,
       private accountService: AccountService,
       private busyService: BusyService,
-      public router: Router,
-      @Inject('BASE_URL') private baseUrl: string) {
+      private errorService: ErrorReportingService) {
     this.model = new RegisterUserModel();
     this.errors = new Array<string>();
   }
@@ -46,10 +47,11 @@ export class RegisterUserComponent implements OnInit {
       success => {
         this.busyService.unsetBusy();
         this.auth.processLogin(success);
+        this.router.navigate(['/']);
       },
       error => {
         this.busyService.unsetBusy();
-        this.errors = error.errors;
+        this.errorService.reportApiError(error);
       });
   }
 

@@ -335,9 +335,9 @@ export interface IAddMainToProfile {
 
 export class PlayerMain implements IPlayerMain {
     id?: number | undefined;
-    name?: string | undefined;
     notes?: string | undefined;
     officerNotes?: string | undefined;
+    player?: StoredPlayer | undefined;
     alts?: PlayerAlt[] | undefined;
 
     constructor(data?: IPlayerMain) {
@@ -352,9 +352,9 @@ export class PlayerMain implements IPlayerMain {
     init(data?: any) {
         if (data) {
             this.id = data["id"];
-            this.name = data["name"];
             this.notes = data["notes"];
             this.officerNotes = data["officerNotes"];
+            this.player = data["player"] ? StoredPlayer.fromJS(data["player"]) : <any>undefined;
             if (data["alts"] && data["alts"].constructor === Array) {
                 this.alts = [] as any;
                 for (let item of data["alts"])
@@ -373,9 +373,9 @@ export class PlayerMain implements IPlayerMain {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["id"] = this.id;
-        data["name"] = this.name;
         data["notes"] = this.notes;
         data["officerNotes"] = this.officerNotes;
+        data["player"] = this.player ? this.player.toJSON() : <any>undefined;
         if (this.alts && this.alts.constructor === Array) {
             data["alts"] = [];
             for (let item of this.alts)
@@ -387,15 +387,67 @@ export class PlayerMain implements IPlayerMain {
 
 export interface IPlayerMain {
     id?: number | undefined;
-    name?: string | undefined;
     notes?: string | undefined;
     officerNotes?: string | undefined;
+    player?: StoredPlayer | undefined;
     alts?: PlayerAlt[] | undefined;
+}
+
+export class StoredPlayer implements IStoredPlayer {
+    id?: number | undefined;
+    name?: string | undefined;
+    level?: number | undefined;
+    class?: number | undefined;
+    guildId?: number | undefined;
+
+    constructor(data?: IStoredPlayer) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.name = data["name"];
+            this.level = data["level"];
+            this.class = data["class"];
+            this.guildId = data["guildId"];
+        }
+    }
+
+    static fromJS(data: any): StoredPlayer {
+        data = typeof data === 'object' ? data : {};
+        let result = new StoredPlayer();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["name"] = this.name;
+        data["level"] = this.level;
+        data["class"] = this.class;
+        data["guildId"] = this.guildId;
+        return data; 
+    }
+}
+
+export interface IStoredPlayer {
+    id?: number | undefined;
+    name?: string | undefined;
+    level?: number | undefined;
+    class?: number | undefined;
+    guildId?: number | undefined;
 }
 
 export class PlayerAlt implements IPlayerAlt {
     id?: number | undefined;
-    name?: string | undefined;
+    player?: StoredPlayer | undefined;
 
     constructor(data?: IPlayerAlt) {
         if (data) {
@@ -409,7 +461,7 @@ export class PlayerAlt implements IPlayerAlt {
     init(data?: any) {
         if (data) {
             this.id = data["id"];
-            this.name = data["name"];
+            this.player = data["player"] ? StoredPlayer.fromJS(data["player"]) : <any>undefined;
         }
     }
 
@@ -423,14 +475,158 @@ export class PlayerAlt implements IPlayerAlt {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["id"] = this.id;
-        data["name"] = this.name;
+        data["player"] = this.player ? this.player.toJSON() : <any>undefined;
         return data; 
     }
 }
 
 export interface IPlayerAlt {
     id?: number | undefined;
-    name?: string | undefined;
+    player?: StoredPlayer | undefined;
+}
+
+export class AddAltToMain implements IAddAltToMain {
+    playerName?: string | undefined;
+    guildName?: string | undefined;
+    playerRealmName?: string | undefined;
+    guildRealmName?: string | undefined;
+    regionName?: string | undefined;
+    mainId?: number | undefined;
+    profileId?: number | undefined;
+
+    constructor(data?: IAddAltToMain) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.playerName = data["playerName"];
+            this.guildName = data["guildName"];
+            this.playerRealmName = data["playerRealmName"];
+            this.guildRealmName = data["guildRealmName"];
+            this.regionName = data["regionName"];
+            this.mainId = data["mainId"];
+            this.profileId = data["profileId"];
+        }
+    }
+
+    static fromJS(data: any): AddAltToMain {
+        data = typeof data === 'object' ? data : {};
+        let result = new AddAltToMain();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["playerName"] = this.playerName;
+        data["guildName"] = this.guildName;
+        data["playerRealmName"] = this.playerRealmName;
+        data["guildRealmName"] = this.guildRealmName;
+        data["regionName"] = this.regionName;
+        data["mainId"] = this.mainId;
+        data["profileId"] = this.profileId;
+        return data; 
+    }
+}
+
+export interface IAddAltToMain {
+    playerName?: string | undefined;
+    guildName?: string | undefined;
+    playerRealmName?: string | undefined;
+    guildRealmName?: string | undefined;
+    regionName?: string | undefined;
+    mainId?: number | undefined;
+    profileId?: number | undefined;
+}
+
+export class RemoveAltFromMain implements IRemoveAltFromMain {
+    altId?: number | undefined;
+    mainId?: number | undefined;
+    profileId?: number | undefined;
+
+    constructor(data?: IRemoveAltFromMain) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.altId = data["altId"];
+            this.mainId = data["mainId"];
+            this.profileId = data["profileId"];
+        }
+    }
+
+    static fromJS(data: any): RemoveAltFromMain {
+        data = typeof data === 'object' ? data : {};
+        let result = new RemoveAltFromMain();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["altId"] = this.altId;
+        data["mainId"] = this.mainId;
+        data["profileId"] = this.profileId;
+        return data; 
+    }
+}
+
+export interface IRemoveAltFromMain {
+    altId?: number | undefined;
+    mainId?: number | undefined;
+    profileId?: number | undefined;
+}
+
+export class RemoveMain implements IRemoveMain {
+    mainId?: number | undefined;
+    profileId?: number | undefined;
+
+    constructor(data?: IRemoveMain) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.mainId = data["mainId"];
+            this.profileId = data["profileId"];
+        }
+    }
+
+    static fromJS(data: any): RemoveMain {
+        data = typeof data === 'object' ? data : {};
+        let result = new RemoveMain();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["mainId"] = this.mainId;
+        data["profileId"] = this.profileId;
+        return data; 
+    }
+}
+
+export interface IRemoveMain {
+    mainId?: number | undefined;
+    profileId?: number | undefined;
 }
 
 export class GuildProfile implements IGuildProfile {

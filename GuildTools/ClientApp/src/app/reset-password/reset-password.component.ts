@@ -3,6 +3,9 @@ import { AuthService } from '../auth/auth.service';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ResetPasswordModel } from './reset-password.model';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
+import { AccountService } from 'app/services/account-service';
+import { BusyService } from 'app/shared-services/busy-service';
 
 @Component({
   selector: 'app-reset-password',
@@ -18,6 +21,9 @@ export class ResetPasswordComponent implements OnInit {
   constructor(
       private http: HttpClient,
       public router: Router,
+      private errorService: ErrorReportingService,
+      private accountService: AccountService,
+      private busyService: BusyService,
       @Inject('BASE_URL')
       private baseUrl: string) {
     this.model = new ResetPasswordModel();
@@ -28,15 +34,18 @@ export class ResetPasswordComponent implements OnInit {
   }
 
   resetPassword(): boolean {
-    var email = this.model.Email;
+    const email = this.model.Email;
 
-    this.http.get(this.baseUrl + `api/account/resetPassword?emailAddress=${email}`).subscribe(
+    this.busyService.setBusy();
+    this.accountService.requestPasswordReset(email).subscribe(
       success => {
+        this.busyService.unsetBusy();
         this.emailSent = true;
       },
       error => {
+        this.busyService.unsetBusy();
         this.emailSent = false;
-        alert('Could not reset password!');
+        this.errorService.reportApiError(error);
       });
 
     return false;

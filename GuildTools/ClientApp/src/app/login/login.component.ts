@@ -5,6 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { RoutePaths } from '../data/route-paths';
+import { BusyService } from 'app/shared-services/busy-service';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +21,8 @@ export class LoginComponent implements OnInit {
   constructor(
       public auth: AuthService,
       public router: Router,
-      @Inject('BASE_URL') private baseUrl: string) {
+      private busyService: BusyService,
+      private errorService: ErrorReportingService) {
     this.model = new LoginModel();
     this.errors = [];
   }
@@ -29,12 +32,15 @@ export class LoginComponent implements OnInit {
 
   onSubmit(): boolean {
 
+    this.busyService.setBusy();
     this.auth.logIn(this.model.Email, this.model.Password).subscribe(
       success => {
+        this.busyService.unsetBusy();
         this.router.navigate(['/']);
       },
       error => {
-        this.errors = [error.error];
+        this.busyService.unsetBusy();
+        this.errorService.reportApiError(error);
       });
 
     return false;

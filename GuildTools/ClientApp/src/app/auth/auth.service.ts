@@ -4,6 +4,7 @@ import { AccountService } from '../services/account-service';
 import { BusyService } from '../shared-services/busy-service';
 import { Observable, Subscription } from 'rxjs';
 import { log } from 'util';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 (window as any).global = window;
 
 @Injectable()
@@ -12,7 +13,8 @@ export class AuthService {
   constructor(
     public router: Router,
     private accountService: AccountService,
-    private busyService: BusyService) { }
+    private busyService: BusyService,
+    private errorService: ErrorReportingService) { }
 
   public appInitialization(): void {
     if (!this.isAuthenticated) {
@@ -23,7 +25,7 @@ export class AuthService {
   public logIn(email: string, password: string): Observable<Object> {
     this.busyService.setBusy();
 
-    let loginObservable = this.accountService.login(email, password);
+    const loginObservable = this.accountService.login(email, password);
 
     loginObservable.subscribe(
       success => {
@@ -31,6 +33,7 @@ export class AuthService {
         this.handleLoginSuccess(success);
       },
       error => {
+        this.errorService.reportApiError(error);
         this.busyService.unsetBusy();
       });
 

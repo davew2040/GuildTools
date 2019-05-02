@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { DataService } from '../services/data-services';
 import { Router } from '@angular/router';
 import { BlizzardRealms, BlizzardRegionDefinition } from '../data/blizzard-realms';
+import { BusyService } from 'app/shared-services/busy-service';
+import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 
 @Component({
   selector: 'app-guild-stats-launcher',
@@ -20,7 +22,11 @@ export class GuildStatsLauncherComponent implements OnInit {
   selectedRegionName: string;
   regions: Array<BlizzardRegionDefinition>;
 
-  constructor(public dataService: DataService, public router: Router) {
+  constructor(
+    public dataService: DataService,
+    public router: Router,
+    private busyService: BusyService,
+    private errorService: ErrorReportingService) {
   }
 
   ngOnInit() {
@@ -34,9 +40,13 @@ export class GuildStatsLauncherComponent implements OnInit {
   }
 
   search(region: string, guild: string, realm: string): void {
+
+    this.busyService.setBusy();
     this.dataService.getGuildExists(region, guild, realm)
       .subscribe(
         success => {
+          this.busyService.unsetBusy();
+
           if (success.found) {
             this.guildNotFound = false;
 
@@ -51,7 +61,8 @@ export class GuildStatsLauncherComponent implements OnInit {
           }
         },
         error => {
-          console.error(error)
+          this.busyService.unsetBusy();
+          this.errorService.reportApiError(error);
         });
    }
 }
