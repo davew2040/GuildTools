@@ -1,0 +1,43 @@
+<div class="container" fxLayout="column" fxLayoutAlign="start center">
+  <div fxLayout="row" fxLayoutAlign="start" fxFill>
+      <h1>Register</h1>
+  </div>
+
+  <mat-divider fxFill></mat-divider>
+
+  <div class="registration-holder">
+    <form (ngSubmit)="onSubmit()" [formGroup]="registrationForm" fxLayout="column">
+
+      <mat-form-field style="margin-top: 8px;">
+          <input matInput type="text" placeholder="Username" [formControlName]="usernameControlName">
+      </mat-form-field>
+
+      <mat-form-field style="margin-top: 8px;">
+          <input matInput type="text" placeholder="Email Address:" [formControlName]="emailControlName">
+      </mat-form-field>
+
+      <mat-form-field style="margin-top: 8px;">
+          <input matInput type="password" autocomplete="off" placeholder="Password" [formControlName]="passwordControlName">
+      </mat-form-field>
+
+      <mat-form-field style="margin-top: 8px;">
+          <input matInput type="password" autocomplete="off" placeholder="Re-enter Password" [formControlName]="passwordRepeatControlName">
+      </mat-form-field>
+
+      <div fxLayout="row" fxLayoutAlign="start start" style="margin-top: 25px;">
+        <mat-form-field fxFlex>
+          <input matInput type="text" placeholder="Character" [formControlName]="playerNameControlName">
+        </mat-form-field>
+        <button mat-raised-button (click)="findCharacter()" style="margin-left: 55px; margin-top: 0px;">Find</button>
+      </div>
+
+      <div *ngIf="this.errors.length !== 0" class="alert alert-danger">
+        <div *ngFor="let error of errors">{{error}}</div>
+      </div>
+
+      <div fxLayout="row" fxLayoutAlign="end" style="margin-top: 25px">
+        <button mat-raised-button color="primary" type="submit" style="width: 200px">Register</button>
+      </div>
+    </form>
+  </div>
+</div>

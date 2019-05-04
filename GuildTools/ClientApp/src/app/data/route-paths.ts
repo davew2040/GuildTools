@@ -5,7 +5,9 @@ export class RoutePaths {
   public static GuildStats = 'guildstats';
   public static MyProfiles = 'myprofiles';
   public static NewProfile = 'newprofile';
+  public static ConfirmEmail = 'confirmemail';
   public static ResetPassword = 'resetpassword';
   public static ResetPasswordWithToken = 'resetpasswordtoken';
   public static ViewProfile = 'viewprofile';
+  public static ManagePermissions = 'managepermissions';
 }

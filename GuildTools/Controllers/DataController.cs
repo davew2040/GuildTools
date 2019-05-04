@@ -27,6 +27,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static GuildTools.EF.Models.Enums.EnumUtilities;
 using static GuildTools.ExternalServices.Blizzard.BlizzardService;
+using EfModels = GuildTools.EF.Models;
 
 namespace GuildTools.Controllers
 {
@@ -39,13 +40,14 @@ namespace GuildTools.Controllers
         private readonly IDataRepository dataRepo;
         private readonly IRealmsCache realmsCache;
         private readonly IGuildCache guildCache;
+        private readonly IPlayerCache playerCache;
         private readonly IGuildMemberCache guildMemberCache;
         private readonly IGuildService guildService;
         private readonly IGuildStoreByName guildStore;
         private readonly IPlayerStoreByValue playerStore;
         private readonly IRealmStoreByValues realmStoreByValues;
         private readonly RoleManager<IdentityRole> roleManager;
-        private readonly UserManager<IdentityUser> userManager;
+        private readonly UserManager<EfModels.UserWithData> userManager;
 
         public DataController(
             IOptions<ConnectionStrings> connectionStrings,
@@ -54,13 +56,14 @@ namespace GuildTools.Controllers
             IBlizzardService blizzardService,
             IOldGuildMemberCache oldGuildMemberCache,
             IGuildCache guildCache,
+            IPlayerCache playerCache,
             IGuildMemberCache guildMemberCache,
             IRealmsCache realmsCache,
             IGuildStoreByName guildStore,
             IPlayerStoreByValue playerStore,
             IRealmStoreByValues realmStoreByValues,
             RoleManager<IdentityRole> roleManager,
-            UserManager<IdentityUser> userManager)
+            UserManager<EfModels.UserWithData> userManager)
         {
             this.connectionStrings = connectionStrings.Value;
             this.blizzardService = blizzardService;
@@ -68,6 +71,7 @@ namespace GuildTools.Controllers
             this.guildService = guildService;
             this.dataRepo = repository;
             this.guildCache = guildCache;
+            this.playerCache = playerCache;
             this.guildMemberCache = guildMemberCache;
             this.realmsCache = realmsCache;
             this.playerStore = playerStore;
@@ -143,6 +147,33 @@ namespace GuildTools.Controllers
                 GuildName = locatedGuild.Name
             };
         }
+
+        [HttpGet("playerExists")]
+        public async Task<PlayerFound> PlayerExists(string region, string playerName, string realm)
+        {
+            InputValidators.ValidateRealmName(realm);
+            InputValidators.ValidatePlayerName(playerName);
+
+            realm = BlizzardService.FormatRealmName(realm);
+            var regionEnum = GameRegionUtilities.GetGameRegionFromString(region);
+
+            var locatedPlayer = await this.playerCache.GetPlayer(regionEnum, playerName, realm);
+
+            if (locatedPlayer == null)
+            {
+                return new PlayerFound()
+                {
+                    Found = false
+                };
+            }
+
+            return new PlayerFound()
+            {
+                Found = true,
+                PlayerDetails = locatedPlayer
+            };
+        }
+
 
         [Authorize]
         [HttpPost("createGuildProfile")]
@@ -342,11 +373,11 @@ namespace GuildTools.Controllers
                 GuildName = p.CreatorGuild.Name,
                 Realm = p.Realm.Name,
                 Region = p.Realm.Region.RegionName,
-                Creator = new CreatorStub()
+                Creator = new UserStub()
                 {
-                    Id = p.Creator.UserId,
-                    Email = user.Email,
-                    Username = p.Creator.Username
+                    Id = p.Creator.Id,
+                    Email = p.Creator.Email,
+                    Username = p.Creator.UserName
                 }
             });
 
@@ -366,20 +397,18 @@ namespace GuildTools.Controllers
                     GuildProfilePermissionLevel.Officer)
                 : false;
 
-            var repoProfile = await this.dataRepo.GetFullGuildProfile(profileId);
+            var repoProfile = await this.dataRepo.GetFullGuildProfileAsync(profileId);
             var efProfile = repoProfile.Profile;
-
-            var creatorUser = await this.userManager.FindByIdAsync(efProfile.Creator.UserId);
 
             var returnProfile = new FullGuildProfile()
             {
                 Id = efProfile.Id,
                 ProfileName = efProfile.ProfileName,
-                Creator = new CreatorStub()
+                Creator = new UserStub()
                 {
-                    Id = creatorUser.Id,
-                    Email = creatorUser.Email,
-                    Username = creatorUser.UserName
+                    Id = efProfile.Creator.Id,
+                    Email = efProfile.Creator.Email,
+                    Username = efProfile.Creator.UserName
                 },
                 GuildName = efProfile.CreatorGuild.Name,
                 Mains = efProfile.PlayerMains.Select(x => new PlayerMain()
@@ -411,13 +440,16 @@ namespace GuildTools.Controllers
                     Name = efProfile.Realm.Name,
                     RegionId = efProfile.Realm.Region.Id
                 },
-                Region = efProfile.Realm.Region.RegionName
+                Region = efProfile.Realm.Region.RegionName,
+                AccessRequestCount = isOfficer ? efProfile.AccessRequests.Count() : 0
             };
 
             returnProfile.Players = await this.guildMemberCache.GetMembers(
                 EnumUtilities.GameRegionUtilities.GetGameRegionFromString(returnProfile.Region),
                 returnProfile.Realm.Name, 
                 returnProfile.GuildName);
+
+            returnProfile.CurrentPermissionLevel = (int?)permissionLevel;
 
             return returnProfile;
         }
@@ -433,7 +465,123 @@ namespace GuildTools.Controllers
                 throw new UserReportableError("This user doesn't have permissions to perform this operation.", (int)HttpStatusCode.Unauthorized);
             }
 
-            await this.dataRepo.DeleteProfile(profileId);
+            await this.dataRepo.DeleteProfileAsync(profileId);
+        }
+
+        [Authorize]
+        [HttpPost("addAccessRequest")]
+        public async Task AddAccessRequest(int profileId)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id) != null)
+            {
+                throw new UserReportableError($"This user already has permissions for profile '{profileId}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var existingAccessRequests = await this.dataRepo.GetAccessRequestsAsync(profileId);
+
+            if (existingAccessRequests.Any(x => x.RequesterId == user.Id))
+            {
+                throw new UserReportableError($"User has already submitted an access request for profile '{profileId}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            await this.dataRepo.AddAccessRequestAsync(user.Id, profileId);
+        }
+
+        [Authorize]
+        [HttpPost("approveAccessRequest")]
+        public async Task ApproveAccessRequest(int requestId)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!(await this.UserCanApproveAccessRequest(user, requestId)))
+            {
+                throw new UserReportableError($"This user does not have permission to approve access requests for profile '{requestId}'.",
+                    (int)HttpStatusCode.Unauthorized);
+            }
+
+            await this.dataRepo.ApproveAccessRequest(requestId);
+        }
+
+        [Authorize]
+        [HttpGet("getAccessRequests")]
+        public async Task<IEnumerable<PendingAccessRequest>> GetAccessRequests(int profileId)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            var userPermissionLevel = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+            if (!userPermissionLevel.HasValue 
+                || !PermissionsOrder.GreaterThanOrEqual(userPermissionLevel.Value, GuildProfilePermissionLevel.Officer))
+            {
+                throw new UserReportableError($"User does not have permissions to approve access requests for profile '{profileId}'.", 
+                    (int)HttpStatusCode.Unauthorized);
+            }
+
+            var efRequests = await this.dataRepo.GetAccessRequestsAsync(profileId);
+            return efRequests.Select(x => new PendingAccessRequest()
+            {
+                Id = x.Id,
+                CreatedOn = x.CreatedOn,
+                ProfileId = x.ProfileId,
+                User = new UserStub()
+                {
+                    Id = x.Requester.Id,
+                    Email = x.Requester.Email,
+                    Username = x.Requester.UserName
+                }
+            });
+        }
+
+
+        [Authorize]
+        [HttpGet("getAllProfilePermissions")]
+        public async Task<FullProfilePermissions> GetAllProfilePermissions(int profileId)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!(await this.CanGetAllProfilePermissions(user, profileId)))
+            {
+                throw new UserReportableError($"This user does not have permission to retrieve profile permissions for profile '{profileId}'.",
+                    (int)HttpStatusCode.Unauthorized);
+            }
+
+            var userPermissionTask = this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+            var allPermissionsTask = this.dataRepo.GetFullProfilePermissions(user.Id, profileId);
+
+            Task.WaitAll(userPermissionTask, allPermissionsTask);
+
+            return new FullProfilePermissions()
+            {
+                CurrentPermissions = (int)userPermissionTask.Result.Value,
+                Permissions = allPermissionsTask.Result.Select(x => new ProfilePermissionByUser()
+                {
+                    PermissionLevel = (int)x.PermissionLevel,
+                    User = new UserStub()
+                    {
+                        Id = x.User.Id,
+                        Email = x.User.Email,
+                        Username = x.User.UserName
+                    }
+                })
+            };
+        }
+
+        [Authorize]
+        [HttpPost("updatePermissions")]
+        public async Task UpdatePermissions([FromBody] UpdatePermissionSet updates)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!(await this.CanUpdatePermissions(user, updates.ProfileId)))
+            {
+                throw new UserReportableError($"This user does not have permission to update profile permissions for profile '{updates.ProfileId}'.",
+                    (int)HttpStatusCode.Unauthorized);
+            }
+
+            bool isAdmin = await this.IsAdmin(user);
+
+            await this.dataRepo.UpdatePermissions(user.Id, updates.Updates, updates.ProfileId, isAdmin);
         }
 
         [HttpGet("getRealms")]
@@ -442,10 +590,9 @@ namespace GuildTools.Controllers
             return await this.realmsCache.GetRealms(EnumUtilities.GameRegionUtilities.GetGameRegionFromString(region));
         }
 
-        private async Task<bool> UserCanAddMainAsync(IdentityUser user, int profileId)
+        private async Task<bool> UserCanAddMainAsync(EfModels.UserWithData user, int profileId)
         {
-            var roles = await this.GetRolesForUser(user);
-            if (roles.Any(r => r == GuildToolsRoles.AdminRole.Name))
+            if (await this.IsAdmin(user))
             {
                 return true;
             }
@@ -461,10 +608,9 @@ namespace GuildTools.Controllers
                 >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
         }
 
-        private async Task<bool> UserCanAddAltAsync(IdentityUser user, int profileId)
+        private async Task<bool> UserCanAddAltAsync(EfModels.UserWithData user, int profileId)
         {
-            var roles = await this.GetRolesForUser(user);
-            if (roles.Any(r => r == GuildToolsRoles.AdminRole.Name))
+            if (await this.IsAdmin(user))
             {
                 return true;
             }
@@ -480,20 +626,19 @@ namespace GuildTools.Controllers
                 >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
         }
 
-        private async Task<bool> UserCanRemoveAltAsync(IdentityUser user, int profileId)
+        private async Task<bool> UserCanRemoveAltAsync(EfModels.UserWithData user, int profileId)
         {
             return await this.UserCanAddAltAsync(user, profileId);
         }
 
-        private async Task<bool> UserCanRemoveMain(IdentityUser user, int profileId)
+        private async Task<bool> UserCanRemoveMain(EfModels.UserWithData user, int profileId)
         {
             return await this.UserCanAddAltAsync(user, profileId);
         }
 
-        private async Task<bool> CanDeleteProfile(IdentityUser user, int profileId)
+        private async Task<bool> CanDeleteProfile(EfModels.UserWithData user, int profileId)
         {
-            var roles = await this.GetRolesForUser(user);
-            if (roles.Any(r => r == GuildToolsRoles.AdminRole.Name))
+            if (await this.IsAdmin(user))
             {
                 return true;
             }
@@ -508,7 +653,54 @@ namespace GuildTools.Controllers
             return PermissionsOrder.GreaterThanOrEqual(permissionsForProfile.Value, GuildProfilePermissionLevel.Admin);
         }
 
-        private async Task<IEnumerable<string>> GetRolesForUser(IdentityUser user)
+        private async Task<bool> UserCanApproveAccessRequest(EfModels.UserWithData user, int profileId)
+        {
+            if (await this.IsAdmin(user))
+            {
+                return true;
+            }
+
+            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+
+            if (!permissionsForProfile.HasValue)
+            {
+                return false;
+            }
+
+            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
+                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+        }
+
+        private async Task<bool> CanGetAllProfilePermissions(EfModels.UserWithData user, int profileId)
+        {
+            if (await this.IsAdmin(user))
+            {
+                return true;
+            }
+
+            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+
+            if (!permissionsForProfile.HasValue)
+            {
+                return false;
+            }
+
+            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
+                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+        }
+
+        private async Task<bool> CanUpdatePermissions(EfModels.UserWithData user, int profileId)
+        {
+            return await this.UserCanApproveAccessRequest(user, profileId);
+        }
+
+        private async Task<bool> IsAdmin(EfModels.UserWithData user)
+        {
+            var roles = await this.GetRolesForUser(user);
+            return (roles.Any(r => r == GuildToolsRoles.AdminRole.Name));
+        }
+
+        private async Task<IEnumerable<string>> GetRolesForUser(EfModels.UserWithData user)
         {
             return (await this.userManager.GetRolesAsync(user));
         }

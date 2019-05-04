@@ -2,13 +2,17 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using GuildTools.Configuration;
 using GuildTools.Controllers.Models;
 using GuildTools.Data;
+using GuildTools.EF.Models;
 using GuildTools.EF.Models.Enums;
+using GuildTools.ErrorHandling;
 using GuildTools.Models;
 using GuildTools.Permissions;
 using GuildTools.Services;
@@ -27,18 +31,15 @@ namespace GuildTools.Controllers
     [Route("api/[controller]")]
     public class AccountController : Controller
     {
-        private readonly UserManager<IdentityUser> userManager;
-        private readonly SignInManager<IdentityUser> signInManager;
+        private readonly UserManager<UserWithData> userManager;
+        private readonly SignInManager<UserWithData> signInManager;
         private readonly JwtSettings jwtSettings;
-        private readonly ConnectionStrings connectionStrings;
         private readonly ICommonValuesProvider commonValues;
         private readonly IMailSender mailSender;
-        private readonly IDataRepository dataRepository;
-        private readonly IAccountRepository accountRepository;
 
         public AccountController(
-            UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager,
+            UserManager<UserWithData> userManager,
+            SignInManager<UserWithData> signInManager,
             IMailSender mailSender,
             IDataRepository dataRepository,
             IAccountRepository accountRepository,
@@ -49,53 +50,90 @@ namespace GuildTools.Controllers
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.mailSender = mailSender;
-            this.dataRepository = dataRepository;
-            this.accountRepository = accountRepository;
             this.commonValues = commonValues;
             this.jwtSettings = jwtSettings.Value;
-            this.connectionStrings = connectionStrings.Value;
         }
 
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register([FromBody] RegistrationCredentials credentials)
+        public async Task Register([FromBody] RegistrationDetails details)
         {
             if (!ModelState.IsValid)
             {
-                return Error("Encountered invalid user values during registration.");
+                throw new UserReportableError("Encountered invalid user values.", (int)HttpStatusCode.BadRequest);
             }
 
-            if (ModelState.IsValid)
+            var user = new UserWithData()
             {
-                var user = new IdentityUser { UserName = credentials.Email, Email = credentials.Email };
+                UserName = details.Username,
+                Email = details.Email,
+                GuildName = details.GuildName,
+                GuildRealm = details.GuildRealm,
+                PlayerRegion = details.PlayerRegion,
+                PlayerName = details.PlayerName,
+                PlayerRealm = details.PlayerRealm
+            };
 
-                var result = await this.userManager.CreateAsync(user, credentials.Password);
+            var result = await this.userManager.CreateAsync(user, details.Password);
 
-                if (result.Succeeded)
+            if (result.Succeeded)
+            {
+                await this.userManager.AddToRoleAsync(user, GuildToolsRoles.StandardUser.Name);
+
+                await userManager.AddClaimAsync(user, new Claim(GuildToolsClaims.UserId, user.Id));
+
+                var confirmationToken = await this.userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                string baseUrl = $"{this.Request.Scheme}://{this.Request.Host}{this.Request.PathBase}";
+                string resetUrl = $"{baseUrl}/confirmemail?userId={user.Id}&token={HttpUtility.UrlEncode(confirmationToken)}";
+
+                var confirmationEmail = MailGenerator.GenerateRegistrationConfirmationEmail(resetUrl);
+
+                var mailResult = await this.mailSender.SendMailAsync(
+                    user.Email, 
+                    this.commonValues.AdminEmail, 
+                    confirmationEmail.Subject, 
+                    confirmationEmail.TextContent, 
+                    confirmationEmail.HtmlContent);
+
+                if (!mailResult)
                 {
-                    await this.userManager.AddToRoleAsync(user, GuildToolsRoles.StandardUser.Name);
-
-                    await userManager.AddClaimAsync(user, new Claim(GuildToolsClaims.UserId, user.Id));
-
-                    await this.accountRepository.AddOrUpdateUsername(user.Id, credentials.Username);
-                    await this.signInManager.SignInAsync(user, isPersistent: false);
-
-                    var authenticationResponse = await this.GetAuthenticationResponse(user);
-
-                    return new JsonResult(authenticationResponse);
+                    await this.userManager.DeleteAsync(user);
+                    throw new UserReportableError("An error occurred while attempting to create this account.", (int)HttpStatusCode.InternalServerError);
                 }
-                else
-                {
-                    if (result.Errors.Any(e => e.Code == "DuplicateUserName"))
-                    {
-                        return Error("This email address is already registered.");
-                    }
-                }
-
-                return Errors(result);
-
             }
-            return Error("Unexpected error");
+            else
+            {
+                if (result.Errors.Any(e => e.Code == "DuplicateUserName"))
+                {
+                    throw new UserReportableError("This email address is already registered.", (int)HttpStatusCode.BadRequest);
+                }
+
+                throw new UserReportableError("An error occurred while attempting to create this account.", (int)HttpStatusCode.InternalServerError);
+            }
+        }
+
+        [HttpPost]
+        [Route("confirmEmail")]
+        public async Task ConfirmEmail([FromBody] ConfirmEmail confirmation)
+        {
+            if (!ModelState.IsValid)
+            {
+                throw new UserReportableError("Encountered invalid user values.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var user = await this.userManager.FindByIdAsync(confirmation.UserId);
+            if (user == null)
+            {
+                throw new UserReportableError("Could not find a user with this ID.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var confirmationResult = await this.userManager.ConfirmEmailAsync(user, confirmation.Token);
+
+            if (!confirmationResult.Succeeded)
+            {
+                throw new UserReportableError("Unable to confirmation this email address.", (int)HttpStatusCode.BadRequest);
+            }
         }
 
         [HttpGet]
@@ -159,28 +197,48 @@ namespace GuildTools.Controllers
 
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login([FromBody] LoginCredentials credentials)
+        public async Task<LoginResponse> Login([FromBody] LoginCredentials credentials)
         {
             if (!ModelState.IsValid)
             {
-                return Error("Encountered invalid user values during registration.");
+                throw new UserReportableError("Encountered invalid user values during registration.", (int)HttpStatusCode.BadRequest);
             }
 
-            var result = await signInManager.PasswordSignInAsync(credentials.Email, credentials.Password, false, false);
+            var user = await this.userManager.FindByEmailAsync(credentials.Email);
 
-            if (result.Succeeded)
+            if (user == null)
             {
-                var user = await userManager.FindByEmailAsync(credentials.Email);
-                
-                var authenticationResponse = await this.GetAuthenticationResponse(user);
-
-                return new JsonResult(authenticationResponse);
+                throw new UserReportableError($"Couldn't find user with email '{credentials.Email}'.", (int)HttpStatusCode.BadRequest);
             }
 
-            return new JsonResult("Unable to sign in.") { StatusCode = 401 };
+            if (!user.EmailConfirmed)
+            {
+                throw new UserReportableError($"User with email '{credentials.Email}' hasn't yet confirmed their registration.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var signinResult = await signInManager.PasswordSignInAsync(user.UserName, credentials.Password, false, false);
+
+            if (signinResult.Succeeded)
+            {
+                var authenticationResponse = this.GetAuthenticationResponse(user);
+
+                return new LoginResponse()
+                {
+                    AuthenticationDetails = authenticationResponse,
+                    Email = user.Email,
+                    Username = user.UserName,
+                    GuildName = user.GuildName,
+                    GuildRealm = user.GuildRealm,
+                    PlayerName = user.PlayerName,
+                    PlayerRealm = user.PlayerRealm,
+                    PlayerRegion = user.PlayerRegion
+                };
+            }
+
+            throw new UserReportableError("Unable to sign in.", (int)HttpStatusCode.Unauthorized);
         }
 
-        private async Task<Dictionary<string, object>> GetAuthenticationResponse(IdentityUser user)
+        private Dictionary<string, object> GetAuthenticationResponse(IdentityUser user)
         {
             return new Dictionary<string, object>
             {

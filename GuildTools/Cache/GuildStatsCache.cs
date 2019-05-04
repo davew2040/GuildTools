@@ -5,8 +5,10 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
 using static GuildTools.ExternalServices.Blizzard.BlizzardService;
+using GuildTools.EF;
 
 namespace GuildTools.Cache
 {
@@ -15,18 +17,19 @@ namespace GuildTools.Cache
         private HashSet<string> updatingSet;
         private Dictionary<string, ExpiringData<string>> cache;
         private const string SqlCacheType = "Guild";
-        private IBlizzardService blizzardService;
+        private readonly IBlizzardService blizzardService;
         private readonly TimeSpan CacheEntryDuration = new TimeSpan(24, 0, 0);
         private readonly IDataRepository dataRepo;
+        private readonly IServiceProvider serviceProvider;
 
-
-        public GuildStatsCache(IConfiguration configuration, IBlizzardService blizzardService, IDataRepository dataRepo)
+        public GuildStatsCache(IConfiguration configuration, IBlizzardService blizzardService, IDataRepository dataRepo, IServiceProvider serviceProvider)
         {
             this.cache = new Dictionary<string, ExpiringData<string>>();
             this.blizzardService = blizzardService;
             string connectionString = configuration.GetValue<string>("ConnectionStrings:Database");
             this.updatingSet = new HashSet<string>();
             this.dataRepo = dataRepo;
+            this.serviceProvider = serviceProvider;
         }
 
         public async Task<string> Get(BlizzardRegion region, string realm, string guild)
@@ -74,22 +77,32 @@ namespace GuildTools.Cache
 
             Task.Factory.StartNew(async () =>
             {
+
+                using (GuildToolsContext context = this.serviceProvider.GetService<GuildToolsContext>())
+                using (IDataRepository dataRepo = new DataRepository(context))
+                {
+                    await dataRepo.SetCachedValueAsync("test_key", "test_value", TimeSpan.FromSeconds(10));
+                }
+
                 var guildData = await this.blizzardService.GetGuildMembersAsync(guild, realm, region);
-                
-                await this.Add(region, realm, guild, guildData, CacheEntryDuration);
+
+                using (GuildToolsContext context = this.serviceProvider.GetService<GuildToolsContext>())
+                using (IDataRepository dataRepo = new DataRepository(context))
+                {
+                    await this.Add(region, realm, guild, guildData, CacheEntryDuration, dataRepo);
+                }
 
                 this.updatingSet.Remove(key);
             });
         }
 
-
-        private async Task Add(BlizzardRegion region, string realm, string guild, string value, TimeSpan duration)
+        private async Task Add(BlizzardRegion region, string realm, string guild, string value, TimeSpan duration, IDataRepository repo)
         {
             string key = this.GetKey(region, realm, guild);
 
             this.cache[key] = new ExpiringData<string>(DateTime.Now + duration, value);
 
-            await this.dataRepo.SetCachedValueAsync(key, value, duration);
+            await repo.SetCachedValueAsync(key, value, duration);
         }
         
         private string GetKey(BlizzardRegion region, string realm, string guild)

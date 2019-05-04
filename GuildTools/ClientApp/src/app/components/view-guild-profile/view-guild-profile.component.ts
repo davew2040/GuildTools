@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ViewChildren } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FullGuildProfile, BlizzardPlayer, PlayerMain, PlayerAlt } from 'app/services/ServiceTypes/service-types';
 import { DataService, WowClass } from 'app/services/data-services';
 import { BusyService } from 'app/shared-services/busy-service';
@@ -8,9 +8,13 @@ import { ContextMenuComponent } from 'ngx-contextmenu';
 import { Observable, Subject, combineLatest } from 'rxjs';
 import { startWith, map, filter } from 'rxjs/operators';
 import { DropEvent } from 'ng-drag-drop';
-import { MatExpansionModule, MatExpansionPanel } from '@angular/material';
+import { MatExpansionPanel } from '@angular/material';
 import { RemoveAltEvent, RemoveMainEvent } from '../view-main/view-main.component';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
+import { PermissionsOrder } from 'app/permissions/permissions-order';
+import { GuildProfilePermissionLevel, AuthService } from 'app/auth/auth.service';
+import { NotificationService } from 'app/shared-services/notification-service';
+import { RoutePaths } from 'app/data/route-paths';
 
 class DropScopes {
   public DropMain = 'DropMain';
@@ -30,11 +34,11 @@ export class ViewGuildProfileComponent implements OnInit {
   public mainsSubject = new Subject<Array<PlayerMain>>();
   public altsSubject = new Subject<Array<PlayerAlt>>();
   public altsObservable: Observable<Array<PlayerAlt>>;
-  public orderedMains = new Observable<Array<PlayerMain>>();
+  public orderedMains = new Array<PlayerMain>();
+  public orderedMainsObs = new Observable<Array<PlayerMain>>();
   public filteredPlayersObs: Observable<Array<BlizzardPlayer>>;
   public filteredPlayers: Array<BlizzardPlayer>;
   public playerFilterText: Subject<string> = new Subject<string>();
-
   public dropScopes = new DropScopes();
 
   public items = [
@@ -47,17 +51,22 @@ export class ViewGuildProfileComponent implements OnInit {
 
   constructor(
       private route: ActivatedRoute,
+      private router: Router,
       private dataService: DataService,
       private busyService: BusyService,
       private wowService: WowService,
+      private authService: AuthService,
+      private notificationService: NotificationService,
       private errorService: ErrorReportingService) {
 
-    this.orderedMains = this.mainsSubject.pipe(
-      map(m => this.sortMains(m))
-    );
+    this.orderedMainsObs = this.mainsSubject.pipe(
+      map(m => {
+        return this.sortMains(m);
+      }));
+      this.orderedMainsObs.subscribe(orderedMains => {
 
-    this.orderedMains.subscribe(mains => {
-      this.altsSubject.next(this.getAltsFromMains(mains));
+      this.altsSubject.next(this.getAltsFromMains(orderedMains));
+      this.orderedMains = orderedMains;
     });
 
     this.filteredPlayersObs = this.getPlayerFilterer();
@@ -73,6 +82,38 @@ export class ViewGuildProfileComponent implements OnInit {
     });
   }
 
+  public get hasAdminPermissions(): boolean {
+    if (!this.profile) {
+      return false;
+    }
+
+    if (!this.profile.currentPermissionLevel) {
+      return false;
+    }
+
+    return PermissionsOrder.GreaterThanOrEqual(this.profile.currentPermissionLevel, GuildProfilePermissionLevel.Officer);
+  }
+
+  public get isVisitor(): boolean {
+    if (!this.profile) {
+      return false;
+    }
+
+    return (!this.authService.isAuthenticated || !this.profile.currentPermissionLevel);
+  }
+
+  public get getAccessRequestBadge(): number {
+    if (!this.profile) {
+      return null;
+    }
+
+    if (this.profile.accessRequestCount === 0) {
+      return null;
+    }
+
+    return this.profile.accessRequestCount;
+  }
+
   public playersFilterChanged($e: any) {
     this.playerFilterText.next($e.target.value);
   }
@@ -85,6 +126,28 @@ export class ViewGuildProfileComponent implements OnInit {
 
   public getWowClassLabel(wowClass: WowClass): string {
     return this.wowService.getClassLabel(wowClass);
+  }
+
+  public requestAccess() {
+    if (!this.authService.isAuthenticated) {
+      this.errorService.reportError('You must log in to request access!');
+      return;
+    }
+
+    this.busyService.setBusy();
+    this.dataService.requestProfileAccess(this.profile.id).subscribe(
+      success => {
+        this.busyService.unsetBusy();
+        this.notificationService.showNotification('You have requested access for this profile.');
+      },
+      error => {
+        this.busyService.unsetBusy();
+        this.errorService.reportApiError(error);
+      });
+  }
+
+  public navigateToAccessRequests(): void {
+    this.router.navigate(['/' + RoutePaths.ManagePermissions, this.profile.id]);
   }
 
   public onUnassignedPlayerDropped($event: DropEvent) {
@@ -186,7 +249,7 @@ export class ViewGuildProfileComponent implements OnInit {
           map(
             s => s.trim())
         ),
-        this.orderedMains.pipe(
+        this.orderedMainsObs.pipe(
           startWith([])
         ),
         this.altsSubject.pipe(

@@ -22,7 +22,16 @@ import {
     AddAltToMain,
     IPlayerAlt,
     RemoveAltFromMain,
-    RemoveMain} from './ServiceTypes/service-types';
+    RemoveMain,
+    PendingAccessRequest,
+    IPendingAccessRequest,
+    ProfilePermissionByUser,
+    IProfilePermissionByUser,
+    FullProfilePermissions,
+    IFullProfilePermissions,
+    UpdatePermissionSet,
+    PlayerFound,
+    IPlayerFound} from './ServiceTypes/service-types';
 import { BlizzardRegionDefinition } from '../data/blizzard-realms';
 
 export enum WowClass {
@@ -70,6 +79,16 @@ export class DataService {
       .pipe(
         map(response => {
           const guildExists = new GuildFound(response as IGuildFound);
+
+          return guildExists;
+        }));
+  }
+
+  public getPlayerExists(region: string, playerName: string, realm: string): Observable<PlayerFound> {
+    return this.http.get(this.baseUrl + `api/data/playerExists?region=${region}&playerName=${playerName}&realm=${realm}`)
+      .pipe(
+        map(response => {
+          const guildExists = new PlayerFound(response as IPlayerFound);
 
           return guildExists;
         }));
@@ -124,6 +143,17 @@ export class DataService {
           return new FullGuildProfile(response);
         }));
   }
+
+  public getAccessRequests(profileId: number): Observable<Array<PendingAccessRequest>> {
+    const headers = this.getAuthorizeHeader();
+
+    return this.http.get(this.baseUrl + `api/data/getAccessRequests?profileId=${profileId}`, { headers: headers })
+      .pipe(
+        map(
+          response => (response as Array<IPendingAccessRequest>)
+            .map(i => new PendingAccessRequest(i))));
+  }
+
 
   public addPlayerMainToProfile(player: BlizzardPlayer, profile: FullGuildProfile): Observable<PlayerMain> {
     const headers = this.getAuthorizeHeader();
@@ -191,6 +221,33 @@ export class DataService {
     const headers = this.getAuthorizeHeader();
 
     return this.http.delete(this.baseUrl + `api/data/deleteProfile?profileId=${profile.id}`, { headers: headers });
+  }
+
+  public requestProfileAccess(profileId: number): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    return this.http.post(this.baseUrl + `api/data/AddAccessRequest?profileId=${profileId}`, null, { headers: headers });
+  }
+
+  public approveProfileAccessRequest(requestId: number): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    return this.http.post(this.baseUrl + `api/data/approveAccessRequest?requestId=${requestId}`, null, { headers: headers });
+  }
+
+  public getAllProfilePermissions(profileId: number): Observable<FullProfilePermissions> {
+    const headers = this.getAuthorizeHeader();
+
+    return this.http.get(this.baseUrl + `api/data/getAllProfilePermissions?profileId=${profileId}`, { headers: headers })
+      .pipe(
+        map(response => new FullProfilePermissions(response as IFullProfilePermissions))
+      );
+  }
+
+  public updatePermissions(permissionsSet: UpdatePermissionSet): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    return this.http.post(this.baseUrl + `api/data/updatePermissions`, permissionsSet, { headers: headers });
   }
 
   private getAuthorizeHeader(): HttpHeaders {

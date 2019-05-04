@@ -26,5 +26,10 @@ namespace GuildTools.Permissions
         {
             return PermissionsOrder.PermissionOrderMap[target] >= PermissionsOrder.PermissionOrderMap[compareAgainst];
         }
+
+        public static int Order(GuildProfilePermissionLevel level)
+        {
+            return PermissionsOrder.PermissionOrderMap[level];
+        }
     }
 }

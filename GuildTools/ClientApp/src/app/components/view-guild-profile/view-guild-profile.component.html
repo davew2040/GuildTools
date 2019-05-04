@@ -1,12 +1,32 @@
-<div fxLayout="row" fxLayoutAlign="center" class="main-container">
+
+<div fxLayout="column" fxLayoutAlign="start center" class="container">
+  <div class="operations-container" fxLayout="row" fxLayoutAlign="end">
+      <div *ngIf="hasAdminPermissions" fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
+          <button
+            mat-raised-button color="primary"
+            [matBadge]="getAccessRequestBadge"
+            matBadgeColor="warn"
+            (click)="navigateToAccessRequests()">Manage Permissions</button>
+      </div>
+
+      <div *ngIf="isVisitor" fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
+          <button mat-raised-button color="primary" (click)="requestAccess()">Request Access</button>
+      </div>
+</div>
+
+  <div fxLayout="row" fxLayoutAlign="center" class="main-container" style="margin-top: 15px">
     <div fxLayout="row" fxLayoutAlign="space-between" class="secondary-container" fxLayoutGap="10px">
         <div class="main-list" fxLayout="column" fxLayoutAlign="start center" fxLayoutGap="15px" fxFlex>
             <h2>Mains</h2>
 
             <mat-card class="drag-box" droppable [dragOverClass]="'dragover-class'" [dropScope]="dropScopes.DropMain" (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
 
-            <mat-accordion fxFlexAlign="stretch" class="mains-container">
-              <mat-expansion-panel class="player-main-panel" #playerPanel *ngFor="let main of orderedMains | async" droppable [dropScope]="dropScopes.DropAlt" (onDrop)="onAltDropped($event, main, playerPanel)">
+            <div class="no-mains-message" *ngIf="orderedMains.length === 0" fxLayout="column" fxLayoutAlign="center">
+              No mains have been entered.
+            </div>
+
+            <mat-accordion *ngIf="orderedMains.length > 0" fxFlexAlign="stretch" class="mains-container">
+              <mat-expansion-panel class="player-main-panel" #playerPanel *ngFor="let main of orderedMains" droppable [dropScope]="dropScopes.DropAlt" (onDrop)="onAltDropped($event, main, playerPanel)">
                   <mat-expansion-panel-header>
                       <mat-panel-title>
                         {{main.player.name}}
@@ -21,7 +41,7 @@
           </mat-accordion>
         </div>
         <div fxFlex="200px" fxLayout="column" class="players-container" >
-            <input class="player-filter" type="text" matInput placeholder="Filter" (change)="playersFilterChanged($event)" (keydown)="playersFilterChanged($event)" autocomplete="off" />
+            <input class="player-filter" type="text" matInput placeholder="Filter" (change)="playersFilterChanged($event)" (keyup)="playersFilterChanged($event)" autocomplete="off" />
 
             <div class="player-table-container">
               <mat-table *ngIf="profile" [dataSource]="filteredPlayers" class="player-table">
@@ -57,7 +77,8 @@
             </div>
         </div>
     </div>
-
+  </div>
+</div>
   <!-- FIXME: Re-implement when done  <context-menu>
         <ng-template contextMenuItem (execute)="showMessage('Hi, ' + $event.item.name)">
             Say hi!

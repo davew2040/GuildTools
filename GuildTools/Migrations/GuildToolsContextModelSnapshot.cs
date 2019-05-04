@@ -130,6 +130,30 @@ namespace GuildTools.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GuildTools.EF.Models.PendingAccessRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("CreatedOn");
+
+                    b.Property<int>("ProfileId");
+
+                    b.Property<string>("RequesterId")
+                        .IsRequired();
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.HasIndex("RequesterId");
+
+                    b.ToTable("PendingAccessRequests");
+                });
+
             modelBuilder.Entity("GuildTools.EF.Models.PlayerAlt", b =>
                 {
                     b.Property<int>("Id")
@@ -266,36 +290,15 @@ namespace GuildTools.Migrations
                     b.ToTable("StoredRealms");
                 });
 
-            modelBuilder.Entity("GuildTools.EF.Models.UserData", b =>
-                {
-                    b.Property<string>("UserId");
-
-                    b.Property<string>("GuildName")
-                        .HasMaxLength(50);
-
-                    b.Property<string>("GuildRealm")
-                        .HasMaxLength(50);
-
-                    b.Property<string>("Username")
-                        .HasMaxLength(50);
-
-                    b.HasKey("UserId");
-
-                    b.HasIndex("UserId")
-                        .HasName("IX_Users_Column");
-
-                    b.ToTable("UserData");
-                });
-
             modelBuilder.Entity("GuildTools.EF.Models.User_GuildProfilePermissions", b =>
                 {
                     b.Property<string>("UserId");
 
-                    b.Property<int>("PermissionLevelId");
-
                     b.Property<int>("ProfileId");
 
-                    b.HasKey("UserId", "PermissionLevelId", "ProfileId");
+                    b.Property<int>("PermissionLevelId");
+
+                    b.HasKey("UserId", "ProfileId");
 
                     b.HasIndex("PermissionLevelId");
 
@@ -371,6 +374,9 @@ namespace GuildTools.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken();
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired();
+
                     b.Property<string>("Email")
                         .HasMaxLength(256);
 
@@ -410,6 +416,8 @@ namespace GuildTools.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("IdentityUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -478,6 +486,25 @@ namespace GuildTools.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
+            modelBuilder.Entity("GuildTools.EF.Models.UserWithData", b =>
+                {
+                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
+
+                    b.Property<string>("GuildName")
+                        .HasMaxLength(50);
+
+                    b.Property<string>("GuildRealm")
+                        .HasMaxLength(50);
+
+                    b.Property<string>("PlayerName");
+
+                    b.Property<string>("PlayerRealm");
+
+                    b.Property<string>("PlayerRegion");
+
+                    b.HasDiscriminator().HasValue("UserWithData");
+                });
+
             modelBuilder.Entity("GuildTools.EF.Models.GuildProfile", b =>
                 {
                     b.HasOne("GuildTools.EF.Models.StoredBlizzardModels.StoredGuild", "CreatorGuild")
@@ -485,7 +512,7 @@ namespace GuildTools.Migrations
                         .HasForeignKey("CreatorGuildId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("GuildTools.EF.Models.UserData", "Creator")
+                    b.HasOne("GuildTools.EF.Models.UserWithData", "Creator")
                         .WithMany("GuildProfiles")
                         .HasForeignKey("CreatorId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -497,6 +524,19 @@ namespace GuildTools.Migrations
                     b.HasOne("GuildTools.EF.Models.StoredBlizzardModels.StoredRealm", "Realm")
                         .WithMany("Profiles")
                         .HasForeignKey("RealmId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("GuildTools.EF.Models.PendingAccessRequest", b =>
+                {
+                    b.HasOne("GuildTools.EF.Models.GuildProfile", "Profile")
+                        .WithMany("AccessRequests")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GuildTools.EF.Models.UserWithData", "Requester")
+                        .WithMany("PendingAccessRequests")
+                        .HasForeignKey("RequesterId")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
@@ -583,6 +623,11 @@ namespace GuildTools.Migrations
                         .HasForeignKey("ProfileId")
                         .HasConstraintName("FK__GuildProfilePermissions_GuildProfiles")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GuildTools.EF.Models.UserWithData", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

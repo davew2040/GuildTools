@@ -17,14 +17,28 @@ namespace GuildTools.ExternalServices.Blizzard.JsonParsing
             var jObject = JsonConvert.DeserializeObject(json) as JObject;
 
             var name = jObject["name"].ToString();
+            var realm = jObject["realm"].ToString();
             var playerClass = int.Parse(jObject["class"].ToString());
             var level = int.Parse(jObject["level"].ToString());
+
+            string guildName = string.Empty;
+            string guildRealm = string.Empty;
+
+            var guild = jObject.SelectToken("guild");
+            if (guild != null)
+            {
+                guildName = guild["name"].ToString();
+                guildRealm = guild["realm"].ToString();
+            }
 
             return new SinglePlayer()
             {
                 Name = name,
+                Realm = realm,
                 Class = playerClass,
-                Level = level
+                Level = level,
+                GuildName = guildName,
+                GuildRealm = guildRealm
             };
         }
 
@@ -33,8 +47,11 @@ namespace GuildTools.ExternalServices.Blizzard.JsonParsing
         public class SinglePlayer
         {
             public string Name { get; set; }
+            public string Realm { get; set; }
             public int Class { get; set; }
             public int Level { get; set; }
+            public string GuildName { get; set; }
+            public string GuildRealm { get; set; }
         }
     }
 }

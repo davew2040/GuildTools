@@ -27,6 +27,7 @@ export class NavMenuComponent {
 
   logout() {
     this.auth.logOut();
+    this.router.navigate(['/']);
   }
 
   navigateToLogin() {

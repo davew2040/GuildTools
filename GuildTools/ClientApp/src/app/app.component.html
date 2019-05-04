@@ -4,8 +4,9 @@
   </div>
 </div>
 
-<div class='app-body' fxLayout="column" fxLayoutAlign="start">
 
+<div class='app-body' fxLayout="column" fxLayoutAlign="start">
+  <div id="content-wrap">
     <div>
         <app-nav-menu></app-nav-menu>
     </div>
@@ -15,4 +16,8 @@
             <router-outlet></router-outlet>
         </div>
     </div>
+  </div>
+  <div class="footer" fxLayout="row" fxLayoutAlign="center">
+    <app-footer-component></app-footer-component>
+  </div>
 </div>

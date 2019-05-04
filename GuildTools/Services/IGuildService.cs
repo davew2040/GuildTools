@@ -11,9 +11,9 @@ namespace GuildTools.Services
     public interface IGuildService
     {
         Task<IEnumerable<BlizzardPlayer>> GetSlimGuildMembersDataAsync(BlizzardRegion region, string guild, string realm);
-        Task<BlizzardPlayer> GetSingleGuildMemberAsync(BlizzardRegion region, string realmName, string playerName);
+        Task<BlizzardPlayer> GetSinglePlayerAsync(BlizzardRegion region, string realmName, string playerName);
         Task<IEnumerable<GuildMemberStats>> GetLargeGuildMembersDataAsync(BlizzardRegion region, string guild, string realm);
-        Task<GuildSlim> GetGuild(BlizzardRegion region, string guild, string realm);
+        Task<GuildSlim> GetGuild(BlizzardRegion region, string realmName, string playerName);
         Task<Realm> GetRealmAsync(string realmName, BlizzardRegion region);
     }
 }

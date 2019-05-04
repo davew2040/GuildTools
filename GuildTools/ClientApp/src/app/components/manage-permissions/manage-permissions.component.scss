@@ -1,0 +1,87 @@
+.container {
+  width: 1000px;
+}
+
+.go-back {
+  margin-left: 15px;
+}
+
+.no-access-requests {
+  text-align: center;
+  margin-top: 35px;
+  margin-bottom: 75px !important;
+}
+
+.requests-table {
+  border: 1px solid rgb(143, 143, 143);
+}
+
+.requests-table th {
+  padding: 5px;
+}
+
+.requests-table td {
+  padding: 5px;
+}
+
+.request-col-header-name {
+  width: 250px;
+}
+
+.request-col-header-email {
+  width: 250px;
+}
+
+.request-col-header-createdon {
+  width: 150px;
+}
+
+.request-col-header-approve {
+  width: 150px;
+}
+
+.request-col-cell-name {
+}
+
+.request-col-cell-email {
+}
+
+.request-col-cell-createdon {
+}
+
+.request-col-cell-approve {
+}
+
+
+
+.permissions-header-name {
+}
+
+.permissions-cell-name {
+}
+
+
+.permissions-header-level {
+  flex: 0 0 125px;
+  justify-content: center;
+}
+
+.permissions-cell-level {
+  flex: 0 0 125px;
+  justify-content: center;
+}
+
+.permissions-header-remove {
+  flex: 0 0 300px;
+  justify-content: center;
+}
+
+.permissions-cell-remove {
+  flex: 0 0 300px;
+  justify-content: center;
+}
+
+.btn-save-permissions {
+  margin-top: 25px;
+  margin-right: 100px;
+}

@@ -1,9 +1,10 @@
 @import '../scss/variables.scss';
 .body-content {
-    margin-top: 25px;
+    margin-top: 15px;
     padding-left: 50px;
     padding-right: 50px;
     margin-bottom: 25px;
+
 }
 
 .busy-cover {
@@ -31,6 +32,22 @@
   border-radius: 15px;
   border-width: 0px;
   border-style: solid;
+}
+
+.app-body {
+  position: relative;
+  min-height: 100vh;
+}
+
+#content-wrap {
+  padding-bottom: 2.5rem;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 40px;            /* Footer height */
 }
 
 mat-spinner::ng-deep circle {

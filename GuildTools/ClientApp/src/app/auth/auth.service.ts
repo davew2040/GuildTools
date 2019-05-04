@@ -3,9 +3,29 @@ import { Router } from '@angular/router';
 import { AccountService } from '../services/account-service';
 import { BusyService } from '../shared-services/busy-service';
 import { Observable, Subscription } from 'rxjs';
-import { log } from 'util';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
+import { share } from 'rxjs/operators';
+import { LoginResponse } from 'app/services/ServiceTypes/service-types';
+import { StoredValuesService } from 'app/shared-services/stored-values';
+import { IUserDetails } from './user-details';
+import { JsonPipe } from '@angular/common';
 (window as any).global = window;
+
+export enum GuildProfilePermissionLevel {
+  Admin = 1,
+  Officer = 2,
+  Member = 3,
+  Visitor = 4
+}
+
+class AuthKeys {
+  public static get AccessToken() { return 'access_token'; }
+  public static get UserName() { return 'username'; }
+  public static get ExpiresAt() { return 'expires_at'; }
+  public static get ProfilePermissions() { return 'profile_permissions'; }
+
+  public static get UserDetails() { return 'user_details'; }
+}
 
 @Injectable()
 export class AuthService {
@@ -14,7 +34,8 @@ export class AuthService {
     public router: Router,
     private accountService: AccountService,
     private busyService: BusyService,
-    private errorService: ErrorReportingService) { }
+    private errorService: ErrorReportingService,
+    private valuesService: StoredValuesService) { }
 
   public appInitialization(): void {
     if (!this.isAuthenticated) {
@@ -44,10 +65,10 @@ export class AuthService {
     this.handleLoginSuccess(loginResponse);
   }
 
-  private handleLoginSuccess(authResult): void {
-    let accessToken = authResult['access_token'];
+  private handleLoginSuccess(authResult: LoginResponse): void {
+    const accessToken = authResult.authenticationDetails['access_token'];
 
-    let decoded = this.decodeTokenExpiration(accessToken);
+    const decoded = this.decodeTokenExpiration(accessToken);
 
     // Set the time that the access token will expire at
     const expiresAt = JSON.stringify((decoded.exp * 1000) + new Date().getTime());
@@ -55,12 +76,20 @@ export class AuthService {
     localStorage.setItem(AuthKeys.AccessToken, accessToken);
     localStorage.setItem(AuthKeys.ExpiresAt, expiresAt);
 
-    let userName = authResult['email'];
+    const userName = authResult.authenticationDetails['email'];
     localStorage.setItem(AuthKeys.UserName, userName);
 
-    let permissions = authResult['permissions'];
+    const userDetails = {} as IUserDetails;
 
-    localStorage.setItem(AuthKeys.ProfilePermissions, JSON.stringify(permissions));
+    userDetails.username = authResult.username;
+    userDetails.email = authResult.email;
+    userDetails.playerRegion = authResult.playerRegion;
+    userDetails.playerName = authResult.playerName;
+    userDetails.playerRealm = authResult.playerRealm;
+    userDetails.guildName = authResult.guildName,
+    userDetails.guildRealm = authResult.guildRealm;
+
+    localStorage.setItem(AuthKeys.UserDetails, JSON.stringify(userDetails));
   }
 
   public getAccessToken(): string {
@@ -71,21 +100,8 @@ export class AuthService {
     return localStorage.getItem(AuthKeys.UserName);
   }
 
-  private decodeTokenExpiration(token: string): any {
-    let base64Url = token.split('.')[1];
-    let base64 = base64Url.replace('-', '+').replace('_', '/');
-
-    return JSON.parse(window.atob(base64));
-  }
-
   public logOut(): void {
     this.clearLocalStorage();
-  }
-
-  private clearLocalStorage(): void {
-    localStorage.removeItem(AuthKeys.AccessToken);
-    localStorage.removeItem(AuthKeys.ExpiresAt);
-    localStorage.removeItem(AuthKeys.ProfilePermissions);
   }
 
   public get isAuthenticated(): boolean {
@@ -95,52 +111,32 @@ export class AuthService {
     return new Date().getTime() < expiresAt;
   }
 
-  public getPermissionLevelForProfile(profileId: number): GuildProfilePermissionLevel | null {
+  public get userDetails(): IUserDetails {
     if (!this.isAuthenticated) {
       return null;
     }
 
-    var profilePermissionsObject = JSON.parse(localStorage.get(AuthKeys.ProfilePermissions));
+    const detailsJson = localStorage.getItem(AuthKeys.UserDetails);
 
-    return GuildProfilePermissionLevel.Visitor;
-  }
-
-
-  private getPermissionSetFromResponseContent(response: any): GuildProfilePermissionSet {
-    return new GuildProfilePermissionSet();
-  }
-}
-
-export enum GuildProfilePermissionLevel {
-  Admin = 1,
-  Officer = 2,
-  Member = 3,
-  Visitor = 4
-}
-
-export class GuildProfilePermissionSet {
-  private permissionsByGuild: { [id: number]: GuildProfilePermissionLevel };
-
-  constructor() {
-    this.permissionsByGuild = {};
-  }
-
-  public addPermission(guildProfileId: number, permission: GuildProfilePermissionLevel) {
-    this.permissionsByGuild[guildProfileId] = permission;
-  }
-
-  public getPermission(guildProfileId: number): GuildProfilePermissionLevel | null {
-    if (this.permissionsByGuild[guildProfileId] === undefined) {
+    if (!detailsJson) {
       return null;
     }
 
-    return this.permissionsByGuild[guildProfileId];
-  }
-}
+    const details = JSON.parse(detailsJson) as IUserDetails;
 
-class AuthKeys {
-  public static get AccessToken() { return 'access_token'; }
-  public static get UserName() { return 'username'; }
-  public static get ExpiresAt() { return 'expires_at'; }
-  public static get ProfilePermissions() { return 'profile_permissions'; }
+    return details;
+  }
+
+  private clearLocalStorage(): void {
+    localStorage.removeItem(AuthKeys.AccessToken);
+    localStorage.removeItem(AuthKeys.ExpiresAt);
+    localStorage.removeItem(AuthKeys.ProfilePermissions);
+  }
+
+  private decodeTokenExpiration(token: string): any {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace('-', '+').replace('_', '/');
+
+    return JSON.parse(window.atob(base64));
+  }
 }

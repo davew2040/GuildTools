@@ -8,22 +8,21 @@
             </mat-select>
         </mat-form-field>
         <mat-form-field class="guild">
-            <input matInput placeholder="Guild Name:" #guild formControlName="guild" [value]="selectedGuild">
+            <input matInput placeholder="Guild Name:" #guild formControlName="guildName">
         </mat-form-field>
         <mat-form-field>
             <input type="text" placeholder="Realm" matInput [matAutocomplete]="auto" [formControl]="searchForm.controls['realm']">
 
             <mat-autocomplete #auto="matAutocomplete" [displayWith]='displayRealm'>
-                <mat-option *ngFor="let realm of filteredRealms | async" [value]="realm">{{realm.name}}</mat-option>
+                <mat-option *ngFor="let realm of filteredRealmsObservable | async" [value]="realm">{{realm.name}}</mat-option>
             </mat-autocomplete>
         </mat-form-field>
     </div>
 
     <mat-card-actions>
-        <div fxLayout="row" fxLayoutAlign="end" class="buttons-container">
-            <button mat-raised-button [disabled]="!canContinue" (click)="useGuild()">Use</button>
-            <button mat-raised-button [ngClass]='searchStateClasses' (click)="search()" style="margin-left: 17px">{{ searchStateText }}</button>
-            <button mat-raised-button style="margin-left: 10px" (click)="cancel()">Cancel</button>
+        <div fxLayout="row" fxLayoutAlign="end" class="buttons-container" style="margin-right: 10px">
+            <button mat-raised-button [disabled]="!canContinue" (click)="okay()">{{ okayButtonText }}</button>
+            <button *ngIf="showCancel" mat-raised-button style="margin-left: 10px" (click)="cancel()">Cancel</button>
         </div>
     </mat-card-actions>
 </form>

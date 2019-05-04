@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace GuildTools.Controllers.Models
 {
-    public class CreatorStub
+    public class UserStub
     {
         public string Id { get; set; }
         public string Email { get; set; }

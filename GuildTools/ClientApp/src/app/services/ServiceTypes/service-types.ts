@@ -9,12 +9,17 @@
 
 
 
-export class RegistrationCredentials implements IRegistrationCredentials {
+export class RegistrationDetails implements IRegistrationDetails {
     username!: string;
     email!: string;
     password!: string;
+    playerName?: string | undefined;
+    playerRealm?: string | undefined;
+    guildName?: string | undefined;
+    guildRealm?: string | undefined;
+    playerRegion?: string | undefined;
 
-    constructor(data?: IRegistrationCredentials) {
+    constructor(data?: IRegistrationDetails) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -28,12 +33,17 @@ export class RegistrationCredentials implements IRegistrationCredentials {
             this.username = data["username"];
             this.email = data["email"];
             this.password = data["password"];
+            this.playerName = data["playerName"];
+            this.playerRealm = data["playerRealm"];
+            this.guildName = data["guildName"];
+            this.guildRealm = data["guildRealm"];
+            this.playerRegion = data["playerRegion"];
         }
     }
 
-    static fromJS(data: any): RegistrationCredentials {
+    static fromJS(data: any): RegistrationDetails {
         data = typeof data === 'object' ? data : {};
-        let result = new RegistrationCredentials();
+        let result = new RegistrationDetails();
         result.init(data);
         return result;
     }
@@ -43,14 +53,64 @@ export class RegistrationCredentials implements IRegistrationCredentials {
         data["username"] = this.username;
         data["email"] = this.email;
         data["password"] = this.password;
+        data["playerName"] = this.playerName;
+        data["playerRealm"] = this.playerRealm;
+        data["guildName"] = this.guildName;
+        data["guildRealm"] = this.guildRealm;
+        data["playerRegion"] = this.playerRegion;
         return data; 
     }
 }
 
-export interface IRegistrationCredentials {
+export interface IRegistrationDetails {
     username: string;
     email: string;
     password: string;
+    playerName?: string | undefined;
+    playerRealm?: string | undefined;
+    guildName?: string | undefined;
+    guildRealm?: string | undefined;
+    playerRegion?: string | undefined;
+}
+
+export class ConfirmEmail implements IConfirmEmail {
+    userId!: string;
+    token!: string;
+
+    constructor(data?: IConfirmEmail) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.userId = data["userId"];
+            this.token = data["token"];
+        }
+    }
+
+    static fromJS(data: any): ConfirmEmail {
+        data = typeof data === 'object' ? data : {};
+        let result = new ConfirmEmail();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["userId"] = this.userId;
+        data["token"] = this.token;
+        return data; 
+    }
+}
+
+export interface IConfirmEmail {
+    userId: string;
+    token: string;
 }
 
 export class ResetPasswordWithTokenModel implements IResetPasswordWithTokenModel {
@@ -135,6 +195,82 @@ export class LoginCredentials implements ILoginCredentials {
 export interface ILoginCredentials {
     email: string;
     password: string;
+}
+
+export class LoginResponse implements ILoginResponse {
+    username?: string | undefined;
+    email?: string | undefined;
+    guildName?: string | undefined;
+    guildRealm?: string | undefined;
+    playerName?: string | undefined;
+    playerRealm?: string | undefined;
+    playerRegion?: string | undefined;
+    authenticationDetails?: { [key: string] : any; } | undefined;
+
+    constructor(data?: ILoginResponse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.username = data["username"];
+            this.email = data["email"];
+            this.guildName = data["guildName"];
+            this.guildRealm = data["guildRealm"];
+            this.playerName = data["playerName"];
+            this.playerRealm = data["playerRealm"];
+            this.playerRegion = data["playerRegion"];
+            if (data["authenticationDetails"]) {
+                this.authenticationDetails = {} as any;
+                for (let key in data["authenticationDetails"]) {
+                    if (data["authenticationDetails"].hasOwnProperty(key))
+                        this.authenticationDetails![key] = data["authenticationDetails"][key];
+                }
+            }
+        }
+    }
+
+    static fromJS(data: any): LoginResponse {
+        data = typeof data === 'object' ? data : {};
+        let result = new LoginResponse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["username"] = this.username;
+        data["email"] = this.email;
+        data["guildName"] = this.guildName;
+        data["guildRealm"] = this.guildRealm;
+        data["playerName"] = this.playerName;
+        data["playerRealm"] = this.playerRealm;
+        data["playerRegion"] = this.playerRegion;
+        if (this.authenticationDetails) {
+            data["authenticationDetails"] = {};
+            for (let key in this.authenticationDetails) {
+                if (this.authenticationDetails.hasOwnProperty(key))
+                    data["authenticationDetails"][key] = this.authenticationDetails[key];
+            }
+        }
+        return data; 
+    }
+}
+
+export interface ILoginResponse {
+    username?: string | undefined;
+    email?: string | undefined;
+    guildName?: string | undefined;
+    guildRealm?: string | undefined;
+    playerName?: string | undefined;
+    playerRealm?: string | undefined;
+    playerRegion?: string | undefined;
+    authenticationDetails?: { [key: string] : any; } | undefined;
 }
 
 export class GuildMemberStats implements IGuildMemberStats {
@@ -275,6 +411,102 @@ export interface IGuildFound {
     found?: boolean | undefined;
     realmName?: string | undefined;
     guildName?: string | undefined;
+}
+
+export class PlayerFound implements IPlayerFound {
+    found?: boolean | undefined;
+    playerDetails?: BlizzardPlayer | undefined;
+
+    constructor(data?: IPlayerFound) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.found = data["found"];
+            this.playerDetails = data["playerDetails"] ? BlizzardPlayer.fromJS(data["playerDetails"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): PlayerFound {
+        data = typeof data === 'object' ? data : {};
+        let result = new PlayerFound();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["found"] = this.found;
+        data["playerDetails"] = this.playerDetails ? this.playerDetails.toJSON() : <any>undefined;
+        return data; 
+    }
+}
+
+export interface IPlayerFound {
+    found?: boolean | undefined;
+    playerDetails?: BlizzardPlayer | undefined;
+}
+
+export class BlizzardPlayer implements IBlizzardPlayer {
+    playerName?: string | undefined;
+    realmName?: string | undefined;
+    class?: number | undefined;
+    level?: number | undefined;
+    guildName?: string | undefined;
+    guildRealm?: string | undefined;
+
+    constructor(data?: IBlizzardPlayer) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.playerName = data["playerName"];
+            this.realmName = data["realmName"];
+            this.class = data["class"];
+            this.level = data["level"];
+            this.guildName = data["guildName"];
+            this.guildRealm = data["guildRealm"];
+        }
+    }
+
+    static fromJS(data: any): BlizzardPlayer {
+        data = typeof data === 'object' ? data : {};
+        let result = new BlizzardPlayer();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["playerName"] = this.playerName;
+        data["realmName"] = this.realmName;
+        data["class"] = this.class;
+        data["level"] = this.level;
+        data["guildName"] = this.guildName;
+        data["guildRealm"] = this.guildRealm;
+        return data; 
+    }
+}
+
+export interface IBlizzardPlayer {
+    playerName?: string | undefined;
+    realmName?: string | undefined;
+    class?: number | undefined;
+    level?: number | undefined;
+    guildName?: string | undefined;
+    guildRealm?: string | undefined;
 }
 
 export class AddMainToProfile implements IAddMainToProfile {
@@ -631,7 +863,7 @@ export interface IRemoveMain {
 
 export class GuildProfile implements IGuildProfile {
     id?: number | undefined;
-    creator?: CreatorStub | undefined;
+    creator?: UserStub | undefined;
     profileName?: string | undefined;
     guildName?: string | undefined;
     realm?: string | undefined;
@@ -649,7 +881,7 @@ export class GuildProfile implements IGuildProfile {
     init(data?: any) {
         if (data) {
             this.id = data["id"];
-            this.creator = data["creator"] ? CreatorStub.fromJS(data["creator"]) : <any>undefined;
+            this.creator = data["creator"] ? UserStub.fromJS(data["creator"]) : <any>undefined;
             this.profileName = data["profileName"];
             this.guildName = data["guildName"];
             this.realm = data["realm"];
@@ -678,19 +910,19 @@ export class GuildProfile implements IGuildProfile {
 
 export interface IGuildProfile {
     id?: number | undefined;
-    creator?: CreatorStub | undefined;
+    creator?: UserStub | undefined;
     profileName?: string | undefined;
     guildName?: string | undefined;
     realm?: string | undefined;
     region?: string | undefined;
 }
 
-export class CreatorStub implements ICreatorStub {
+export class UserStub implements IUserStub {
     id?: string | undefined;
     email?: string | undefined;
     username?: string | undefined;
 
-    constructor(data?: ICreatorStub) {
+    constructor(data?: IUserStub) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -707,9 +939,9 @@ export class CreatorStub implements ICreatorStub {
         }
     }
 
-    static fromJS(data: any): CreatorStub {
+    static fromJS(data: any): UserStub {
         data = typeof data === 'object' ? data : {};
-        let result = new CreatorStub();
+        let result = new UserStub();
         result.init(data);
         return result;
     }
@@ -723,7 +955,7 @@ export class CreatorStub implements ICreatorStub {
     }
 }
 
-export interface ICreatorStub {
+export interface IUserStub {
     id?: string | undefined;
     email?: string | undefined;
     username?: string | undefined;
@@ -731,11 +963,13 @@ export interface ICreatorStub {
 
 export class FullGuildProfile implements IFullGuildProfile {
     id?: number | undefined;
-    creator?: CreatorStub | undefined;
+    creator?: UserStub | undefined;
     profileName?: string | undefined;
     guildName?: string | undefined;
     realm?: StoredRealm | undefined;
     region?: string | undefined;
+    currentPermissionLevel?: number | undefined;
+    accessRequestCount?: number | undefined;
     players?: BlizzardPlayer[] | undefined;
     mains?: PlayerMain[] | undefined;
 
@@ -751,11 +985,13 @@ export class FullGuildProfile implements IFullGuildProfile {
     init(data?: any) {
         if (data) {
             this.id = data["id"];
-            this.creator = data["creator"] ? CreatorStub.fromJS(data["creator"]) : <any>undefined;
+            this.creator = data["creator"] ? UserStub.fromJS(data["creator"]) : <any>undefined;
             this.profileName = data["profileName"];
             this.guildName = data["guildName"];
             this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
             this.region = data["region"];
+            this.currentPermissionLevel = data["currentPermissionLevel"];
+            this.accessRequestCount = data["accessRequestCount"];
             if (data["players"] && data["players"].constructor === Array) {
                 this.players = [] as any;
                 for (let item of data["players"])
@@ -784,6 +1020,8 @@ export class FullGuildProfile implements IFullGuildProfile {
         data["guildName"] = this.guildName;
         data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
         data["region"] = this.region;
+        data["currentPermissionLevel"] = this.currentPermissionLevel;
+        data["accessRequestCount"] = this.accessRequestCount;
         if (this.players && this.players.constructor === Array) {
             data["players"] = [];
             for (let item of this.players)
@@ -800,11 +1038,13 @@ export class FullGuildProfile implements IFullGuildProfile {
 
 export interface IFullGuildProfile {
     id?: number | undefined;
-    creator?: CreatorStub | undefined;
+    creator?: UserStub | undefined;
     profileName?: string | undefined;
     guildName?: string | undefined;
     realm?: StoredRealm | undefined;
     region?: string | undefined;
+    currentPermissionLevel?: number | undefined;
+    accessRequestCount?: number | undefined;
     players?: BlizzardPlayer[] | undefined;
     mains?: PlayerMain[] | undefined;
 }
@@ -853,14 +1093,13 @@ export interface IStoredRealm {
     regionId?: number | undefined;
 }
 
-export class BlizzardPlayer implements IBlizzardPlayer {
-    guildName?: string | undefined;
-    playerName?: string | undefined;
-    realmName?: string | undefined;
-    class?: number | undefined;
-    level?: number | undefined;
+export class PendingAccessRequest implements IPendingAccessRequest {
+    id?: number | undefined;
+    profileId?: number | undefined;
+    user?: UserStub | undefined;
+    createdOn?: Date | undefined;
 
-    constructor(data?: IBlizzardPlayer) {
+    constructor(data?: IPendingAccessRequest) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -871,38 +1110,215 @@ export class BlizzardPlayer implements IBlizzardPlayer {
 
     init(data?: any) {
         if (data) {
-            this.guildName = data["guildName"];
-            this.playerName = data["playerName"];
-            this.realmName = data["realmName"];
-            this.class = data["class"];
-            this.level = data["level"];
+            this.id = data["id"];
+            this.profileId = data["profileId"];
+            this.user = data["user"] ? UserStub.fromJS(data["user"]) : <any>undefined;
+            this.createdOn = data["createdOn"] ? new Date(data["createdOn"].toString()) : <any>undefined;
         }
     }
 
-    static fromJS(data: any): BlizzardPlayer {
+    static fromJS(data: any): PendingAccessRequest {
         data = typeof data === 'object' ? data : {};
-        let result = new BlizzardPlayer();
+        let result = new PendingAccessRequest();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["guildName"] = this.guildName;
-        data["playerName"] = this.playerName;
-        data["realmName"] = this.realmName;
-        data["class"] = this.class;
-        data["level"] = this.level;
+        data["id"] = this.id;
+        data["profileId"] = this.profileId;
+        data["user"] = this.user ? this.user.toJSON() : <any>undefined;
+        data["createdOn"] = this.createdOn ? this.createdOn.toISOString() : <any>undefined;
         return data; 
     }
 }
 
-export interface IBlizzardPlayer {
-    guildName?: string | undefined;
-    playerName?: string | undefined;
-    realmName?: string | undefined;
-    class?: number | undefined;
-    level?: number | undefined;
+export interface IPendingAccessRequest {
+    id?: number | undefined;
+    profileId?: number | undefined;
+    user?: UserStub | undefined;
+    createdOn?: Date | undefined;
+}
+
+export class FullProfilePermissions implements IFullProfilePermissions {
+    permissions?: ProfilePermissionByUser[] | undefined;
+    currentPermissions?: number | undefined;
+
+    constructor(data?: IFullProfilePermissions) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            if (data["permissions"] && data["permissions"].constructor === Array) {
+                this.permissions = [] as any;
+                for (let item of data["permissions"])
+                    this.permissions!.push(ProfilePermissionByUser.fromJS(item));
+            }
+            this.currentPermissions = data["currentPermissions"];
+        }
+    }
+
+    static fromJS(data: any): FullProfilePermissions {
+        data = typeof data === 'object' ? data : {};
+        let result = new FullProfilePermissions();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (this.permissions && this.permissions.constructor === Array) {
+            data["permissions"] = [];
+            for (let item of this.permissions)
+                data["permissions"].push(item.toJSON());
+        }
+        data["currentPermissions"] = this.currentPermissions;
+        return data; 
+    }
+}
+
+export interface IFullProfilePermissions {
+    permissions?: ProfilePermissionByUser[] | undefined;
+    currentPermissions?: number | undefined;
+}
+
+export class ProfilePermissionByUser implements IProfilePermissionByUser {
+    user?: UserStub | undefined;
+    permissionLevel?: number | undefined;
+
+    constructor(data?: IProfilePermissionByUser) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.user = data["user"] ? UserStub.fromJS(data["user"]) : <any>undefined;
+            this.permissionLevel = data["permissionLevel"];
+        }
+    }
+
+    static fromJS(data: any): ProfilePermissionByUser {
+        data = typeof data === 'object' ? data : {};
+        let result = new ProfilePermissionByUser();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["user"] = this.user ? this.user.toJSON() : <any>undefined;
+        data["permissionLevel"] = this.permissionLevel;
+        return data; 
+    }
+}
+
+export interface IProfilePermissionByUser {
+    user?: UserStub | undefined;
+    permissionLevel?: number | undefined;
+}
+
+export class UpdatePermissionSet implements IUpdatePermissionSet {
+    profileId?: number | undefined;
+    updates?: UpdatePermission[] | undefined;
+
+    constructor(data?: IUpdatePermissionSet) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.profileId = data["profileId"];
+            if (data["updates"] && data["updates"].constructor === Array) {
+                this.updates = [] as any;
+                for (let item of data["updates"])
+                    this.updates!.push(UpdatePermission.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): UpdatePermissionSet {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdatePermissionSet();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["profileId"] = this.profileId;
+        if (this.updates && this.updates.constructor === Array) {
+            data["updates"] = [];
+            for (let item of this.updates)
+                data["updates"].push(item.toJSON());
+        }
+        return data; 
+    }
+}
+
+export interface IUpdatePermissionSet {
+    profileId?: number | undefined;
+    updates?: UpdatePermission[] | undefined;
+}
+
+export class UpdatePermission implements IUpdatePermission {
+    delete?: boolean | undefined;
+    userId?: string | undefined;
+    newPermissionLevel?: number | undefined;
+
+    constructor(data?: IUpdatePermission) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.delete = data["delete"];
+            this.userId = data["userId"];
+            this.newPermissionLevel = data["newPermissionLevel"];
+        }
+    }
+
+    static fromJS(data: any): UpdatePermission {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdatePermission();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["delete"] = this.delete;
+        data["userId"] = this.userId;
+        data["newPermissionLevel"] = this.newPermissionLevel;
+        return data; 
+    }
+}
+
+export interface IUpdatePermission {
+    delete?: boolean | undefined;
+    userId?: string | undefined;
+    newPermissionLevel?: number | undefined;
 }
 
 export class Realm implements IRealm {

@@ -18,6 +18,5 @@ namespace GuildTools.Data
 {
     public interface IAccountRepository
     {
-        Task AddOrUpdateUsername(string userId, string username);
     }
 }

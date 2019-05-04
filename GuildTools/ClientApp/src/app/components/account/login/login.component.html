@@ -1,0 +1,36 @@
+<div class="container" fxLayout="column" fxLayoutAlign="start center">
+  <div fxLayout="row" fxLayoutAlign="start" fxFill>
+      <h1>Login</h1>
+  </div>
+
+  <mat-divider fxFill></mat-divider>
+
+  <div class="login-holder">
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" fxLayout="column">
+
+      <mat-form-field style="margin-top: 25px;">
+          <input matInput type="text" placeholder="Login" id="email" required [(ngModel)]="model.Email" #email="ngModel" [ngModelOptions]="{standalone: true}">
+      </mat-form-field>
+
+      <div [hidden]="email.valid || email.pristine" class="alert alert-danger">Email is required.</div>
+
+      <mat-form-field style="margin-top: 25px;">
+        <input matInput type="password" placeholder="Password" id="password" required [(ngModel)]="model.Password" #password="ngModel" [ngModelOptions]="{standalone: true}">
+      </mat-form-field>
+
+      <div [hidden]="password.valid || password.pristine" class="alert alert-danger">Password is required.</div>
+
+      <div *ngIf="this.errors.length !== 0" class="alert alert-danger">
+        <div *ngFor="let error of errors">{{error}}</div>
+      </div>
+
+      <div fxLayout="row" fxLayoutAlign="end" style="margin-top: 25px">
+        <button mat-raised-button color="primary" type="submit" class="btn btn-success" style="width: 200px">Login</button>
+      </div>
+
+      <div class="forgot-password">
+        <a (click)="forgotPassword()">I forgot my password</a>
+      </div>
+    </form>
+  </div>
+</div>

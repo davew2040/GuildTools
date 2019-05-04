@@ -17,7 +17,7 @@
                 </mat-list>
             </div> -->
 
-            <mat-table [dataSource]="tableDataSource" *ngIf="myGuildProfiles.length > 0" class="profile-table">
+            <mat-table [dataSource]="tableDataSource" *ngIf="myGuildProfiles.length > 0" class="profile-table standard-table">
                 <ng-container matColumnDef="profileName">
                     <mat-header-cell class="profilename-header-cell" mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
                     <mat-cell class="profilename-main-cell"  mat-cell *matCellDef="let profile">
@@ -46,7 +46,7 @@
             </mat-table>
         </div>
 
-        <div fxFlex fxLayout="row" fxLayoutAlign="end"><input style="width: 150px; margin-top: 25px" mat-raised-button type="button" (click)="addProfile()" value="Add New Profile" />
-            <div></div>
+        <div fxFlex fxLayout="row" fxLayoutAlign="end">
+          <button style="width: 150px; margin-top: 25px" mat-raised-button type="button" color="primary" (click)="addProfile()">Add New Profile</button>
         </div>
     </div>

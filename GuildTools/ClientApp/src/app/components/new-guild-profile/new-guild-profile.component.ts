@@ -36,23 +36,41 @@ export class NewGuildProfileComponent implements OnInit {
   }
 
   public get guildDisplay(): string {
-    if (!this.selectedGuild) {
+    if (!this.guildFormControl.value) {
       return '';
     }
     else {
-      return this.selectedGuild.name;
+      return this.guildFormControl.value;
     }
   }
 
-  public findGuild(): void {
+  public findGuild(): boolean {
     const dialogRef = this.dialog.open(FindGuildDialogComponent, {
       disableClose: true,
       width: '600px'
     });
 
     dialogRef.afterClosed().subscribe(result => {
+      if (!result) {
+        return;
+      }
+
       this.selectedGuild = result;
+
+      const formattedGuild = `${this.selectedGuild.name} - ${this.selectedGuild.realm}`;
+      this.guildFormControl.setValue(formattedGuild);
+      this.newProfileForm.markAsPristine();
     });
+
+    return false;
+  }
+
+  public get canSubmit(): boolean {
+    if (!this.newProfileForm || !this.newProfileForm.controls) {
+      return false;
+    }
+
+    return this.newProfileForm.valid && this.guildFormControl.value;
   }
 
   public createProfile(): void {
@@ -73,10 +91,10 @@ export class NewGuildProfileComponent implements OnInit {
     this.busyService.setBusy();
 
     this.dataService.createNewGuildProfile(
-      this.newProfileForm.controls['profileName'].value,
-      this.selectedGuild.name,
-      this.selectedGuild.realm,
-      this.selectedGuild.region)
+        this.newProfileForm.controls['profileName'].value,
+        this.selectedGuild.name,
+        this.selectedGuild.realm,
+        this.selectedGuild.region)
       .subscribe(
         success => {
           this.created.emit();
@@ -92,9 +110,20 @@ export class NewGuildProfileComponent implements OnInit {
     const formBuilder = new FormBuilder();
 
     const form = formBuilder.group({
-      profileName: ['', Validators.required]
+      profileName: ['', Validators.required],
+      guildName: new FormControl('', Validators.required)
     });
 
+    form.controls['guildName'].disable();
+
     return form;
+  }
+
+  private get guildFormControl(): AbstractControl {
+    if (!this.newProfileForm.controls) {
+      return null;
+    }
+
+    return this.newProfileForm.controls['guildName'];
   }
 }

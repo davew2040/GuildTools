@@ -118,12 +118,12 @@ namespace GuildTools.Services
             member.TotalHonorableKills = pvpStats.TotalHonorableKills;
         }
 
-        public async Task<GuildSlim> GetGuild(BlizzardRegion region, string guild, string realm)
+        public async Task<GuildSlim> GetGuild(BlizzardRegion region, string realmName, string guildName)
         {
-            guild = BlizzardService.FormatGuildName(guild);
-            realm = BlizzardService.FormatRealmName(realm);
+            guildName = BlizzardService.FormatGuildName(guildName);
+            realmName = BlizzardService.FormatRealmName(realmName);
 
-            var result = await this.blizzardService.GetGuildAsync(guild, realm, region);
+            var result = await this.blizzardService.GetGuildAsync(guildName, realmName, region);
 
             if (BlizzardService.DidGetFail(result))
             {
@@ -161,9 +161,14 @@ namespace GuildTools.Services
             });
         }
 
-        public async Task<BlizzardPlayer> GetSingleGuildMemberAsync(BlizzardRegion region, string realmName, string playerName)
+        public async Task<BlizzardPlayer> GetSinglePlayerAsync(BlizzardRegion region, string realmName, string playerName)
         {
             var playerJson = await this.blizzardService.GetPlayerAsync(playerName, realmName, region);
+
+            if (BlizzardService.DidGetFail(playerJson))
+            {
+                return null;
+            }
 
             var player = PlayerParsing.GetSinglePlayerFromJson(playerJson);
 
@@ -171,7 +176,10 @@ namespace GuildTools.Services
             {
                 PlayerName = player.Name,
                 Class = player.Class,
-                Level = player.Level
+                Level = player.Level,
+                GuildName = player.GuildName,
+                GuildRealm = player.GuildRealm,
+                RealmName = player.Realm
             };
         }
     }

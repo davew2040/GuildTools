@@ -33,6 +33,8 @@ using System.Security.Claims;
 using GuildTools.Cache.SpecificCaches.CacheInterfaces;
 using Microsoft.AspNetCore.Diagnostics;
 using GuildTools.ErrorHandling;
+using GuildTools.EF.Models;
+using System.Collections.Generic;
 
 namespace GuildTools
 {
@@ -63,7 +65,7 @@ namespace GuildTools
                 .AddDbContext<GuildToolsContext>(options => options.UseSqlServer(Configuration.GetValue<string>("ConnectionStrings:Database")));
 
             services
-                .AddIdentity<IdentityUser, IdentityRole>(x =>
+                .AddIdentity<UserWithData, IdentityRole>(x =>
                 {
                     x.Password.RequiredLength = 8;
                     x.ClaimsIdentity.UserIdClaimType = GuildToolsClaims.UserId;
@@ -118,7 +120,6 @@ namespace GuildTools
 
             services.AddScoped<IKeyedResourceManager, KeyedResourceManager>();
             services.AddScoped<IDatabaseCache, DatabaseCache>();
-            services.AddScoped<IDataRepository, DataRepository>();
             services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddScoped<IBlizzardService, BlizzardService>();
             services.AddScoped<IGuildService, GuildService>();
@@ -149,6 +150,20 @@ namespace GuildTools
                 {
                     Version = "v1",
                     Title = "CSV TEST API",
+                });
+
+                c.AddSecurityDefinition("Bearer",
+                    new ApiKeyScheme
+                    {
+                        In = "header",
+                        Description = "Please enter into field the word 'Bearer' following by space and JWT",
+                        Name = "Authorization",
+                        Type = "apiKey"
+                    });
+
+                c.AddSecurityRequirement(new Dictionary<string, IEnumerable<string>>
+                {
+                    { "Bearer", Enumerable.Empty<string>() },
                 });
 
                 // comments path
@@ -186,17 +201,18 @@ namespace GuildTools
             app.UseSpaStaticFiles();
             app.UseAuthentication();
 
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "CSV Test API V1");
-            });
-
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller}/{action=Index}/{id?}");
+            });
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "CSV Test API V1");
+                c.RoutePrefix = "api";
             });
 
             app.UseSpa(spa =>
@@ -219,10 +235,18 @@ namespace GuildTools
         {
             services.AddScoped<IRealmsCache, RealmsCache>();
             services.AddScoped<IGuildCache, GuildCache>();
+            services.AddScoped<IPlayerCache, PlayerCache>();
         }
 
         private void UpdateClaims(IServiceProvider serviceProvider)
         {
+            var adminUsername = "Krom";
+            var adminPlayername = "Kromp";
+            var adminPlayerRealm = "Burning Blade";
+            var adminGuild = "Longanimity";
+            var adminGuildRealm = "Burning Blade";
+            var adminRegion = "US";
+
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
             foreach (var roleName in GuildToolsRoles.AllRoleNames)
@@ -237,7 +261,7 @@ namespace GuildTools
                 }
             }
 
-            var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            var userManager = serviceProvider.GetRequiredService<UserManager<UserWithData>>();
 
             var adminEmail = Configuration.GetValue<string>("AdminCredentials:Email");
 
@@ -245,7 +269,7 @@ namespace GuildTools
 
             if (null == adminUser)
             {
-                adminUser = new IdentityUser { UserName = adminEmail, Email = adminEmail };
+                adminUser = new UserWithData { UserName = adminUsername, Email = adminEmail };
 
                 var adminPassword = Configuration.GetValue<string>("AdminCredentials:Password");
                 var result = userManager.CreateAsync(adminUser, adminPassword).Result;
@@ -270,35 +294,28 @@ namespace GuildTools
 
             var context = serviceProvider.GetRequiredService<GuildToolsContext>();
 
-            if (context.UserData.FirstOrDefault(u => u.UserId == adminUser.Id) == null)
-            {
-                context.UserData.Add(new EF.Models.UserData()
-                {
-                    UserId = adminUser.Id,
-                    GuildName = "Longanimity",
-                    Username = "Krom",
-                    GuildRealm = "burning-blade"
-                });
-                context.SaveChanges();
-            }
+            var efAdminUser = context.UserData.FirstOrDefault(u => u.Id == adminUser.Id);
+
+            efAdminUser.EmailConfirmed = true;
+            efAdminUser.Email = adminEmail;
+            efAdminUser.UserName = adminUsername;
+            efAdminUser.PlayerName = adminPlayername;
+            efAdminUser.PlayerRealm = adminPlayerRealm;
+            efAdminUser.PlayerRegion = adminRegion;
+            efAdminUser.GuildName = adminGuild;
+            efAdminUser.GuildRealm = adminGuildRealm;
+
+            context.SaveChanges();
         }
 
         private void MigrateDatabase(IApplicationBuilder app)
         {
-            try
+            using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
+                .CreateScope())
             {
-                using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
-                    .CreateScope())
-                {
 
-                    serviceScope.ServiceProvider.GetService<GuildToolsContext>()
-                        .Database.Migrate();
-                }
-            }
-            catch (Exception e)
-            {
-                var msg = e.Message;
-                var stacktrace = e.StackTrace;
+                serviceScope.ServiceProvider.GetService<GuildToolsContext>()
+                    .Database.Migrate();
             }
         }
     }

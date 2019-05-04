@@ -1,30 +1,31 @@
-<div class='new-guild-profile-container' fxLayout="column" fxLayoutAlign="start center" fxFill>
-    <form class="new-guild-profile-form" [formGroup]="newProfileForm" #form (submit)="createProfile()">
-        <h2>New Guild Profile</h2>
+<div fxLayout="column" fxLayoutAlign="start center" fxFill>
+  <div class='new-guild-profile-container' >
+      <form class="new-guild-profile-form" [formGroup]="newProfileForm" #form (ngSubmit)="createProfile()" fxFill fxLayout="column" fxLayoutAlign="start center">
 
-        <mat-divider></mat-divider>
-
-        <div fxLayout="column" fxLayoutAlign="space-between" fxLayoutGap="25px" style='margin-top: 25px;'>
-
-            <div fxLayout="column">
-                <label>Profile Name:</label>
-                <input formControlName="profileName" fxFlex>
-            </div>
-
-            <div fxLayout="column">
-                <label>Guild:</label>
-                <div fxLayout="row" fxLayoutAlign="space-between center" fxLayoutGap="15px">
-                    <input type="text" disabled [value]="guildDisplay" fxFlex style="height:28px">
-                    <button mat-raised-button (click)="findGuild()">Find</button>
-                </div>
-                <div *ngIf="errors.length !== 0" class="alert alert-danger" style="margin-top: 5px">
-                    <div *ngFor="let error of errors">{{error}}</div>
-                </div>
-            </div>
+        <div fxLayout="row" fxLayoutAlign="start" fxFill>
+          <h2>New Guild Profile</h2>
         </div>
+          <mat-divider fxFill></mat-divider>
 
-        <div fxLayout="row" fxLayoutAlign="space-evenly" style='margin-top: 25px;'>
-            <button type="submit" mat-raised-button [disabled]="!newProfileForm.valid">Create Profile</button>
-        </div>
-    </form>
+          <div class="form-contents" fxLayout="column" fxLayoutAlign="space-between" fxLayoutGap="10px" style='margin-top: 25px;'>
+              <mat-form-field >
+                <input matInput type="text" placeholder="Profile Name" formControlName="profileName">
+              </mat-form-field>
+
+              <div fxLayout="row" fxLayoutAlign="start start">
+                <mat-form-field fxFlex>
+                  <input matInput type="text" placeholder="Guild" formControlName="guildName">
+                </mat-form-field>
+                <button mat-raised-button (click)="findGuild()" style="margin-left: 55px; margin-top: 0px;">Find</button>
+              </div>
+              <div *ngIf="errors.length !== 0" class="alert alert-danger" style="margin-top: 5px">
+                  <div *ngFor="let error of errors">{{error}}</div>
+              </div>
+          </div>
+
+          <div fxLayout="row" fxLayoutAlign="space-evenly" style='margin-top: 25px;'>
+              <button type="submit" mat-raised-button [disabled]="!canSubmit" color="primary">Create Profile</button>
+          </div>
+      </form>
+  </div>
 </div>

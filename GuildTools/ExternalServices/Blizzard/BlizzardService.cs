@@ -96,7 +96,7 @@ namespace GuildTools.ExternalServices.Blizzard
         public async Task<string> GetPlayerAsync(string player, string realm, BlizzardRegion region)
         {
             var regionString = GetRegionString(region);
-            var url = $"https://{regionString}.api.blizzard.com/wow/character/{realm}/{player}?locale=en_US&access_token={{0}}";
+            var url = $"https://{regionString}.api.blizzard.com/wow/character/{realm}/{player}?fields=guild&locale=en_US&access_token={{0}}";
 
             return await DoBlizzardGet(url, region);
         }

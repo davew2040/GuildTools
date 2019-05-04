@@ -1,6 +1,15 @@
 @import 'scss/variables.scss';
+
+.container {
+  margin-bottom: 50px;
+}
+
 h2 {
     font-weight: bold;
+}
+
+.operations-container {
+  width: 1000px;
 }
 
 .secondary-container {
@@ -16,6 +25,13 @@ h2 {
   border-radius: 50px;
   width: 300px;
   text-align: center;
+}
+
+.no-mains-message {
+  margin-top: 125px;
+  text-align: center;
+  color: #2a2961;
+  font-size: 24px;
 }
 
 .main-list {}

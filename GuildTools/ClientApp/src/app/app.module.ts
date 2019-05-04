@@ -12,8 +12,8 @@ import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { AuthService } from './auth/auth.service';
 import { CallbackComponent } from './callback/callback.component';
 import { UserSettingsComponent } from './user-settings/user-settings.component';
-import { RegisterUserComponent } from './register-user/register-user.component';
-import { LoginComponent } from './login/login.component';
+import { RegisterUserComponent } from './components/account/register-user/register-user.component';
+import { LoginComponent } from './components/account/login/login.component';
 import { GuildStatsComponent } from './guild-stats/guild-stats.component';
 import { BlizzardService } from './blizzard-services/blizzard-services';
 import { DataService } from './services/data-services';
@@ -37,6 +37,13 @@ import { WowService } from './services/wow-service';
 import { NgDragDropModule } from 'ng-drag-drop';
 import { ViewMainComponent } from './components/view-main/view-main.component';
 import { ErrorReportingService } from './shared-services/error-reporting-service';
+import { FooterComponentComponent } from './components/footer-component/footer-component.component';
+import { ConfirmRegistrationComponent } from './components/account/confirm-registration/confirm-registration.component';
+import { NotificationService } from './shared-services/notification-service';
+import { ManagePermissionsComponent } from './components/manage-permissions/manage-permissions.component';
+import { StoredValuesService } from './shared-services/stored-values';
+import { FindPlayerComponent } from './components/find-player/find-player.component';
+import { FindPlayerDialogComponent } from './dialogs/find-player-dialog.component/find-player-dialog.component';
 
 @NgModule({
   declarations: [
@@ -56,10 +63,15 @@ import { ErrorReportingService } from './shared-services/error-reporting-service
     FindGuildDialogComponent,
     NewGuildProfileComponent,
     FindGuildComponent,
+    FindPlayerComponent,
+    FindPlayerDialogComponent,
     BusyDirective,
     NewProfilePageComponent,
     ViewGuildProfileComponent,
-    ViewMainComponent
+    ViewMainComponent,
+    FooterComponentComponent,
+    ConfirmRegistrationComponent,
+    ManagePermissionsComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -73,8 +85,17 @@ import { ErrorReportingService } from './shared-services/error-reporting-service
     ContextMenuModule.forRoot(),
     NgDragDropModule.forRoot()
   ],
-  providers: [AuthService, BlizzardService, DataService, AccountService, BusyService, WowService, ErrorReportingService],
+  providers: [
+    AuthService,
+    BlizzardService,
+    DataService,
+    AccountService,
+    WowService,
+    ErrorReportingService,
+    BusyService,
+    NotificationService,
+    StoredValuesService],
   bootstrap: [AppComponent],
-  entryComponents: [FindGuildDialogComponent]
+  entryComponents: [FindGuildDialogComponent, FindPlayerDialogComponent]
 })
 export class AppModule { }

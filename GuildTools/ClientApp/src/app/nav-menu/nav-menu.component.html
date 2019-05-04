@@ -1,9 +1,9 @@
 <div class="main-nav" fxLayout="row" fxLayoutAlign="space-between" fxFill>
     <div>
         <h1 class="page-title">Guild Tools</h1>
-        <div class="links-container">
-            <a [routerLink]="['./guildstats']">Stats</a>
+        <div class="links-container" fxLayout="row" fxLayout="start">
             <a [routerLink]="['./myprofiles']">My Guild Profiles</a>
+            <a [routerLink]="['./guildstats']">Stats</a>
         </div>
     </div>
     <div class="auth-content" fxLayout="column" fxLayoutAlign="start">
@@ -18,7 +18,7 @@
       </button>
             </div>
         </div>
-        <div *ngIf="auth.isAuthenticated">
+      <div *ngIf="auth.isAuthenticated">
             <div fxLayout="row" fxLayoutAlign="end">
                 <button id="btnLogout" mat-button-raised class="btn btn-primary" (click)="logout()" type="button">
           Log Out

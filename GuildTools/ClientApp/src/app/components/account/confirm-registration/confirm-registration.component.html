@@ -1,0 +1,15 @@
+
+
+<div class='container' fxLayout="column" fxLayoutAlign="start stretch">
+  <div *ngIf="isWaiting">
+    Processing confirmation...
+  </div>
+  <div *ngIf="isConfirmed" fxLayout="column" fxLayoutAlign="start center">
+    <div>Confirmation successful!</div>
+
+    <button mat-raised-button style="margin-top: 25px" class="btn-login" (click)="navigateToLogin()">Log In</button>
+  </div>
+  <div *ngIf="isFailed">
+    Confirmation failed.
+  </div>
+</div>

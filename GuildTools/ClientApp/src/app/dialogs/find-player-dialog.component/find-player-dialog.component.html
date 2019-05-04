@@ -1,0 +1,6 @@
+<mat-card>
+    <mat-card-title class='header'>Find Character</mat-card-title>
+
+    <mat-divider></mat-divider>
+    <app-find-player (playerSelected)="handlePlayerSelected($event)" (cancelled)="handleChildCancelled()"></app-find-player>
+</mat-card>

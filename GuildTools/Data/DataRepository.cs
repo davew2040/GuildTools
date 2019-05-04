@@ -17,6 +17,8 @@ using EfModels = GuildTools.EF.Models;
 using ControllerModels = GuildTools.Controllers.Models;
 using GuildTools.ErrorHandling;
 using System.Net;
+using GuildTools.Controllers.InputModels;
+using GuildTools.Permissions;
 
 namespace GuildTools.Data
 {
@@ -104,20 +106,16 @@ namespace GuildTools.Data
             {
                 var result = await this.context.BigValueCache.FindAsync(key);
 
-                if (result != null)
+                if (result != null && result.ExpiresOn < DateTime.Now)
                 {
                     this.context.BigValueCache.Remove(result);
-                }
 
-                if (result.ExpiresOn < DateTime.Now)
-                {
-                    this.context.BigValueCache.Remove(result);
+                    await this.context.SaveChangesAsync();
                 }
-
-                await this.context.SaveChangesAsync();
 
                 this.context.BigValueCache.Add(new BigValueCache()
                 {
+                    Id = key,
                     Value = value,
                     ExpiresOn = DateTime.Now + duration
                 });
@@ -159,7 +157,7 @@ namespace GuildTools.Data
             return await this.context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public async Task<RepositoryModels.FullGuildProfile> GetFullGuildProfile(int id)
+        public async Task<RepositoryModels.FullGuildProfile> GetFullGuildProfileAsync(int id)
         {
             var profile = await this.context.GuildProfile
                 .Include(x => x.Creator)
@@ -173,6 +171,7 @@ namespace GuildTools.Data
                     .ThenInclude(y => y.Region)
                 .Include(x => x.User_GuildProfilePermissions)
                     .ThenInclude(y => y.PermissionLevel)
+                .Include(x => x.AccessRequests)
                 .AsNoTracking()
                 .SingleOrDefaultAsync(x => x.Id == id);
 
@@ -182,7 +181,7 @@ namespace GuildTools.Data
             };
         }
 
-        public async Task DeleteProfile(int id)
+        public async Task DeleteProfileAsync(int id)
         {
             var profileTask = this.context.GuildProfile.FirstOrDefaultAsync(p => p.Id == id);
             var playersTask = this.context.StoredPlayers.Where(x => x.ProfileId == id).ToListAsync();
@@ -275,6 +274,207 @@ namespace GuildTools.Data
             return newAlt;
         }
 
+
+        public async Task AddAccessRequestAsync(string userId, int profileId)
+        {
+            this.context.PendingAccessRequests.Add(new EfModels.PendingAccessRequest()
+            {
+                RequesterId = userId,
+                CreatedOn = DateTime.Now,
+                ProfileId = profileId
+            });
+
+            await this.context.SaveChangesAsync();
+        }
+
+        public async Task ApproveAccessRequest(int requestId)
+        {
+            var request = await this.context.PendingAccessRequests.SingleOrDefaultAsync(x => x.Id == requestId);
+
+            if (request == null)
+            {
+                throw new UserReportableError("Unable to locate this access request.", (int)HttpStatusCode.BadRequest);
+            }
+
+            this.context.User_GuildProfilePermissions.Add(new User_GuildProfilePermissions()
+            {
+                PermissionLevelId = (int)EfEnums.GuildProfilePermissionLevel.Member,
+                ProfileId = request.ProfileId,
+                UserId = request.RequesterId
+            });
+
+            this.context.PendingAccessRequests.Remove(request);
+
+            await this.context.SaveChangesAsync();
+        }
+
+
+        public async Task<IEnumerable<RepositoryModels.ProfilePermissionByUser>> GetFullProfilePermissions(string userId, int profileId)
+        {
+            var profile = await this.context
+                .GuildProfile
+                .Include(x => x.User_GuildProfilePermissions)
+                    .ThenInclude(x => x.User)
+                .Include(x => x.User_GuildProfilePermissions)
+                .FirstOrDefaultAsync(x => x.Id == profileId);
+
+            return profile.User_GuildProfilePermissions.Select(x => new RepositoryModels.ProfilePermissionByUser()
+            {
+                User = x.User,
+                PermissionLevel = (EfEnums.GuildProfilePermissionLevel)x.PermissionLevelId
+            });
+        }
+
+        public async Task UpdatePermissions(string userId, IEnumerable<UpdatePermission> newPermissions, int profileId, bool isAdmin)
+        {
+            var activePermission = await this.GetProfilePermissionForUserAsync(profileId, userId);
+
+            var newPermissionsUserIds = newPermissions.Select(x => x.UserId);
+            var newPermissionsUsersList = await this.context.UserData.Where(x => newPermissionsUserIds.Contains(x.Id)).AsNoTracking().ToListAsync();
+            var newPermissionsUsers = newPermissionsUsersList.ToDictionary(
+                value => value.Id, value => value);
+            var notFoundUsers = newPermissions.Where(desired => !newPermissionsUsers.ContainsKey(desired.UserId)).Select(x => x.UserId);
+
+            if (notFoundUsers.Any())
+            {
+                throw new UserReportableError($"Could not locate users with the following ID's: { string.Join(", ", notFoundUsers)}", 
+                    (int)HttpStatusCode.BadRequest);
+            }
+
+            var taskList = new List<Task>();
+
+            using (var transaction = await this.context.Database.BeginTransactionAsync())
+            {
+                foreach (UpdatePermission permission in newPermissions)
+                {
+                    var targetUser = newPermissionsUsers[permission.UserId];
+
+                    taskList.Add(UpdateSinglePermission(userId, activePermission.Value, permission, targetUser, profileId, isAdmin));
+                }
+
+                Task.WaitAll(taskList.ToArray());
+
+                transaction.Commit();
+            }
+        }
+
+        private async Task UpdateSinglePermission(
+            string originatingUserId,
+            EfEnums.GuildProfilePermissionLevel activeLevel, 
+            UpdatePermission newPermission, 
+            UserWithData targetUser,
+            int profileId,
+            bool isAdmin)
+        {
+            if (newPermission.Delete)
+            {
+                await this.UpdateSinglePermissionDelete(originatingUserId, activeLevel, targetUser, profileId, isAdmin);
+            }
+            else
+            {
+                await this.UpdateSinglePermissionUpdate(originatingUserId, activeLevel, newPermission, targetUser, profileId, isAdmin);
+            }
+        }
+
+        private async Task UpdateSinglePermissionDelete(
+            string originatingUserId,
+            EfEnums.GuildProfilePermissionLevel activeLevel,
+            UserWithData targetUser,
+            int profileId,
+            bool isAdmin)
+        {
+            int activeUserPermissionOrder = PermissionsOrder.Order(activeLevel);
+
+            if (originatingUserId == targetUser.Id)
+            {
+                throw new UserReportableError($"User may not delete their own permissions.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var targetUserLevel = await this.GetProfilePermissionForUserAsync(profileId, targetUser.Id);
+            if (targetUserLevel == null)
+            {
+                throw new UserReportableError($"User {targetUser.Id} has not requested access!", (int)HttpStatusCode.BadRequest);
+            }
+
+            int targetUserOrder = PermissionsOrder.Order(targetUserLevel.Value);
+
+            if (!isAdmin)
+            {
+                if (activeUserPermissionOrder < PermissionsOrder.Order(EfEnums.GuildProfilePermissionLevel.Officer))
+                {
+                    throw new UserReportableError("User does not have permissions to delete a user.", (int)HttpStatusCode.Unauthorized);
+                }
+
+                if (activeUserPermissionOrder < targetUserOrder)
+                {
+                    throw new UserReportableError("User can't delete another user with a higher permission level.", (int)HttpStatusCode.Unauthorized);
+                }
+            }
+
+            var targetPermission = await this.context.User_GuildProfilePermissions.SingleOrDefaultAsync(
+                x => x.ProfileId == profileId && x.UserId == targetUser.Id);
+
+            this.context.User_GuildProfilePermissions.Remove(targetPermission);
+
+            await this.context.SaveChangesAsync();
+        }
+
+        private async Task UpdateSinglePermissionUpdate(
+            string originatingUserId,
+            EfEnums.GuildProfilePermissionLevel activeLevel,
+            UpdatePermission newPermission,
+            UserWithData targetUser,
+            int profileId, 
+            bool isAdmin)
+        {
+            int newPermissionOrder = PermissionsOrder.Order((EfEnums.GuildProfilePermissionLevel)newPermission.NewPermissionLevel);
+            int activeUserPermissionOrder = PermissionsOrder.Order(activeLevel);
+
+            if (originatingUserId == targetUser.Id)
+            {
+                throw new UserReportableError($"User may not modify their own permissions.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var targetUserLevel = await this.GetProfilePermissionForUserAsync(profileId, targetUser.Id);
+            if (targetUserLevel == null)
+            {
+                throw new UserReportableError($"User {targetUser.Id} has not requested access!", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (!isAdmin)
+            {
+                int targetUserOrder = PermissionsOrder.Order(targetUserLevel.Value);
+
+                if (newPermissionOrder > PermissionsOrder.Order(activeLevel))
+                {
+                    throw new UserReportableError("User can't adjust permissions beyond their own level.", (int)HttpStatusCode.BadRequest);
+                }
+
+                if (PermissionsOrder.Order(activeLevel) < PermissionsOrder.Order(targetUserLevel.Value))
+                {
+                    throw new UserReportableError($"Can't adjust permissions on user with a higher permission level.",
+                        (int)HttpStatusCode.BadRequest);
+                }
+            }
+
+            var targetPermission = await this.context.User_GuildProfilePermissions.FirstOrDefaultAsync(
+                x => x.ProfileId == profileId && x.UserId == targetUser.Id);
+
+            targetPermission.PermissionLevelId = newPermission.NewPermissionLevel;
+
+            await this.context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<EfModels.PendingAccessRequest>> GetAccessRequestsAsync(int profileId)
+        {
+            return await this.context
+                .PendingAccessRequests
+                .Include(x => x.Requester)
+                .Where(x => x.ProfileId == profileId)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public async Task RemoveAltFromMainAsync(int mainId, int altId, int profileId)
         {
             var mainTask = this.context.PlayerMains.Include(p => p.Alts)
@@ -353,6 +553,11 @@ namespace GuildTools.Data
             item.Value = value;
             await this.context.SaveChangesAsync();
             return;
+        }
+
+        public void Dispose()
+        {
+            this.context.Dispose();
         }
     }
 }

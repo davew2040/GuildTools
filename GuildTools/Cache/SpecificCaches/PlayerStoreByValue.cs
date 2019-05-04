@@ -62,7 +62,7 @@ namespace GuildTools.Cache.SpecificCaches
         {
             return (async () =>
             {
-                var result = await this.guildService.GetSingleGuildMemberAsync(
+                var result = await this.guildService.GetSinglePlayerAsync(
                     BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegion)realm.Region.Id),
                     realm.Slug,
                     name);

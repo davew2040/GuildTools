@@ -1,0 +1,28 @@
+<form class="find-guild-form" [formGroup]="searchForm">
+    <div fxLayout="row" fxLayoutAlign="space-between" fxLayoutGap="10px" class='selection-container' style='margin-top: 25px;'>
+
+        <mat-form-field class="region">
+            <mat-label>Region</mat-label>
+            <mat-select [formControlName]="regionControlName" name="regionName">
+                <mat-option *ngFor="let region of regions" [value]="region">{{region.Name}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field class="guild">
+            <input matInput placeholder="Character Name:" [formControlName]="playerNameControlName">
+        </mat-form-field>
+        <mat-form-field>
+            <input type="text" placeholder="Realm" matInput [matAutocomplete]="auto" [formControlName]="realmNameControlName">
+
+            <mat-autocomplete #auto="matAutocomplete" [displayWith]='displayRealm'>
+                <mat-option *ngFor="let realm of filteredRealmsObservable | async" [value]="realm">{{realm.name}}</mat-option>
+            </mat-autocomplete>
+        </mat-form-field>
+    </div>
+
+    <mat-card-actions>
+        <div fxLayout="row" fxLayoutAlign="end" class="buttons-container">
+            <button mat-raised-button [disabled]="!canContinue" (click)="okay()">Use</button>
+            <button mat-raised-button style="margin-left: 10px" (click)="cancel()">Cancel</button>
+        </div>
+    </mat-card-actions>
+</form>

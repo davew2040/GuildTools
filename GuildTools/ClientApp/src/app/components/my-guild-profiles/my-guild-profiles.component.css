@@ -18,14 +18,6 @@ a:hover {
   border: 1px solid #CCC;
 }
 
-.profile-table mat-row:nth-child(even) {
-  background: rgb(233, 233, 233);
-}
-
-.profile-table mat-row:nth-child(odd) {
-  background: rgb(235, 235, 238);
-}
-
 .profilename-header-cell {
   flex: 0 0 300px;
 }

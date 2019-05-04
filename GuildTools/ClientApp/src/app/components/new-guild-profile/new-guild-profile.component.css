@@ -5,5 +5,9 @@
 }
 
 .new-guild-profile-container {
-    width: 400px;
+    width: 600px;
+}
+
+.form-contents {
+  width: 400px;
 }

@@ -24,7 +24,7 @@ namespace GuildTools.EF.Models
 
         public int? CreatorGuildId { get; set; }
 
-        public virtual UserData Creator { get; set; }
+        public virtual UserWithData Creator { get; set; }
         public virtual IEnumerable<User_GuildProfilePermissions> User_GuildProfilePermissions { get; set; }
         public virtual StoredRealm Realm { get; set; }
         public virtual StoredGuild CreatorGuild { get; set; }
@@ -32,5 +32,6 @@ namespace GuildTools.EF.Models
         public virtual ICollection<StoredPlayer> Players { get; set; }
         public virtual ICollection<PlayerMain> PlayerMains { get; set; }
         public virtual ICollection<PlayerAlt> PlayerAlts { get; set; }
+        public virtual ICollection<PendingAccessRequest> AccessRequests { get; set; }
     }
 }

@@ -13,10 +13,11 @@ using EfEnums = GuildTools.EF.Models.Enums;
 using EfModels = GuildTools.EF.Models;
 using RepoModels = GuildTools.Data.RepositoryModels;
 using ControllerModels = GuildTools.Controllers.Models;
+using ControllerInputModels = GuildTools.Controllers.InputModels;
 
 namespace GuildTools.Data
 {
-    public interface IDataRepository
+    public interface IDataRepository : IDisposable
     {
         Task<EfEnums.GuildProfilePermissionLevel?> GetProfilePermissionForUserAsync(int profileId, string userId);
         Task CreateGuildProfileAsync(string creatorId, string profileName, GuildSlim guild, EfModels.StoredBlizzardModels.StoredRealm realm, EfEnums.GameRegion region);
@@ -26,8 +27,14 @@ namespace GuildTools.Data
         Task RemoveMainAsync(int mainId, int profileId);
         Task<IdentityUser> GetUserByEmailAddressAsync(string email);
         Task<IEnumerable<EfModels.GuildProfile>> GetGuildProfilesForUserAsync(string userId);
-        Task<RepoModels.FullGuildProfile> GetFullGuildProfile(int id);
-        Task DeleteProfile(int id);
+        Task<RepoModels.FullGuildProfile> GetFullGuildProfileAsync(int id);
+        Task DeleteProfileAsync(int id);
+
+        Task AddAccessRequestAsync(string userId, int profileId);
+        Task<IEnumerable<EfModels.PendingAccessRequest>> GetAccessRequestsAsync(int profileId);
+        Task ApproveAccessRequest(int requestId);
+        Task<IEnumerable<RepoModels.ProfilePermissionByUser>> GetFullProfilePermissions(string userId, int profileId);
+        Task UpdatePermissions(string userId, IEnumerable<ControllerInputModels.UpdatePermission> newPermissions, int profileId, bool isAdmin);
 
         Task<CachedValue> GetCachedValueAsync(string key);
         Task SetCachedValueAsync(string key, string value, TimeSpan duration);

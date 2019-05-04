@@ -23,13 +23,14 @@ namespace GuildTools.EF
         public virtual DbSet<GuildProfile> GuildProfile { get; set; }
         public virtual DbSet<EfModels.GuildProfilePermissionLevel> GuildProfilePermissions { get; set; }
         public virtual DbSet<User_GuildProfilePermissions> User_GuildProfilePermissions { get; set; }
-        public virtual DbSet<UserData> UserData { get; set; }
+        public virtual DbSet<UserWithData> UserData { get; set; }
         public virtual DbSet<ValueStore> ValueStore { get; set; }
         public virtual DbSet<PlayerMain> PlayerMains { get; set; }
         public virtual DbSet<PlayerAlt> PlayerAlts { get; set; }
         public virtual DbSet<StoredRealm> StoredRealms { get; set; }
         public virtual DbSet<StoredPlayer> StoredPlayers { get; set; }
         public virtual DbSet<StoredGuild> StoredGuilds { get; set; }
+        public virtual DbSet<PendingAccessRequest> PendingAccessRequests { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -79,18 +80,11 @@ namespace GuildTools.EF
 
             });
 
-            modelBuilder.Entity<UserData>(entity =>
+            modelBuilder.Entity<UserWithData>(entity =>
             {
-                entity.HasIndex(e => e.UserId)
-                    .HasName("IX_Users_Column");
-
-                entity.Property(e => e.UserId).ValueGeneratedNever();
-
                 entity.Property(e => e.GuildName).HasMaxLength(50);
 
                 entity.Property(e => e.GuildRealm).HasMaxLength(50);
-
-                entity.Property(e => e.Username).HasMaxLength(50);
             });
 
             modelBuilder.Entity<ValueStore>(entity =>
@@ -104,7 +98,7 @@ namespace GuildTools.EF
 
             modelBuilder.Entity<User_GuildProfilePermissions>(entity =>
             {
-                entity.HasKey(e => new { e.UserId, e.PermissionLevelId, e.ProfileId });
+                entity.HasKey(e => new { e.UserId, e.ProfileId });
 
                 entity
                     .HasOne(e => e.PermissionLevel)
@@ -203,6 +197,23 @@ namespace GuildTools.EF
                 entity.HasOne(e => e.Player)
                     .WithOne(f => f.Alt)
                     .HasForeignKey<PlayerAlt>(e => e.PlayerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+
+            modelBuilder.Entity<PendingAccessRequest>(entity =>
+            {
+                entity.HasIndex(e => e.Id);
+                entity.HasIndex(e => e.ProfileId);
+
+                entity.HasOne(e => e.Profile)
+                    .WithMany(f => f.AccessRequests)
+                    .HasForeignKey(e => e.ProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Requester)
+                    .WithMany(f => f.PendingAccessRequests)
+                    .HasForeignKey(e => e.RequesterId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 

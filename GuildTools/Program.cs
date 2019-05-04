@@ -31,17 +31,19 @@ namespace GuildTools
                 {
                     var env = hostingContext.HostingEnvironment;
 
-                    var keyVaultEndpoint = GetKeyVaultEndpoint();
-                    if (!string.IsNullOrEmpty(keyVaultEndpoint))
+                    if (!env.IsDevelopment())
                     {
-                        var azureServiceTokenProvider = new AzureServiceTokenProvider();
-                        var keyVaultClient = new KeyVaultClient(
-                            new KeyVaultClient.AuthenticationCallback(
-                                azureServiceTokenProvider.KeyVaultTokenCallback));
-                        config.AddAzureKeyVault(
-                            keyVaultEndpoint, keyVaultClient, new DefaultKeyVaultSecretManager());
+                        var keyVaultEndpoint = GetKeyVaultEndpoint();
+                        if (!string.IsNullOrEmpty(keyVaultEndpoint))
+                        {
+                            var azureServiceTokenProvider = new AzureServiceTokenProvider();
+                            var keyVaultClient = new KeyVaultClient(
+                                new KeyVaultClient.AuthenticationCallback(
+                                    azureServiceTokenProvider.KeyVaultTokenCallback));
+                            config.AddAzureKeyVault(
+                                keyVaultEndpoint, keyVaultClient, new DefaultKeyVaultSecretManager());
+                        }
                     }
-
                     if (env.IsDevelopment())
                     {
                         config.AddUserSecrets<Startup>();

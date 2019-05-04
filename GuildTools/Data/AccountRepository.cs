@@ -27,29 +27,5 @@ namespace GuildTools.Data
         {
             this.context = context;
         }
-
-        public async Task AddOrUpdateUsername(string userId, string username)
-        {
-            var user = await this.context.UserData.FirstOrDefaultAsync(u => u.UserId == userId);
-
-            if (user == null)
-            {
-                user = new UserData()
-                {
-                    UserId = userId,
-                    Username = username
-                };
-
-                this.context.UserData.Add(user);
-
-                await this.context.SaveChangesAsync();
-
-                return;
-            }
-
-            user.Username = username;
-
-            await this.context.SaveChangesAsync();
-        }
     }
 }
