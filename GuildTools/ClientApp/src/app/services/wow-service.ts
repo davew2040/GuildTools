@@ -1,5 +1,7 @@
 import { BlizzardRegionDefinition } from '../data/blizzard-realms';
 import { Injectable, Inject } from '@angular/core';
+import { StoredPlayer } from './ServiceTypes/service-types';
+import { BlizzardService } from 'app/blizzard-services/blizzard-services';
 
 export enum WowClass {
    Warrior = 1,
@@ -72,6 +74,24 @@ export class WowService {
   private wowClassTags: WowClassTags;
   private wowClassLabels: WowClassLabels;
 
+  public static viewBlizzardProfile(player: StoredPlayer) {
+    const url = `https://worldofwarcraft.com/en-us/character/`
+      + `${player.regionName.toLowerCase()}/${BlizzardService.FormatRealm(player.realm.slug)}/${player.name}`;
+    window.open(url, '_blank');
+  }
+
+  public static viewRaiderIo(player: StoredPlayer) {
+    const url = `https://www.raider.io/characters/${player.regionName.toLowerCase()}`
+      + `/${BlizzardService.FormatRealm(player.realm.slug)}/${player.name}`;
+    window.open(url, '_blank');
+  }
+
+  public static viewWowProgress(player: StoredPlayer) {
+    const url = `https://wowprogress.com/character/${player.regionName.toLowerCase()}`
+      + `/${BlizzardService.FormatRealm(player.realm.slug)}/${player.name}`;
+    window.open(url, '_blank');
+  }
+
   constructor(
     @Inject('BASE_URL') private baseUrl: string) {
       this.wowClassTags = new WowClassTags();
@@ -81,6 +101,7 @@ export class WowService {
   public getClassTag(targetClass: WowClass): string {
     return this.wowClassTags.getClassTag(targetClass);
   }
+
   public getClassLabel(targetClass: WowClass): string {
     return this.wowClassLabels.getClassLabel(targetClass);
   }

@@ -1,5 +1,8 @@
 @import 'scss/variables.scss';
 
+$dragover-background: rgb(93, 126, 93);
+$dragover-text: white;
+
 .container {
   margin-bottom: 50px;
 }
@@ -60,6 +63,42 @@ h2 {
   background: #e0e2e7;
 }
 
+::ng-deep .player-main-panel:nth-child(odd) mat-expansion-panel-header:focus {
+  background: #d2d9ec !important;
+}
+
+::ng-deep .player-main-panel:nth-child(even) mat-expansion-panel-header:focus {
+  background: #e0e2e7 !important;
+}
+
+::ng-deep .player-main-panel:nth-child(odd) mat-expansion-panel-header:hover {
+  background: #d2d9ec !important;
+}
+
+::ng-deep .player-main-panel:nth-child(even) mat-expansion-panel-header:hover {
+  background: #e0e2e7 !important;
+}
+
+::ng-deep mat-expansion-panel.dragover-class > mat-expansion-panel-header {
+  background-color: $dragover-background !important;
+}
+
+::ng-deep mat-expansion-panel.dragover-class .mat-expansion-panel-header-title {
+  color: $dragover-text !important;
+}
+
+::ng-deep mat-expansion-panel.dragover-class .mat-expansion-panel-header-description {
+  color: $dragover-text !important;
+}
+
+::ng-deep mat-expansion-panel.dragover-class .mat-expansion-indicator:after {
+  color: $dragover-text !important;
+}
+
+.drag-box.dragover-class {
+  background: $dragover-background;
+  color: $dragover-text;
+}
 
 .player-table-container {
   overflow-y: auto;
@@ -115,10 +154,6 @@ h2 {
     padding-right: 10px;
     flex: 0 0 60px;
     font-size: 11px;
-}
-
-.dragover-class {
-  background: #96ce9d;
 }
 
 .my-draggable {

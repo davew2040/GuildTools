@@ -44,6 +44,9 @@ import { ManagePermissionsComponent } from './components/manage-permissions/mana
 import { StoredValuesService } from './shared-services/stored-values';
 import { FindPlayerComponent } from './components/find-player/find-player.component';
 import { FindPlayerDialogComponent } from './dialogs/find-player-dialog.component/find-player-dialog.component';
+import { LandingPageComponent } from './components/landing-page/landing-page.component';
+import { PlayerNotesComponentComponent } from './components/player-notes-component/player-notes-component.component';
+import { ConfirmationDialogComponent } from './dialogs/confirmation-dialog.component/confirmation-dialog.component';
 
 @NgModule({
   declarations: [
@@ -71,7 +74,10 @@ import { FindPlayerDialogComponent } from './dialogs/find-player-dialog.componen
     ViewMainComponent,
     FooterComponentComponent,
     ConfirmRegistrationComponent,
-    ManagePermissionsComponent
+    ManagePermissionsComponent,
+    LandingPageComponent,
+    PlayerNotesComponentComponent,
+    ConfirmationDialogComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -96,6 +102,6 @@ import { FindPlayerDialogComponent } from './dialogs/find-player-dialog.componen
     NotificationService,
     StoredValuesService],
   bootstrap: [AppComponent],
-  entryComponents: [FindGuildDialogComponent, FindPlayerDialogComponent]
+  entryComponents: [FindGuildDialogComponent, FindPlayerDialogComponent, ConfirmationDialogComponent]
 })
 export class AppModule { }

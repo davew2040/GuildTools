@@ -1,0 +1,11 @@
+<div *ngIf="isAdmin"><a *ngIf="!isEditing" (click)="startEditing()">Edit</a>
+  <a *ngIf="isEditing" (click)="cancelEditing()">Cancel</a>
+</div>
+
+<div *ngIf="!isEditing" fxFill>{{ text }}</div>
+<div *ngIf="isEditing" fxFill fxLayout="column" fxLayoutAlign="start end">
+  <mat-form-field fxFill>
+      <textarea matInput [(ngModel)]="editingText" class="edit-textarea"></textarea>
+    </mat-form-field>
+    <button mat-raised-button class='save-button' (click)="saveEdits()">Save</button>
+</div>

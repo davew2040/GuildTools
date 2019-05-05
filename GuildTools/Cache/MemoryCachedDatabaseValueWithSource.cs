@@ -57,8 +57,9 @@ namespace GuildTools.Cache
                     return null;
                 }
 
-                this.SetMemoryCacheEntry(key, foundFromSource.Result);
                 await databaseStorer(foundFromSource.Result);
+                var retrieved = await databaseRetriever();
+                this.SetMemoryCacheEntry(key, retrieved);
 
                 return foundFromSource.Result;
             }

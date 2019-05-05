@@ -35,8 +35,8 @@ export class FindPlayerComponent implements OnInit {
   public get playerNameControlName() { return 'playerName'; }
   public get realmNameControlName() { return 'realm'; }
 
-  @Output() playerSelected = new EventEmitter<SelectedPlayer>()
-  @Output() cancelled = new EventEmitter();
+  @Output() public playerSelected = new EventEmitter<SelectedPlayer>()
+  @Output() public cancelled = new EventEmitter();
 
   constructor(
       public busyService: BusyService,

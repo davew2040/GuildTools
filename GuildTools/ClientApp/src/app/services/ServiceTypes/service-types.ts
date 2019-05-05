@@ -631,6 +631,9 @@ export class StoredPlayer implements IStoredPlayer {
     level?: number | undefined;
     class?: number | undefined;
     guildId?: number | undefined;
+    realmId?: number | undefined;
+    regionName?: string | undefined;
+    realm?: StoredRealm | undefined;
 
     constructor(data?: IStoredPlayer) {
         if (data) {
@@ -648,6 +651,9 @@ export class StoredPlayer implements IStoredPlayer {
             this.level = data["level"];
             this.class = data["class"];
             this.guildId = data["guildId"];
+            this.realmId = data["realmId"];
+            this.regionName = data["regionName"];
+            this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
         }
     }
 
@@ -665,6 +671,9 @@ export class StoredPlayer implements IStoredPlayer {
         data["level"] = this.level;
         data["class"] = this.class;
         data["guildId"] = this.guildId;
+        data["realmId"] = this.realmId;
+        data["regionName"] = this.regionName;
+        data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
         return data; 
     }
 }
@@ -675,6 +684,9 @@ export interface IStoredPlayer {
     level?: number | undefined;
     class?: number | undefined;
     guildId?: number | undefined;
+    realmId?: number | undefined;
+    regionName?: string | undefined;
+    realm?: StoredRealm | undefined;
 }
 
 export class PlayerAlt implements IPlayerAlt {
@@ -715,6 +727,54 @@ export class PlayerAlt implements IPlayerAlt {
 export interface IPlayerAlt {
     id?: number | undefined;
     player?: StoredPlayer | undefined;
+}
+
+export class StoredRealm implements IStoredRealm {
+    id?: number | undefined;
+    name?: string | undefined;
+    slug?: string | undefined;
+    regionId?: number | undefined;
+
+    constructor(data?: IStoredRealm) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.name = data["name"];
+            this.slug = data["slug"];
+            this.regionId = data["regionId"];
+        }
+    }
+
+    static fromJS(data: any): StoredRealm {
+        data = typeof data === 'object' ? data : {};
+        let result = new StoredRealm();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["name"] = this.name;
+        data["slug"] = this.slug;
+        data["regionId"] = this.regionId;
+        return data; 
+    }
+}
+
+export interface IStoredRealm {
+    id?: number | undefined;
+    name?: string | undefined;
+    slug?: string | undefined;
+    regionId?: number | undefined;
 }
 
 export class AddAltToMain implements IAddAltToMain {
@@ -818,6 +878,46 @@ export class RemoveAltFromMain implements IRemoveAltFromMain {
 export interface IRemoveAltFromMain {
     altId?: number | undefined;
     mainId?: number | undefined;
+    profileId?: number | undefined;
+}
+
+export class PromoteAltToMain implements IPromoteAltToMain {
+    altId?: number | undefined;
+    profileId?: number | undefined;
+
+    constructor(data?: IPromoteAltToMain) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.altId = data["altId"];
+            this.profileId = data["profileId"];
+        }
+    }
+
+    static fromJS(data: any): PromoteAltToMain {
+        data = typeof data === 'object' ? data : {};
+        let result = new PromoteAltToMain();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["altId"] = this.altId;
+        data["profileId"] = this.profileId;
+        return data; 
+    }
+}
+
+export interface IPromoteAltToMain {
+    altId?: number | undefined;
     profileId?: number | undefined;
 }
 
@@ -1049,50 +1149,6 @@ export interface IFullGuildProfile {
     mains?: PlayerMain[] | undefined;
 }
 
-export class StoredRealm implements IStoredRealm {
-    id?: number | undefined;
-    name?: string | undefined;
-    regionId?: number | undefined;
-
-    constructor(data?: IStoredRealm) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.name = data["name"];
-            this.regionId = data["regionId"];
-        }
-    }
-
-    static fromJS(data: any): StoredRealm {
-        data = typeof data === 'object' ? data : {};
-        let result = new StoredRealm();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["name"] = this.name;
-        data["regionId"] = this.regionId;
-        return data; 
-    }
-}
-
-export interface IStoredRealm {
-    id?: number | undefined;
-    name?: string | undefined;
-    regionId?: number | undefined;
-}
-
 export class PendingAccessRequest implements IPendingAccessRequest {
     id?: number | undefined;
     profileId?: number | undefined;
@@ -1319,6 +1375,50 @@ export interface IUpdatePermission {
     delete?: boolean | undefined;
     userId?: string | undefined;
     newPermissionLevel?: number | undefined;
+}
+
+export class EditNotes implements IEditNotes {
+    profileId?: number | undefined;
+    playerMainId?: number | undefined;
+    newNotes?: string | undefined;
+
+    constructor(data?: IEditNotes) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.profileId = data["profileId"];
+            this.playerMainId = data["playerMainId"];
+            this.newNotes = data["newNotes"];
+        }
+    }
+
+    static fromJS(data: any): EditNotes {
+        data = typeof data === 'object' ? data : {};
+        let result = new EditNotes();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["profileId"] = this.profileId;
+        data["playerMainId"] = this.playerMainId;
+        data["newNotes"] = this.newNotes;
+        return data; 
+    }
+}
+
+export interface IEditNotes {
+    profileId?: number | undefined;
+    playerMainId?: number | undefined;
+    newNotes?: string | undefined;
 }
 
 export class Realm implements IRealm {

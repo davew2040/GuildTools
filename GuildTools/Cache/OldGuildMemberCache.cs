@@ -21,23 +21,20 @@ namespace GuildTools.Cache
         private IGuildService guildMemberService;
         private const string SqlCacheType = "GuildMember";
         private readonly TimeSpan CacheEntryDuration = new TimeSpan(24, 0, 0);
-        private readonly IBackgroundTaskQueue backgroundQueue;
+        private readonly IBackgroundTaskQueue backgroundTaskQueue;
         private readonly IDataRepository dataRepository;
-        private readonly IServiceProvider serviceProvider;
 
         public OldGuildMemberCache(
-            IConfiguration configuration, 
             IGuildService guildMemberService,
-            IBackgroundTaskQueue backgroundQueue, 
             IDataRepository dataRepository,
-            IServiceProvider serviceProvider)
+            IBackgroundTaskQueue backgroundTaskQueue)
+
         {
             this.cache = new Dictionary<string, ExpiringData<IEnumerable<GuildMemberStats>>>();
             this.guildMemberService = guildMemberService;
             this.updatingSet = new HashSet<string>();
-            this.backgroundQueue = backgroundQueue;
             this.dataRepository = dataRepository;
-            this.serviceProvider = serviceProvider;
+            this.backgroundTaskQueue = backgroundTaskQueue;
         }
 
         public async Task<IEnumerable<GuildMemberStats>> GetAsync(BlizzardRegion region, string realm, string guild)
@@ -70,16 +67,16 @@ namespace GuildTools.Cache
 
             if (!this.updatingSet.Contains(key))
             {
-                this.backgroundQueue.QueueBackgroundWorkItem(async token =>
+                this.backgroundTaskQueue.QueueBackgroundWorkItem(async (token, serviceProvider) =>
                 {
-                    await this.Refresh(region, guild, realm);
+                    await this.Refresh(region, guild, realm, serviceProvider);
                 });
             }
 
             return null;
         }
 
-        public async Task Refresh(BlizzardRegion region, string guild, string realm)
+        public async Task Refresh(BlizzardRegion region, string guild, string realm, IServiceProvider serviceProvider)
         {
             string key = this.GetKey(realm, guild);
 

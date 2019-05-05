@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ViewChildren } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewChildren, AfterViewChecked, QueryList, ElementRef, ViewContainerRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FullGuildProfile, BlizzardPlayer, PlayerMain, PlayerAlt } from 'app/services/ServiceTypes/service-types';
 import { DataService, WowClass } from 'app/services/data-services';
@@ -8,17 +8,23 @@ import { ContextMenuComponent } from 'ngx-contextmenu';
 import { Observable, Subject, combineLatest } from 'rxjs';
 import { startWith, map, filter } from 'rxjs/operators';
 import { DropEvent } from 'ng-drag-drop';
-import { MatExpansionPanel } from '@angular/material';
-import { RemoveAltEvent, RemoveMainEvent } from '../view-main/view-main.component';
+import { MatExpansionPanel, MatDialog } from '@angular/material';
+import { RemoveAltEvent, RemoveMainEvent, EditPlayerNotesEvent, EditOfficerNotesEvent, PromoteAltToMainEvent } from '../view-main/view-main.component';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 import { PermissionsOrder } from 'app/permissions/permissions-order';
 import { GuildProfilePermissionLevel, AuthService } from 'app/auth/auth.service';
 import { NotificationService } from 'app/shared-services/notification-service';
 import { RoutePaths } from 'app/data/route-paths';
+import { ConfirmationDialogComponent } from 'app/dialogs/confirmation-dialog.component/confirmation-dialog.component';
 
 class DropScopes {
   public DropMain = 'DropMain';
   public DropAlt = 'DropAlt';
+}
+
+interface ComponentWithElement {
+  component: MatExpansionPanel;
+  element: ElementRef;
 }
 
 @Component({
@@ -26,7 +32,7 @@ class DropScopes {
   templateUrl: './view-guild-profile.component.html',
   styleUrls: ['./view-guild-profile.component.scss']
 })
-export class ViewGuildProfileComponent implements OnInit {
+export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
   public profile: FullGuildProfile = null;
   public playerColumns: Array<string> = ['playerName', 'playerLevel'];
   public unassignedPlayers = new Subject<Array<BlizzardPlayer>>();
@@ -40,14 +46,12 @@ export class ViewGuildProfileComponent implements OnInit {
   public filteredPlayers: Array<BlizzardPlayer>;
   public playerFilterText: Subject<string> = new Subject<string>();
   public dropScopes = new DropScopes();
+  public isAdmin = false;
+  public playerFlaggedForExpansion: number = null;
 
-  public items = [
-    { name: 'John', otherProperty: 'Foo' },
-    { name: 'Joe', otherProperty: 'Bar' }
-  ];
-
-  @ViewChild(ContextMenuComponent) public basicMenu: ContextMenuComponent;
-  @ViewChildren('playerPanel') private expansionPanels: MatExpansionPanel;
+  @ViewChild(ContextMenuComponent) public contextMenu: ContextMenuComponent;
+  @ViewChildren('playerPanel',  { read: MatExpansionPanel  }) public playerPanelComponents: QueryList<MatExpansionPanel>;
+  @ViewChildren('playerPanel',  { read: ElementRef  }) public playerPanelElements: QueryList<ElementRef>;
 
   constructor(
       private route: ActivatedRoute,
@@ -57,6 +61,7 @@ export class ViewGuildProfileComponent implements OnInit {
       private wowService: WowService,
       private authService: AuthService,
       private notificationService: NotificationService,
+      private dialog: MatDialog,
       private errorService: ErrorReportingService) {
 
     this.orderedMainsObs = this.mainsSubject.pipe(
@@ -80,6 +85,38 @@ export class ViewGuildProfileComponent implements OnInit {
     this.route.params.subscribe(params => {
       this.updateRouteParams(params);
     });
+  }
+
+  ngAfterViewChecked(): void {
+
+    if (this.playerFlaggedForExpansion) {
+      // Couldn't find a way to get both the components and elements in the same list, so had
+      //   to generate it manually
+      const pairArray = new Array<ComponentWithElement>();
+
+      const componentsArray = this.playerPanelComponents.toArray();
+      const elementsArray = this.playerPanelElements.toArray();
+
+      for (let i = 0; i < componentsArray.length; i++) {
+        pairArray.push({
+          component: componentsArray[i],
+          element: elementsArray[i]
+        });
+      }
+
+      pairArray.some(pair => {
+        const elementIdString = pair.element.nativeElement.getAttribute('data-main-id');
+        const elementId = parseInt(elementIdString, 10);
+
+        if (elementId === this.playerFlaggedForExpansion) {
+          pair.component.expanded = true;
+          this.playerFlaggedForExpansion = null;
+
+          return true;
+        }
+        return false;
+      });
+    }
   }
 
   public get hasAdminPermissions(): boolean {
@@ -216,6 +253,27 @@ export class ViewGuildProfileComponent implements OnInit {
           });
   }
 
+  public removeMainWithConfirmation(main: PlayerMain): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      disableClose: true,
+      data: {
+        title: 'Are you sure?',
+        confirmationText: 'Are you sure you want to delete this player?'
+      },
+      width: '400px'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result) {
+        return;
+      }
+
+      this.removeMain({
+        main: main
+      } as RemoveMainEvent);
+    });
+  }
+
   public removeMain(event: RemoveMainEvent): void {
     const main = event.main;
 
@@ -233,6 +291,69 @@ export class ViewGuildProfileComponent implements OnInit {
             this.busyService.unsetBusy();
             this.errorService.reportApiError(error);
           });
+  }
+
+  public viewBlizzardProfile(main: PlayerMain) {
+    WowService.viewBlizzardProfile(main.player);
+  }
+
+  public viewRaiderIo(main: PlayerMain) {
+    WowService.viewRaiderIo(main.player);
+  }
+
+  public viewWowProgress(main: PlayerMain) {
+    WowService.viewWowProgress(main.player);
+  }
+
+  public onAltPromoted(event: PromoteAltToMainEvent) {
+    this.busyService.setBusy();
+
+    this.dataService.promoteAltToMain(event.alt.id, this.profile).subscribe(
+      success => {
+        this.busyService.unsetBusy();
+
+        const oldMainIndex = this.mains.findIndex(x => x.id === event.main.id);
+        this.mains.splice(oldMainIndex, 1);
+        this.mains.push(success);
+        this.mainsSubject.next(this.mains);
+
+        this.playerFlaggedForExpansion = success.id;
+      },
+      error => {
+        this.busyService.unsetBusy();
+        this.errorService.reportApiError(error);
+      }
+    );
+  }
+
+  public onPlayerNotesChanged(event: EditPlayerNotesEvent): void {
+    this.busyService.setBusy();
+      this.dataService.editPlayerNotes(event.main, this.profile, event.newNotes)
+        .subscribe(
+          success => {
+            this.busyService.unsetBusy();
+          },
+          error => {
+            this.busyService.unsetBusy();
+            this.errorService.reportApiError(error);
+          });
+  }
+
+  public onOfficerNotesChanged(event: EditOfficerNotesEvent): void {
+    this.busyService.setBusy();
+      this.dataService.editOfficerNotes(event.main, this.profile, event.newNotes)
+        .subscribe(
+          success => {
+            this.busyService.unsetBusy();
+          },
+          error => {
+            this.busyService.unsetBusy();
+            this.errorService.reportApiError(error);
+          });
+  }
+
+  public showMessage(message: string) {
+    alert(message);
   }
 
   private getPlayerFilterer(): Observable<Array<BlizzardPlayer>> {
@@ -276,6 +397,8 @@ export class ViewGuildProfileComponent implements OnInit {
       success => {
         this.busyService.unsetBusy();
         this.profile = success;
+        this.isAdmin = this.profile.currentPermissionLevel
+          && PermissionsOrder.GreaterThanOrEqual(this.profile.currentPermissionLevel, GuildProfilePermissionLevel.Officer);
 
         this.unassignedPlayers.next(this.profile.players);
 

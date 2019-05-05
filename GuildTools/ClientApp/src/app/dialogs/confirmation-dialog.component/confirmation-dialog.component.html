@@ -1,0 +1,15 @@
+<mat-card>
+    <mat-card-header class='header'>{{ title }}</mat-card-header>
+
+    <mat-card-content>
+    <mat-divider></mat-divider>
+    <div fxLayout="column" fxLayoutAlign="start center">
+      <div class="confirmation-text" style="margin-top: 25px;">{{confirmationText}}</div>
+
+      <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="25px" style="margin-top: 25px;">
+        <button mat-raised-button (click)="handleConfirmed()">Yes</button>
+        <button mat-raised-button (click)="handleCancelled()">No</button>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>

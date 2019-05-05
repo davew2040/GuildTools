@@ -9,16 +9,16 @@ a:hover {
   margin-right: 5px;
 }
 
-.alts-title {
+.group-title {
   font-family: Arial, Helvetica, sans-serif;
   font-weight: extra-bold;
   font-size: 20px !important;
 }
 
 .alts-table {
-  border-style: dotted;
+  border-style: solid;
   border-collapse: separate;
-  border-color: #7a81aa;
+  border-color: #d1d1d1;
   border-width: 1px;
   margin-left: 10px;
   margin-right: 10px;
@@ -50,4 +50,11 @@ a:hover {
 
 .no-alts {
   text-align: center;
+}
+
+.notes-container {
+  padding-left: 15px;
+  padding-top: 8px;
+  padding-right: 5px;
+  padding-bottom: 5px;
 }

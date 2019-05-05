@@ -1,4 +1,5 @@
 export class RoutePaths {
+  public static LandingPage = 'landingpage';
   public static UserSettings = 'userSettings';
   public static Register = 'register';
   public static Login = 'login';

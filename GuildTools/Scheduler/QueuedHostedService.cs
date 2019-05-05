@@ -11,12 +11,16 @@ namespace GuildTools.Scheduler
     public class QueuedHostedService : BackgroundService
     {
         private readonly ILogger _logger;
+        private readonly IServiceProvider serviceProvider;
 
-        public QueuedHostedService(IBackgroundTaskQueue taskQueue,
-            ILoggerFactory loggerFactory)
+        public QueuedHostedService(
+            IBackgroundTaskQueue taskQueue,
+            ILoggerFactory loggerFactory, 
+            IServiceProvider serviceProvider)
         {
             TaskQueue = taskQueue;
             _logger = loggerFactory.CreateLogger<QueuedHostedService>();
+            this.serviceProvider = serviceProvider;
         }
 
         public IBackgroundTaskQueue TaskQueue { get; }
@@ -32,7 +36,7 @@ namespace GuildTools.Scheduler
 
                 try
                 {
-                    await workItem(cancellationToken);
+                    await workItem(cancellationToken, serviceProvider);
                 }
                 catch (Exception ex)
                 {

@@ -24,11 +24,14 @@ namespace GuildTools.Data
         Task<EfModels.PlayerMain> AddMainToProfileAsync(int playerId, int profileId);
         Task<EfModels.PlayerAlt> AddAltToMainAsync(int playerId, int mainId, int profileId);
         Task RemoveAltFromMainAsync(int mainId, int altId, int profileId);
+        Task<EfModels.PlayerMain> PromoteAltToMainAsync(int altId, int profileId);
         Task RemoveMainAsync(int mainId, int profileId);
         Task<IdentityUser> GetUserByEmailAddressAsync(string email);
         Task<IEnumerable<EfModels.GuildProfile>> GetGuildProfilesForUserAsync(string userId);
         Task<RepoModels.FullGuildProfile> GetFullGuildProfileAsync(int id);
         Task DeleteProfileAsync(int id);
+        Task EditPlayerNotes(int profileId, int playerMainId, string newNotes);
+        Task EditOfficerNotes(int profileId, int playerMainId, string newNotes);
 
         Task AddAccessRequestAsync(string userId, int profileId);
         Task<IEnumerable<EfModels.PendingAccessRequest>> GetAccessRequestsAsync(int profileId);

@@ -165,8 +165,12 @@ namespace GuildTools.Data
                 .Include(x => x.PlayerMains)
                     .ThenInclude(y => y.Alts)
                         .ThenInclude(z => z.Player)
+                            .ThenInclude(a => a.Realm)
+                                .ThenInclude(b => b.Region)
                 .Include(x => x.PlayerMains)
                     .ThenInclude(y => y.Player)
+                        .ThenInclude(z => z.Realm)
+                            .ThenInclude(z => z.Region)
                 .Include(x => x.Realm)
                     .ThenInclude(y => y.Region)
                 .Include(x => x.User_GuildProfilePermissions)
@@ -190,7 +194,7 @@ namespace GuildTools.Data
             var altsTask = this.context.PlayerAlts.Where(x => x.ProfileId == id).ToListAsync();
             var permissionsTask = this.context.User_GuildProfilePermissions.Where(x => x.ProfileId == id).ToListAsync();
 
-            Task.WaitAll(profileTask, playersTask, guildsTask, mainsTask, altsTask, permissionsTask);
+            await Task.WhenAll(profileTask, playersTask, guildsTask, mainsTask, altsTask, permissionsTask);
 
             using (var transaction = await this.context.Database.BeginTransactionAsync())
             {
@@ -240,6 +244,8 @@ namespace GuildTools.Data
             await this.context.SaveChangesAsync();
 
             await context.Entry(newPlayer).Reference(x => x.Player).LoadAsync();
+            await context.Entry(newPlayer.Player).Reference(x => x.Realm).LoadAsync();
+            await context.Entry(newPlayer.Player.Realm).Reference(x => x.Region).LoadAsync();
 
             return newPlayer;
         }
@@ -256,7 +262,7 @@ namespace GuildTools.Data
             var playerTask = this.context.PlayerMains
                 .SingleOrDefaultAsync(x => x.Id == playerId);
 
-            Task.WaitAll(profileTask, mainTask, playerTask);
+            await Task.WhenAll(profileTask, mainTask, playerTask);
 
             var newAlt = new EfModels.PlayerAlt()
             {
@@ -270,6 +276,8 @@ namespace GuildTools.Data
             await this.context.SaveChangesAsync();
 
             await context.Entry(newAlt).Reference(x => x.Player).LoadAsync();
+            await context.Entry(newAlt.Player).Reference(x => x.Realm).LoadAsync();
+            await context.Entry(newAlt.Player.Realm).Reference(x => x.Region).LoadAsync();
 
             return newAlt;
         }
@@ -352,7 +360,7 @@ namespace GuildTools.Data
                     taskList.Add(UpdateSinglePermission(userId, activePermission.Value, permission, targetUser, profileId, isAdmin));
                 }
 
-                Task.WaitAll(taskList.ToArray());
+                await Task.WhenAll(taskList.ToArray());
 
                 transaction.Commit();
             }
@@ -483,7 +491,7 @@ namespace GuildTools.Data
             var altTask = this.context.PlayerAlts.Include(p => p.PlayerMain)
                 .SingleOrDefaultAsync(x => x.Id == altId);
 
-            Task.WaitAll(mainTask, mainTask);
+            await Task.WhenAll(mainTask, mainTask);
 
             if (mainTask.Result == null)
             {
@@ -493,6 +501,11 @@ namespace GuildTools.Data
             if (altTask.Result == null)
             {
                 throw new UserReportableError($"No alt player found with ID of '{altId}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (mainTask.Result.ProfileId != profileId || altTask.Result.ProfileId != profileId)
+            {
+                throw new UserReportableError($"Can only perform operations on characters attached to profile.", (int)HttpStatusCode.BadRequest);
             }
 
             if (!mainTask.Result.Alts.Any(x => x.Id == altId))
@@ -506,6 +519,84 @@ namespace GuildTools.Data
             await this.context.SaveChangesAsync();
         }
 
+        public async Task<EfModels.PlayerMain> PromoteAltToMainAsync(int altId, int profileId)
+        {
+            var oldAlt = await this.context.PlayerAlts
+                .SingleOrDefaultAsync(x => x.Id == altId);
+
+            if (oldAlt == null)
+            {
+                throw new UserReportableError($"No alt player found with ID of '{altId}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (oldAlt.ProfileId != profileId)
+            {
+                throw new UserReportableError($"Can only perform operations on characters attached to profile.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var oldMain = await this.context
+                .PlayerMains
+                .Include(x => x.Alts)
+                    .ThenInclude(x => x.Player)
+                    .ThenInclude(x => x.Realm)
+                    .ThenInclude(x => x.Region)
+                .Include(x => x.Player)
+                    .ThenInclude(x => x.Realm)
+                    .ThenInclude(x => x.Region)
+                .FirstOrDefaultAsync(x => x.Id == oldAlt.PlayerMainId);
+
+            using (var transaction = await this.context.Database.BeginTransactionAsync())
+            {
+                var oldMainPlayer = oldMain.Player;
+                var oldAltPlayer = oldAlt.Player;
+                oldMain.Player = null;
+
+                await this.context.SaveChangesAsync();
+
+                var newMain = new EfModels.PlayerMain()
+                {
+                    Notes = oldMain.Notes,
+                    OfficerNotes = oldMain.OfficerNotes,
+                    ProfileId = profileId,
+                    PlayerId = oldAltPlayer.Id,
+                    Alts = new List<EfModels.PlayerAlt>()
+                };
+
+                this.context.PlayerMains.Add(newMain);
+
+                oldMain.Alts.Remove(oldAlt);
+
+                this.context.PlayerAlts.Remove(oldAlt);
+
+                var oldAlts = oldMain.Alts.ToList();
+
+                foreach(var alt in oldAlts)
+                {
+                    oldMain.Alts.Remove(alt);
+                    newMain.Alts.Add(alt);
+                    alt.PlayerMain = newMain;
+                }
+
+                await this.context.SaveChangesAsync();
+
+                var newAlt = new EfModels.PlayerAlt()
+                {
+                    PlayerId = oldMainPlayer.Id,
+                    ProfileId = profileId,
+                    PlayerMainId = newMain.Id
+                };
+
+                this.context.PlayerAlts.Add(newAlt);
+                this.context.PlayerMains.Remove(oldMain);
+
+                await this.context.SaveChangesAsync();
+
+                transaction.Commit();
+
+                return newMain;
+            }
+        }
+
         public async Task RemoveMainAsync(int mainId, int profileId)
         {
             var mainTask = this.context.PlayerMains.Include(p => p.Alts)
@@ -515,7 +606,7 @@ namespace GuildTools.Data
                 .Where(x => x.PlayerMainId == mainId)
                 .ToListAsync();
 
-            Task.WaitAll(mainTask, altsTask);
+            await Task.WhenAll(mainTask, altsTask);
 
             if (mainTask.Result == null)
             {
@@ -524,6 +615,34 @@ namespace GuildTools.Data
 
             this.context.PlayerAlts.RemoveRange(altsTask.Result);
             this.context.PlayerMains.Remove(mainTask.Result);
+
+            await this.context.SaveChangesAsync();
+        }
+
+        public async Task EditPlayerNotes(int profileId, int playerMainId, string newNotes)
+        {
+            var playerMain = await this.context.PlayerMains.FirstOrDefaultAsync(x => x.Id == playerMainId);
+
+            if (playerMain.ProfileId != profileId)
+            {
+                throw new UserReportableError("Player does not belong to target profile!", (int)HttpStatusCode.BadRequest);
+            }
+
+            playerMain.Notes = newNotes;
+
+            await this.context.SaveChangesAsync();
+        }
+
+        public async Task EditOfficerNotes(int profileId, int playerMainId, string newNotes)
+        {
+            var playerMain = await this.context.PlayerMains.FirstOrDefaultAsync(x => x.Id == playerMainId);
+
+            if (playerMain.ProfileId != profileId)
+            {
+                throw new UserReportableError("Player does not belong to target profile!", (int)HttpStatusCode.BadRequest);
+            }
+
+            playerMain.OfficerNotes = newNotes;
 
             await this.context.SaveChangesAsync();
         }

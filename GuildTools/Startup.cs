@@ -113,11 +113,8 @@ namespace GuildTools
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            IBackgroundTaskQueue backgroundTaskQueue = new BackgroundTaskQueue();
-
             services.AddHostedService<QueuedHostedService>();
-            services.AddSingleton(backgroundTaskQueue);
-
+            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
             services.AddScoped<IKeyedResourceManager, KeyedResourceManager>();
             services.AddScoped<IDatabaseCache, DatabaseCache>();
             services.AddScoped<IAccountRepository, AccountRepository>();

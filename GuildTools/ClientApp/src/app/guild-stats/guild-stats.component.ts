@@ -5,6 +5,7 @@ import { BlizzardService } from '../blizzard-services/blizzard-services';
 import { GuildMemberStats } from '../services/ServiceTypes/service-types';
 import { BusyService } from 'app/shared-services/busy-service';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
+import { WowService } from 'app/services/wow-service';
 
 enum GuildStatsStatus {
   Loading,
@@ -36,6 +37,7 @@ export class GuildStatsComponent implements OnInit {
     public dataService: DataService,
     public blizzardService: BlizzardService,
     private busyService: BusyService,
+    private wowService: WowService,
     private errorService: ErrorReportingService) { }
 
   ngOnInit() {
@@ -245,34 +247,7 @@ export class GuildStatsComponent implements OnInit {
   }
 
   mapClassToColor(classIndex: number): string {
-    switch (classIndex) {
-      case 1:
-        return "warrior";
-      case 2:
-        return "paladin";
-      case 3:
-        return "hunter";
-      case 4:
-        return "rogue";
-      case 5:
-        return "priest";
-      case 6:
-        return "dk";
-      case 7:
-        return "shaman";
-      case 8:
-        return "mage";
-      case 9:
-        return "warlock";
-      case 10:
-        return "monk";
-      case 11:
-        return "druid";
-      case 12:
-        return "dh";
-      default:
-        return "none";
-    }
+    return 'background-' + this.wowService.getClassTag(classIndex);
   }
 }
 

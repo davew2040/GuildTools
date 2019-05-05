@@ -25,8 +25,8 @@
     <div *ngFor="let statsTable of statsTables">
       <table class="statsTable">
         <tr><td class="statsTableHeader" colspan="2">{{statsTable.Title}}</td></tr>
-        <tr [ngClass]="mapClassToColor(member.Class) + ' data-row'" *ngFor="let member of statsTable.SortedMembers()">
-          <td><a [href]="getPlayerArmoryLink(member)">{{member.Name}}</a></td>
+        <tr [ngClass]="mapClassToColor(member.class) + ' data-row'" *ngFor="let member of statsTable.SortedMembers()">
+          <td><a [href]="getPlayerArmoryLink(member)">{{member.name}}</a></td>
           <td class="value-column">{{statsTable.NameDisplayer(member)}}</td>
         </tr>
         <tr>

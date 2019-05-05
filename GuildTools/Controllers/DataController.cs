@@ -256,13 +256,7 @@ namespace GuildTools.Controllers
             {
                 Id = newPlayer.Id,
                 Notes = newPlayer.Notes,
-                Player = new StoredPlayer()
-                {
-                    Id = newPlayer.Player.Id,
-                    Name = newPlayer.Player.Name,
-                    Class = newPlayer.Player.Class,
-                    Level = newPlayer.Player.Level
-                }
+                Player = this.MapPlayer(newPlayer.Player)
             };
         }
 
@@ -314,13 +308,7 @@ namespace GuildTools.Controllers
             return new PlayerAlt()
             {
                 Id = newAlt.Id,
-                Player = new StoredPlayer()
-                {
-                    Id = newAlt.Player.Id,
-                    Name = newAlt.Player.Name,
-                    Class = newAlt.Player.Class,
-                    Level = newAlt.Player.Level
-                }
+                Player = this.MapPlayer(newAlt.Player)
             };
         }
 
@@ -336,6 +324,28 @@ namespace GuildTools.Controllers
             }
 
             await this.dataRepo.RemoveAltFromMainAsync(input.MainId, input.AltId, input.ProfileId);
+        }
+
+        [Authorize]
+        [HttpPost("promoteAltToMain")]
+        public async Task<PlayerMain> PromoteAltToMain([FromBody] PromoteAltToMain input)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!await this.UserCanPromoteAltsAsync(user, input.ProfileId))
+            {
+                throw new UserReportableError("This user doesn't have permissions to perform this operation.", 401);
+            }
+
+            var permissionLevel = await this.GetCurrentPermissionLevel(input.ProfileId, user);
+            bool isOfficer = permissionLevel.HasValue
+                ? PermissionsOrder.GreaterThanOrEqual(permissionLevel.Value,
+                    GuildProfilePermissionLevel.Officer)
+                : false;
+
+            var newMain = await this.dataRepo.PromoteAltToMainAsync(input.AltId, input.ProfileId);
+
+            return this.MapPlayerMain(newMain, isOfficer);
         }
 
         [Authorize]
@@ -389,9 +399,7 @@ namespace GuildTools.Controllers
         {
             var user = await this.userManager.GetUserAsync(HttpContext.User);
 
-            var permissionLevel = user != null
-                ? await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id)
-                : null;
+            var permissionLevel = await this.GetCurrentPermissionLevel(profileId, user);
             bool isOfficer = permissionLevel.HasValue
                 ? PermissionsOrder.GreaterThanOrEqual(permissionLevel.Value,
                     GuildProfilePermissionLevel.Officer)
@@ -411,29 +419,7 @@ namespace GuildTools.Controllers
                     Username = efProfile.Creator.UserName
                 },
                 GuildName = efProfile.CreatorGuild.Name,
-                Mains = efProfile.PlayerMains.Select(x => new PlayerMain()
-                {
-                    Id = x.Id,
-                    Player = new StoredPlayer()
-                    {
-                        Id = x.Player.Id,
-                        Name = x.Player.Name,
-                        Class = x.Player.Class,
-                        Level = x.Player.Level
-                    },
-                    Alts = x.Alts.Select(y => new PlayerAlt()
-                    {
-                        Id = y.Id,
-                        Player = new StoredPlayer()
-                        {
-                            Id = y.Player.Id,
-                            Name = y.Player.Name,
-                            Class = y.Player.Class,
-                            Level = y.Player.Level
-                        }
-                    }),
-                    OfficerNotes = isOfficer ? x.OfficerNotes : string.Empty
-                }),
+                Mains = efProfile.PlayerMains.Select(x => this.MapPlayerMain(x, isOfficer)),
                 Realm = new StoredRealm()
                 {
                     Id = efProfile.Realm.Id,
@@ -549,7 +535,7 @@ namespace GuildTools.Controllers
             var userPermissionTask = this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
             var allPermissionsTask = this.dataRepo.GetFullProfilePermissions(user.Id, profileId);
 
-            Task.WaitAll(userPermissionTask, allPermissionsTask);
+            await Task.WhenAll(userPermissionTask, allPermissionsTask);
 
             return new FullProfilePermissions()
             {
@@ -582,6 +568,37 @@ namespace GuildTools.Controllers
             bool isAdmin = await this.IsAdmin(user);
 
             await this.dataRepo.UpdatePermissions(user.Id, updates.Updates, updates.ProfileId, isAdmin);
+        }
+
+
+        [Authorize]
+        [HttpPost("editPlayerNotes")]
+        public async Task EditPlayerNotes([FromBody] EditNotes editDetails)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!(await this.UserCanEditNotes(editDetails.ProfileId, user)))
+            {
+                throw new UserReportableError($"This user does not have permission to edit player notes for profile '{editDetails.ProfileId}'.",
+                    (int)HttpStatusCode.Unauthorized);
+            }
+
+            await this.dataRepo.EditPlayerNotes(editDetails.ProfileId, editDetails.PlayerMainId, editDetails.NewNotes);
+        }
+
+        [Authorize]
+        [HttpPost("editOfficerNotes")]
+        public async Task EditOfficerNotes([FromBody] EditNotes editDetails)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!(await this.UserCanEditNotes(editDetails.ProfileId, user)))
+            {
+                throw new UserReportableError($"This user does not have permission to edit officer notes for profile '{editDetails.ProfileId}'.",
+                    (int)HttpStatusCode.Unauthorized);
+            }
+
+            await this.dataRepo.EditOfficerNotes(editDetails.ProfileId, editDetails.PlayerMainId, editDetails.NewNotes);
         }
 
         [HttpGet("getRealms")]
@@ -627,6 +644,11 @@ namespace GuildTools.Controllers
         }
 
         private async Task<bool> UserCanRemoveAltAsync(EfModels.UserWithData user, int profileId)
+        {
+            return await this.UserCanAddAltAsync(user, profileId);
+        }
+
+        private async Task<bool> UserCanPromoteAltsAsync(EfModels.UserWithData user, int profileId)
         {
             return await this.UserCanAddAltAsync(user, profileId);
         }
@@ -694,6 +716,50 @@ namespace GuildTools.Controllers
             return await this.UserCanApproveAccessRequest(user, profileId);
         }
 
+
+        private async Task<bool> UserCanEditNotes(int profileId, EfModels.UserWithData user)
+        {
+            if (await this.IsAdmin(user))
+            {
+                return true;
+            }
+
+            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+
+            if (!permissionsForProfile.HasValue)
+            {
+                return false;
+            }
+
+            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
+                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+        }
+
+        private async Task<GuildProfilePermissionLevel?> GetCurrentPermissionLevel(int profileId, EfModels.UserWithData user)
+        {
+            if (user == null)
+            {
+                return null;
+            }
+
+            var isAdminTask = this.IsAdmin(user);
+            var profilePermissionTask = this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+
+            await Task.WhenAll(isAdminTask, profilePermissionTask);
+
+            if (isAdminTask.Result)
+            {
+                return GuildProfilePermissionLevel.Admin;
+            }
+
+            if (!profilePermissionTask.Result.HasValue)
+            {
+                return null;
+            }
+
+            return profilePermissionTask.Result.Value;
+        }
+
         private async Task<bool> IsAdmin(EfModels.UserWithData user)
         {
             var roles = await this.GetRolesForUser(user);
@@ -703,6 +769,66 @@ namespace GuildTools.Controllers
         private async Task<IEnumerable<string>> GetRolesForUser(EfModels.UserWithData user)
         {
             return (await this.userManager.GetRolesAsync(user));
+        }
+
+        private PlayerMain MapPlayerMain(EfModels.PlayerMain efMain, bool isOfficer)
+        {
+            if (efMain == null)
+            {
+                return null;
+            }
+
+            return new PlayerMain()
+            {
+                Id = efMain.Id,
+                Notes = efMain.Notes,
+                OfficerNotes = isOfficer ? efMain.OfficerNotes : string.Empty,
+                Player = MapPlayer(efMain.Player),
+                Alts = efMain.Alts.Select(x => MapPlayerAlt(x))
+            };
+        }
+
+        private PlayerAlt MapPlayerAlt(EfModels.PlayerAlt efAlt)
+        {
+            if (efAlt == null)
+            {
+                return null;
+            }
+
+            return new PlayerAlt()
+            {
+                Id = efAlt.Id,
+                Player = MapPlayer(efAlt.Player)
+            };
+        }
+
+        private StoredPlayer MapPlayer(EfModels.StoredBlizzardModels.StoredPlayer efPlayer)
+        {
+            return new StoredPlayer()
+            {
+                Id = efPlayer.Id,
+                Name = efPlayer.Name,
+                Class = efPlayer.Class,
+                Level = efPlayer.Level,
+                Realm = this.MapRealm(efPlayer.Realm),
+                RegionName = efPlayer.Realm.Region.RegionName
+            };
+        }
+
+        private StoredRealm MapRealm(EfModels.StoredBlizzardModels.StoredRealm efRealm)
+        {
+            if (efRealm == null)
+            {
+                return null;
+            }
+
+            return new StoredRealm()
+            {
+                Id = efRealm.Id,
+                Name = efRealm.Name,
+                Slug = efRealm.Slug,
+                RegionId = efRealm.RegionId
+            };
         }
 
         private class InputValidators

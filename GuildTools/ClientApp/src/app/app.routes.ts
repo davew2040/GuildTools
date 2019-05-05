@@ -12,9 +12,10 @@ import { RoutePaths } from './data/route-paths';
 import { ViewGuildProfileComponent } from './components/view-guild-profile/view-guild-profile.component';
 import { ConfirmRegistrationComponent } from './components/account/confirm-registration/confirm-registration.component';
 import { ManagePermissionsComponent } from './components/manage-permissions/manage-permissions.component';
+import { LandingPageComponent } from './components/landing-page/landing-page.component';
 
 export const ROUTES: Routes = [
-  { path: '', component: MyGuildProfilesComponent },
+  { path: '', component: LandingPageComponent },
   { path: RoutePaths.UserSettings, component: UserSettingsComponent },
   { path: RoutePaths.Register, component: RegisterUserComponent },
   { path: RoutePaths.Login, component: LoginComponent },

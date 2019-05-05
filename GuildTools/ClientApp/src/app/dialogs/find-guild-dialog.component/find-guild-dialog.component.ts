@@ -16,7 +16,7 @@ export class FindGuildDialogComponent implements OnInit {
   }
 
   handleChildCancelled() {
-    this.dialogRef.close(null);
+    this.dialogRef.close(false);
   }
 
   handleGuildSelected(guild: SelectedGuild) {

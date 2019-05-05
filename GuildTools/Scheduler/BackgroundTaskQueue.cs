@@ -9,20 +9,20 @@ namespace GuildTools.Scheduler
 {
     public interface IBackgroundTaskQueue
     {
-        void QueueBackgroundWorkItem(Func<CancellationToken, Task> workItem);
+        void QueueBackgroundWorkItem(Func<CancellationToken, IServiceProvider, Task> workItem);
 
-        Task<Func<CancellationToken, Task>> DequeueAsync(
+        Task<Func<CancellationToken, IServiceProvider, Task>> DequeueAsync(
             CancellationToken cancellationToken);
     }
 
     public class BackgroundTaskQueue : IBackgroundTaskQueue
     {
-        private ConcurrentQueue<Func<CancellationToken, Task>> _workItems =
-            new ConcurrentQueue<Func<CancellationToken, Task>>();
+        private ConcurrentQueue<Func<CancellationToken, IServiceProvider, Task>> _workItems =
+            new ConcurrentQueue<Func<CancellationToken, IServiceProvider, Task>>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
 
         public void QueueBackgroundWorkItem(
-            Func<CancellationToken, Task> workItem)
+            Func<CancellationToken, IServiceProvider, Task> workItem)
         {
             if (workItem == null)
             {
@@ -33,7 +33,7 @@ namespace GuildTools.Scheduler
             _signal.Release();
         }
 
-        public async Task<Func<CancellationToken, Task>> DequeueAsync(
+        public async Task<Func<CancellationToken, IServiceProvider, Task>> DequeueAsync(
             CancellationToken cancellationToken)
         {
             await _signal.WaitAsync(cancellationToken);

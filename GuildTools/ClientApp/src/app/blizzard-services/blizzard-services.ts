@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { StoredPlayer } from 'app/services/ServiceTypes/service-types';
 
 @Injectable()
 export class BlizzardService {

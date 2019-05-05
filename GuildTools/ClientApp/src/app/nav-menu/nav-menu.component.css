@@ -19,7 +19,7 @@ li.link-active a:focus {
     background: linear-gradient(-45deg, rgb(27, 28, 82) 0%, rgb(86, 92, 148) 25%, rgb(27, 28, 82) 50%, rgb(86, 92, 148) 75%, rgb(27, 28, 82) 100%);
     background-size: 2000px 2000px;
     animation:
-      NarBarBgAnimation 45s linear infinite;
+      NarBarBgAnimation 30s linear infinite;
 }
 
 @keyframes NarBarBgAnimation {

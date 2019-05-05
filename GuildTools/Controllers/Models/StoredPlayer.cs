@@ -10,5 +10,8 @@ namespace GuildTools.Controllers.Models
         public int Level { get; set; }
         public int Class { get; set; }
         public int GuildId { get; set; }
+        public int RealmId { get; set; }
+        public string RegionName { get; set; }
+        public StoredRealm Realm { get; set; }
     }
 }

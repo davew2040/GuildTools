@@ -31,7 +31,9 @@ import {
     IFullProfilePermissions,
     UpdatePermissionSet,
     PlayerFound,
-    IPlayerFound} from './ServiceTypes/service-types';
+    IPlayerFound,
+    EditNotes,
+    PromoteAltToMain} from './ServiceTypes/service-types';
 import { BlizzardRegionDefinition } from '../data/blizzard-realms';
 
 export enum WowClass {
@@ -215,6 +217,44 @@ export class DataService {
     input.profileId = profile.id;
 
     return this.http.post(this.baseUrl + `api/data/removeMain`, input, { headers: headers });
+  }
+
+  public promoteAltToMain(altId: number, profile: FullGuildProfile): Observable<PlayerMain> {
+    const headers = this.getAuthorizeHeader();
+
+    const input = new PromoteAltToMain();
+
+    input.altId = altId;
+    input.profileId = profile.id;
+
+    return this.http.post(this.baseUrl + `api/data/promoteAltToMain`, input, { headers: headers })
+      .pipe(
+        map(response => new PlayerMain(response as IPlayerMain))
+      );
+  }
+
+  public editPlayerNotes(main: PlayerMain, profile: FullGuildProfile, newNotes: string): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    const input = new EditNotes();
+
+    input.playerMainId = main.id;
+    input.profileId = profile.id;
+    input.newNotes = newNotes;
+
+    return this.http.post(this.baseUrl + `api/data/editPlayerNotes`, input, { headers: headers });
+  }
+
+  public editOfficerNotes(main: PlayerMain, profile: FullGuildProfile, newNotes: string): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    const input = new EditNotes();
+
+    input.playerMainId = main.id;
+    input.profileId = profile.id;
+    input.newNotes = newNotes;
+
+    return this.http.post(this.baseUrl + `api/data/editOfficerNotes`, input, { headers: headers });
   }
 
   public deleteProfile(profile: GuildProfile): Observable<Object> {

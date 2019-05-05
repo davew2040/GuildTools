@@ -19,15 +19,30 @@
         <div class="main-list" fxLayout="column" fxLayoutAlign="start center" fxLayoutGap="15px" fxFlex>
             <h2>Mains</h2>
 
-            <mat-card class="drag-box" droppable [dragOverClass]="'dragover-class'" [dropScope]="dropScopes.DropMain" (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
+            <mat-card
+              class="drag-box"
+              droppable
+              [dragOverClass]="'dragover-class'"
+              [dropScope]="dropScopes.DropMain"
+              (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
 
             <div class="no-mains-message" *ngIf="orderedMains.length === 0" fxLayout="column" fxLayoutAlign="center">
               No mains have been entered.
             </div>
 
             <mat-accordion *ngIf="orderedMains.length > 0" fxFlexAlign="stretch" class="mains-container">
-              <mat-expansion-panel class="player-main-panel" #playerPanel *ngFor="let main of orderedMains" droppable [dropScope]="dropScopes.DropAlt" (onDrop)="onAltDropped($event, main, playerPanel)">
-                  <mat-expansion-panel-header>
+              <mat-expansion-panel
+                class="player-main-panel"
+                #playerPanel
+                *ngFor="let main of orderedMains"
+                droppable
+                [dragOverClass]="'dragover-class'"
+                [dropScope]="dropScopes.DropAlt"
+                [attr.data-main-id]="main.id"
+                (onDrop)="onAltDropped($event, main, playerPanel)">
+                  <mat-expansion-panel-header
+                    [contextMenu]="contextMenu"
+                    [contextMenuSubject]="main">
                       <mat-panel-title>
                         {{main.player.name}}
                       </mat-panel-title>
@@ -36,7 +51,14 @@
                       </mat-panel-description>
                     </mat-expansion-panel-header>
 
-                    <app-view-main [playerMain]="main" (altRemoved)="removeAlt($event)" (mainRemoved)="removeMain($event)"></app-view-main>
+                    <app-view-main
+                      [playerMain]="main"
+                      [isAdmin]="isAdmin"
+                      (altRemoved)="removeAlt($event)"
+                      (mainRemoved)="removeMain($event)"
+                      (altPromoted)="onAltPromoted($event)"
+                      (playerNotesChanged)="onPlayerNotesChanged($event)"
+                      (officerNotesChanged)="onOfficerNotesChanged($event)"></app-view-main>
               </mat-expansion-panel>
           </mat-accordion>
         </div>
@@ -64,8 +86,6 @@
                   <mat-header-row *matHeaderRowDef="playerColumns"></mat-header-row>
                   <mat-row
                     class="player-row"
-                    [contextMenu]="basicMenu"
-                    [contextMenuSubject]="player"
                     [ngClass]="getPlayerCssClass(player)"
                     *matRowDef="let player; columns: playerColumns;"
                     draggable
@@ -79,16 +99,22 @@
     </div>
   </div>
 </div>
-  <!-- FIXME: Re-implement when done  <context-menu>
-        <ng-template contextMenuItem (execute)="showMessage('Hi, ' + $event.item.name)">
-            Say hi!
-        </ng-template>
-        <ng-template contextMenuItem divider="true"></ng-template>
-        <ng-template contextMenuItem let-item (execute)="showMessage($event.item.name + ' said: ' + $event.item.otherProperty)">
-            Bye, {{item?.name}}
-        </ng-template>
-         <ng-template contextMenuItem passive="true">
-    Input something: <input type="text">
+
+<context-menu>
+  <ng-template contextMenuItem (execute)="removeMainWithConfirmation($event.item)">
+    Delete
   </ng-template>
-    </context-menu>
-  -->
+
+  <ng-template contextMenuItem divider="true"></ng-template>
+
+  <ng-template contextMenuItem (execute)="viewBlizzardProfile($event.item)">
+    View Blizzard Profile
+  </ng-template>
+  <ng-template contextMenuItem (execute)="viewRaiderIo($event.item)">
+      View Raider.IO
+    </ng-template>
+  <ng-template contextMenuItem (execute)="viewWowProgress($event.item)">
+    View WoW Progress
+  </ng-template>
+</context-menu>
+
