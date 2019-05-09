@@ -125,7 +125,7 @@ export class FindPlayerComponent implements OnInit {
 
         if (success.found) {
           player.name = success.playerDetails.playerName;
-          player.realm = success.playerDetails.realmName;
+          player.realm = success.playerDetails.playerRealmName;
           player.guildName = success.playerDetails.guildName;
           player.guildRealm = success.playerDetails.guildRealm;
 

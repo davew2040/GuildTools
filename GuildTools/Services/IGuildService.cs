@@ -1,5 +1,6 @@
 ﻿using GuildTools.Controllers.JsonResponses;
 using GuildTools.Controllers.Models;
+using GuildTools.ExternalServices;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace GuildTools.Services
     {
         Task<IEnumerable<BlizzardPlayer>> GetSlimGuildMembersDataAsync(BlizzardRegion region, string guild, string realm);
         Task<BlizzardPlayer> GetSinglePlayerAsync(BlizzardRegion region, string realmName, string playerName);
-        Task<IEnumerable<GuildMemberStats>> GetLargeGuildMembersDataAsync(BlizzardRegion region, string guild, string realm);
+        Task<IEnumerable<GuildMemberStats>> GetLargeGuildMembersDataAsync(BlizzardRegion region, string guild, string realm, IProgress<double> progress);
         Task<GuildSlim> GetGuild(BlizzardRegion region, string realmName, string playerName);
         Task<Realm> GetRealmAsync(string realmName, BlizzardRegion region);
     }

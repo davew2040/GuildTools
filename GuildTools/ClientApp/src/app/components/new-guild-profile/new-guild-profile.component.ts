@@ -10,6 +10,7 @@ import { SelectedGuild } from '../../models/selected-guild';
 import { MatDialog } from '@angular/material';
 import { FindGuildDialogComponent } from '../../dialogs/find-guild-dialog.component/find-guild-dialog.component';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
+import { AuthService } from 'app/auth/auth.service';
 
 @Component({
   selector: 'app-new-guild-profile',
@@ -24,8 +25,13 @@ export class NewGuildProfileComponent implements OnInit {
   public selectedGuild: SelectedGuild;
   public errors: Array<string> = [];
 
+  public get profileNameControlKey(): string { return 'profileName'; }
+  public get guildNameControlKey(): string { return 'guildName'; }
+  public get isPublicControlKey(): string { return 'isPublic'; }
+
   constructor(
     public busyService: BusyService,
+    private auth: AuthService,
     private dataService: DataService,
     private dialog: MatDialog,
     private errorService: ErrorReportingService) {
@@ -91,14 +97,15 @@ export class NewGuildProfileComponent implements OnInit {
     this.busyService.setBusy();
 
     this.dataService.createNewGuildProfile(
-        this.newProfileForm.controls['profileName'].value,
+        this.newProfileForm.controls[this.profileNameControlKey].value,
         this.selectedGuild.name,
         this.selectedGuild.realm,
-        this.selectedGuild.region)
+        this.selectedGuild.region,
+        this.newProfileForm.controls[this.isPublicControlKey].value)
       .subscribe(
         success => {
-          this.created.emit();
           this.busyService.unsetBusy();
+          this.created.emit(success);
         },
         error => {
           this.busyService.unsetBusy();
@@ -106,15 +113,33 @@ export class NewGuildProfileComponent implements OnInit {
         });
   }
 
+  public publicCheckboxIsDisabled(): boolean {
+    return !this.auth.isAuthenticated;
+  }
+
+  public get publicCheckboxTooltip(): string {
+    if (this.auth.isAuthenticated) {
+      return null;
+    }
+
+    return 'You must be authenticated to create a private profile.';
+  }
+
   private buildForm(): FormGroup {
     const formBuilder = new FormBuilder();
 
     const form = formBuilder.group({
       profileName: ['', Validators.required],
-      guildName: new FormControl('', Validators.required)
+      guildName: new FormControl('', Validators.required),
+      isPublic: new FormControl(false)
     });
 
-    form.controls['guildName'].disable();
+    if (!this.auth.isAuthenticated) {
+      form.controls[this.isPublicControlKey].setValue(true);
+      form.controls[this.isPublicControlKey].disable();
+    }
+
+    form.controls[this.guildNameControlKey].disable();
 
     return form;
   }
@@ -124,6 +149,6 @@ export class NewGuildProfileComponent implements OnInit {
       return null;
     }
 
-    return this.newProfileForm.controls['guildName'];
+    return this.newProfileForm.controls[this.guildNameControlKey];
   }
 }

@@ -28,15 +28,21 @@ using System.Threading.Tasks;
 using static GuildTools.EF.Models.Enums.EnumUtilities;
 using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 using EfModels = GuildTools.EF.Models;
+using EfEnums = GuildTools.EF.Models.Enums;
+using EfBlizzardModels = GuildTools.EF.Models.StoredBlizzardModels;
+using GuildTools.Cache.LongRunningRetrievers;
+using GuildTools.Utilities;
+using GuildTools.Cache.LongRunningRetrievers.Interfaces;
 
 namespace GuildTools.Controllers
 {
     [Route("api/[controller]")]
-    public class DataController : Controller
+    public class DataController : GuildToolsController
     {
         private readonly ConnectionStrings connectionStrings;
         private readonly IBlizzardService blizzardService;
-        private readonly IOldGuildMemberCache guildMemberStatsCache;
+        private readonly IGuildStatsRetriever guildStatsRetriever;
+        private readonly IRaiderIoStatsRetriever raiderIoStatsRetriever;
         private readonly IDataRepository dataRepo;
         private readonly IRealmsCache realmsCache;
         private readonly IGuildCache guildCache;
@@ -49,12 +55,15 @@ namespace GuildTools.Controllers
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly UserManager<EfModels.UserWithData> userManager;
 
+        private static bool sent = false;
+
         public DataController(
             IOptions<ConnectionStrings> connectionStrings,
             IDataRepository repository,
             IGuildService guildService,
             IBlizzardService blizzardService,
-            IOldGuildMemberCache oldGuildMemberCache,
+            IGuildStatsRetriever guildStatsRetriever,
+            IRaiderIoStatsRetriever raiderIoStatsRetriever,
             IGuildCache guildCache,
             IPlayerCache playerCache,
             IGuildMemberCache guildMemberCache,
@@ -67,7 +76,8 @@ namespace GuildTools.Controllers
         {
             this.connectionStrings = connectionStrings.Value;
             this.blizzardService = blizzardService;
-            this.guildMemberStatsCache = oldGuildMemberCache;
+            this.guildStatsRetriever = guildStatsRetriever;
+            this.raiderIoStatsRetriever = raiderIoStatsRetriever;
             this.guildService = guildService;
             this.dataRepo = repository;
             this.guildCache = guildCache;
@@ -104,20 +114,82 @@ namespace GuildTools.Controllers
         }
 
         [HttpGet("getGuildMemberStats")]
-        public async Task<IEnumerable<GuildMemberStats>> GetGuildMemberStats(string region, string guild, string realm)
+        public async Task<GuildStatsResponse> GetGuildMemberStats(string region, string guild, string realm)
         {
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
             BlizzardRegion regionEnum = BlizzardService.GetRegionFromString(region);
 
-            var guildData = await this.guildMemberStatsCache.GetAsync(regionEnum, realm, guild);
+            var guildData = await this.guildStatsRetriever.GetCachedEntry(regionEnum, realm, guild, this.GetBaseUrl());
 
-            if (guildData == null)
+            if (guildData.State == CachedValueState.Updating)
             {
-                return new List<GuildMemberStats>();
+                string key = this.guildStatsRetriever.GetKey(regionEnum, realm, guild);
+                var positionInQueue = this.guildStatsRetriever.GetPositionInQueue(key);
+
+                return new GuildStatsResponse()
+                {
+                    IsCompleted = false,
+                    PositionInQueue = positionInQueue,
+                    CompletionProgress = guildData.CompletionProgress
+                };
+            }
+            else
+            {
+                return new GuildStatsResponse()
+                {
+                    IsCompleted = true,
+                    Values = guildData.Value
+                };
+            }
+        }
+
+        [HttpGet("getRaiderIoStats")]
+        public async Task<RaiderIoStatsResponse> GetRaiderIoStats(string region, string guild, string realm)
+        {
+            guild = BlizzardService.FormatGuildName(guild);
+            realm = BlizzardService.FormatRealmName(realm);
+            BlizzardRegion regionEnum = BlizzardService.GetRegionFromString(region);
+
+            var guildData = await this.raiderIoStatsRetriever.GetCachedEntry(regionEnum, realm, guild, this.GetBaseUrl());
+
+            if (guildData.State == CachedValueState.Updating)
+            {
+                string key = this.raiderIoStatsRetriever.GetKey(regionEnum, realm, guild);
+                var positionInQueue = this.raiderIoStatsRetriever.GetPositionInQueue(key);
+
+                return new RaiderIoStatsResponse()
+                {
+                    IsCompleted = false,
+                    PositionInQueue = positionInQueue,
+                    CompletionProgress = guildData.CompletionProgress
+                };
+            }
+            else
+            {
+                return new RaiderIoStatsResponse()
+                {
+                    IsCompleted = true,
+                    Values = guildData.Value
+                };
+            }
+        }
+
+        [HttpPost("requestStatsCompleteNotification")]
+        public async Task RequestStatsCompleteNotification([FromBody] RequestStatsCompleteNotification input)
+        {
+            input.Guild = BlizzardService.FormatGuildName(input.Guild);
+            input.Realm = BlizzardService.FormatRealmName(input.Realm);
+            BlizzardRegion regionEnum = BlizzardService.GetRegionFromString(input.Region);
+            
+            if (!RegexUtilities.IsValidEmail(input.Email))
+            {
+                throw new UserReportableError("Email is not in a valid format.", (int)HttpStatusCode.BadRequest);
             }
 
-            return guildData;
+            var key = this.guildStatsRetriever.GetKey(regionEnum, input.Realm, input.Guild);
+
+            await this.dataRepo.AddNotification(input.Email, key, (NotificationRequestTypeEnum)input.RequestType);
         }
 
         [HttpGet("guildExists")]
@@ -174,40 +246,40 @@ namespace GuildTools.Controllers
             };
         }
 
-
-        [Authorize]
         [HttpPost("createGuildProfile")]
-        public async Task<ActionResult> CreateGuildProfile(string name, string guild, string realm, string region)
+        public async Task<int> CreateGuildProfile([FromBody] CreateNewGuildProfile input)
         {
-            InputValidators.ValidateProfileName(name);
-            InputValidators.ValidateGuildName(guild);
-            InputValidators.ValidateRealmName(realm);
+            InputValidators.ValidateProfileName(input.ProfileName);
+            InputValidators.ValidateGuildName(input.GuildName);
+            InputValidators.ValidateRealmName(input.GuildRealmName);
 
-            guild = BlizzardService.FormatGuildName(guild);
-            realm = BlizzardService.FormatRealmName(realm);
-            var regionEnum = GameRegionUtilities.GetGameRegionFromString(region);
+            input.GuildName = BlizzardService.FormatGuildName(input.GuildName);
+            input.GuildRealmName = BlizzardService.FormatRealmName(input.GuildRealmName);
+            var regionEnum = GameRegionUtilities.GetGameRegionFromString(input.RegionName);
 
-            var locatedRealm = await this.realmStoreByValues.GetRealmAsync(realm, regionEnum);
-            if (locatedRealm == null)
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (user == null && !input.IsPublic)
             {
-                throw new UserReportableError($"Couldn't locate realm '{realm}'.", 404);
+                throw new UserReportableError("Must be authenticated to create a private profile.", (int)HttpStatusCode.Unauthorized);
             }
 
-            var locatedGuild = await this.guildCache.GetGuild(regionEnum, guild, realm);
+            var locatedRealm = await this.realmStoreByValues.GetRealmAsync(input.GuildRealmName, regionEnum);
+            if (locatedRealm == null)
+            {
+                throw new UserReportableError($"Couldn't locate realm '{input.GuildRealmName}'.", 404);
+            }
+
+            var locatedGuild = await this.guildCache.GetGuild(regionEnum, input.GuildName, input.GuildRealmName);
 
             if (locatedGuild == null)
             {
                 throw new UserReportableError("Could not locate this guild.", 404);
             }
 
-            var user = await this.userManager.GetUserAsync(HttpContext.User);
-
-            await this.dataRepo.CreateGuildProfileAsync(user.Id, name, locatedGuild, locatedRealm, regionEnum);
-
-            return Ok();
+            return await this.dataRepo.CreateGuildProfileAsync(user?.Id, input.ProfileName, locatedGuild, locatedRealm, regionEnum, input.IsPublic);
         }
 
-        [Authorize]
         [HttpPost("addMainToProfile")]
         public async Task<PlayerMain> AddMainToProfile([FromBody] AddMainToProfile input)
         {
@@ -218,39 +290,7 @@ namespace GuildTools.Controllers
                 throw new UserReportableError("This user doesn't have permissions to perform this operation.", 401);
             }
 
-            InputValidators.ValidateProfileName(input.PlayerName);
-            InputValidators.ValidateGuildName(input.GuildName);
-            InputValidators.ValidateRealmName(input.PlayerRealmName);
-
-            input.GuildName = BlizzardService.FormatGuildName(input.GuildName);
-            input.PlayerRealmName = BlizzardService.FormatRealmName(input.PlayerRealmName);
-            var regionEnum = GameRegionUtilities.GetGameRegionFromString(input.RegionName);
-
-            var locatedPlayerRealm = await this.realmStoreByValues.GetRealmAsync(input.PlayerRealmName, regionEnum);
-            if (locatedPlayerRealm == null)
-            {
-                throw new UserReportableError($"Couldn't locate player realm '{input.PlayerRealmName}'.", 404);
-            }
-
-            var locatedGuildRealm = await this.realmStoreByValues.GetRealmAsync(input.GuildRealmName, regionEnum);
-            if (locatedGuildRealm == null)
-            {
-                throw new UserReportableError($"Couldn't locate guild realm '{input.GuildRealmName}'.", 404);
-            }
-
-            var locatedPlayerGuild = await this.guildStore.GetGuildAsync(input.GuildName, locatedGuildRealm, input.ProfileId);
-            if (locatedPlayerGuild == null)
-            {
-                throw new UserReportableError($"Could not locate guild {input.GuildName}.", 404);
-            }
-
-            var player = await this.playerStore.GetPlayerAsync(input.PlayerName, locatedPlayerRealm, locatedPlayerGuild, input.ProfileId);
-            if (player == null)
-            {
-                throw new UserReportableError($"Could not locate player {input.PlayerName}-{locatedPlayerRealm.Name}.", 404);
-            }
-
-            var newPlayer = await this.dataRepo.AddMainToProfileAsync(player.Id, input.ProfileId);
+            var newPlayer = await this.dataRepo.AddMainToProfileAsync(input.PlayerId, input.ProfileId);
 
             return new PlayerMain()
             {
@@ -260,7 +300,6 @@ namespace GuildTools.Controllers
             };
         }
 
-        [Authorize]
         [HttpPost("addAltToMain")]
         public async Task<PlayerAlt> AddAltToMain([FromBody] AddAltToMain input)
         {
@@ -271,39 +310,7 @@ namespace GuildTools.Controllers
                 throw new UserReportableError("This user doesn't have permissions to perform this operation.", 401);
             }
 
-            InputValidators.ValidateProfileName(input.PlayerName);
-            InputValidators.ValidateGuildName(input.GuildName);
-            InputValidators.ValidateRealmName(input.PlayerRealmName);
-
-            input.GuildName = BlizzardService.FormatGuildName(input.GuildName);
-            input.PlayerRealmName = BlizzardService.FormatRealmName(input.PlayerRealmName);
-            var regionEnum = GameRegionUtilities.GetGameRegionFromString(input.RegionName);
-
-            var locatedPlayerRealm = await this.realmStoreByValues.GetRealmAsync(input.PlayerRealmName, regionEnum);
-            if (locatedPlayerRealm == null)
-            {
-                throw new UserReportableError($"Couldn't locate player realm '{input.PlayerRealmName}'.", 404);
-            }
-
-            var locatedGuildRealm = await this.realmStoreByValues.GetRealmAsync(input.GuildRealmName, regionEnum);
-            if (locatedGuildRealm == null)
-            {
-                throw new UserReportableError($"Couldn't locate guild realm '{input.GuildRealmName}'.", 404);
-            }
-
-            var locatedPlayerGuild = await this.guildStore.GetGuildAsync(input.GuildName, locatedGuildRealm, input.ProfileId);
-            if (locatedPlayerGuild == null)
-            {
-                throw new UserReportableError($"Could not locate guild {input.GuildName}.", 404);
-            }
-
-            var player = await this.playerStore.GetPlayerAsync(input.PlayerName, locatedPlayerRealm, locatedPlayerGuild, input.ProfileId);
-            if (player == null)
-            {
-                throw new UserReportableError($"Could not locate player {input.PlayerName}-{locatedPlayerRealm.Name}.", 404);
-            }
-
-            var newAlt = await this.dataRepo.AddAltToMainAsync(player.Id, input.MainId, input.ProfileId);
+            var newAlt = await this.dataRepo.AddAltToMainAsync(input.PlayerId, input.MainId, input.ProfileId);
 
             return new PlayerAlt()
             {
@@ -312,7 +319,6 @@ namespace GuildTools.Controllers
             };
         }
 
-        [Authorize]
         [HttpPost("removeAltFromMain")]
         public async Task RemoveAltFromMain([FromBody] RemoveAltFromMain input)
         {
@@ -326,7 +332,6 @@ namespace GuildTools.Controllers
             await this.dataRepo.RemoveAltFromMainAsync(input.MainId, input.AltId, input.ProfileId);
         }
 
-        [Authorize]
         [HttpPost("promoteAltToMain")]
         public async Task<PlayerMain> PromoteAltToMain([FromBody] PromoteAltToMain input)
         {
@@ -348,7 +353,6 @@ namespace GuildTools.Controllers
             return this.MapPlayerMain(newMain, isOfficer);
         }
 
-        [Authorize]
         [HttpPost("removeMain")]
         public async Task RemoveMain([FromBody] RemoveMain input)
         {
@@ -388,7 +392,8 @@ namespace GuildTools.Controllers
                     Id = p.Creator.Id,
                     Email = p.Creator.Email,
                     Username = p.Creator.UserName
-                }
+                }, 
+                IsPublic = p.IsPublic
             });
 
             return jsonProfiles;
@@ -406,7 +411,7 @@ namespace GuildTools.Controllers
                 : false;
 
             var repoProfile = await this.dataRepo.GetFullGuildProfileAsync(profileId);
-            var efProfile = repoProfile.Profile;
+            var efProfile = repoProfile;
 
             var returnProfile = new FullGuildProfile()
             {
@@ -414,11 +419,11 @@ namespace GuildTools.Controllers
                 ProfileName = efProfile.ProfileName,
                 Creator = new UserStub()
                 {
-                    Id = efProfile.Creator.Id,
-                    Email = efProfile.Creator.Email,
-                    Username = efProfile.Creator.UserName
+                    Id = efProfile.Creator?.Id,
+                    Email = efProfile.Creator?.Email,
+                    Username = efProfile.Creator?.UserName
                 },
-                GuildName = efProfile.CreatorGuild.Name,
+                GuildName = efProfile.CreatorGuild?.Name,
                 Mains = efProfile.PlayerMains.Select(x => this.MapPlayerMain(x, isOfficer)),
                 Realm = new StoredRealm()
                 {
@@ -427,20 +432,47 @@ namespace GuildTools.Controllers
                     RegionId = efProfile.Realm.Region.Id
                 },
                 Region = efProfile.Realm.Region.RegionName,
+                IsPublic = efProfile.IsPublic,
                 AccessRequestCount = isOfficer ? efProfile.AccessRequests.Count() : 0
             };
 
-            returnProfile.Players = await this.guildMemberCache.GetMembers(
-                EnumUtilities.GameRegionUtilities.GetGameRegionFromString(returnProfile.Region),
-                returnProfile.Realm.Name, 
-                returnProfile.GuildName);
+            returnProfile.Players = (await this.GetOrInsertProfileGuildMembers(
+                    profileId,
+                    efProfile.CreatorGuild,
+                    efProfile.Realm,
+                    (EfEnums.GameRegionEnum)efProfile.Realm.RegionId))
+                .Select(x => this.MapPlayer(x));
 
             returnProfile.CurrentPermissionLevel = (int?)permissionLevel;
 
             return returnProfile;
         }
 
-        [Authorize]
+        private async Task<IEnumerable<EfBlizzardModels.StoredPlayer>> GetOrInsertProfileGuildMembers(int profileId, EfBlizzardModels.StoredGuild guild, EfBlizzardModels.StoredRealm realm, EfEnums.GameRegionEnum region)
+        {
+            var members = await this.guildMemberCache.GetMembers(region, realm.Name, guild.Name);
+
+            var realmNames = members.Select(x => x.PlayerRealmName).Distinct();
+
+            var realmsTasks = realmNames.Select(async x =>  await this.realmStoreByValues.GetRealmAsync(x, region));
+            await Task.WhenAll(realmsTasks);
+
+            var realms = realmsTasks.Select(x => x.Result);
+
+            var newPlayers = await this.dataRepo.InsertPlayersIfNeededAsync(members.Select(x =>
+                new EfBlizzardModels.StoredPlayer()
+                {
+                    Name = x.PlayerName,
+                    Class = x.Class,
+                    Level = x.Level,
+                    GuildId = guild.Id,
+                    RealmId = realms.SingleOrDefault(y => y.Name == x.PlayerRealmName).Id,
+                    ProfileId = profileId
+                }), profileId);
+
+            return newPlayers;
+        }
+
         [HttpDelete("deleteProfile")]
         public async Task DeleteProfile(int profileId)
         {
@@ -609,122 +641,68 @@ namespace GuildTools.Controllers
 
         private async Task<bool> UserCanAddMainAsync(EfModels.UserWithData user, int profileId)
         {
-            if (await this.IsAdmin(user))
-            {
-                return true;
-            }
-
-            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
-
-            if (!permissionsForProfile.HasValue)
-            {
-                return false;
-            }
-
-            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
-                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
         private async Task<bool> UserCanAddAltAsync(EfModels.UserWithData user, int profileId)
         {
-            if (await this.IsAdmin(user))
-            {
-                return true;
-            }
-
-            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
-
-            if (!permissionsForProfile.HasValue)
-            {
-                return false;
-            }
-
-            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
-                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
         private async Task<bool> UserCanRemoveAltAsync(EfModels.UserWithData user, int profileId)
         {
-            return await this.UserCanAddAltAsync(user, profileId);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
         private async Task<bool> UserCanPromoteAltsAsync(EfModels.UserWithData user, int profileId)
         {
-            return await this.UserCanAddAltAsync(user, profileId);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
         private async Task<bool> UserCanRemoveMain(EfModels.UserWithData user, int profileId)
         {
-            return await this.UserCanAddAltAsync(user, profileId);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
         private async Task<bool> CanDeleteProfile(EfModels.UserWithData user, int profileId)
         {
-            if (await this.IsAdmin(user))
-            {
-                return true;
-            }
-
-            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
-
-            if (!permissionsForProfile.HasValue)
-            {
-                return false;
-            }
-
-            return PermissionsOrder.GreaterThanOrEqual(permissionsForProfile.Value, GuildProfilePermissionLevel.Admin);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
         private async Task<bool> UserCanApproveAccessRequest(EfModels.UserWithData user, int profileId)
         {
-            if (await this.IsAdmin(user))
-            {
-                return true;
-            }
-
-            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
-
-            if (!permissionsForProfile.HasValue)
-            {
-                return false;
-            }
-
-            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
-                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
         private async Task<bool> CanGetAllProfilePermissions(EfModels.UserWithData user, int profileId)
         {
-            if (await this.IsAdmin(user))
-            {
-                return true;
-            }
-
-            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
-
-            if (!permissionsForProfile.HasValue)
-            {
-                return false;
-            }
-
-            return PermissionsOrder.GetPermissionOrder(permissionsForProfile.Value)
-                >= PermissionsOrder.GetPermissionOrder(GuildProfilePermissionLevel.Officer);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
         private async Task<bool> CanUpdatePermissions(EfModels.UserWithData user, int profileId)
         {
-            return await this.UserCanApproveAccessRequest(user, profileId);
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
 
         private async Task<bool> UserCanEditNotes(int profileId, EfModels.UserWithData user)
         {
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
+        }
+
+        private async Task<bool> UserHasStandardOfficerPermissions(int profileId, EfModels.UserWithData user)
+        {
             if (await this.IsAdmin(user))
             {
                 return true;
             }
 
-            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+            if (await this.dataRepo.ProfileIsPublicAsync(profileId))
+            {
+                return true;
+            }
+
+            var permissionsForProfile = await this.dataRepo.GetProfilePermissionForUserAsync(profileId, user?.Id);
 
             if (!permissionsForProfile.HasValue)
             {
@@ -737,13 +715,8 @@ namespace GuildTools.Controllers
 
         private async Task<GuildProfilePermissionLevel?> GetCurrentPermissionLevel(int profileId, EfModels.UserWithData user)
         {
-            if (user == null)
-            {
-                return null;
-            }
-
             var isAdminTask = this.IsAdmin(user);
-            var profilePermissionTask = this.dataRepo.GetProfilePermissionForUserAsync(profileId, user.Id);
+            var profilePermissionTask = this.dataRepo.GetProfilePermissionForUserAsync(profileId, user?.Id);
 
             await Task.WhenAll(isAdminTask, profilePermissionTask);
 
@@ -762,6 +735,11 @@ namespace GuildTools.Controllers
 
         private async Task<bool> IsAdmin(EfModels.UserWithData user)
         {
+            if (user == null)
+            {
+                return false;
+            }
+
             var roles = await this.GetRolesForUser(user);
             return (roles.Any(r => r == GuildToolsRoles.AdminRole.Name));
         }

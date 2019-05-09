@@ -57,11 +57,15 @@ export class RegisterUserComponent implements OnInit {
     registrationModel.username = this.registrationForm.controls[this.usernameControlName].value;
     registrationModel.password = this.registrationForm.controls[this.passwordControlName].value;
     registrationModel.email = this.registrationForm.controls[this.emailControlName].value;
-    registrationModel.playerName = this.selectedPlayer.name;
-    registrationModel.playerRealm = this.selectedPlayer.realm;
-    registrationModel.playerRegion = this.selectedPlayer.region.Name;
-    registrationModel.guildName = this.selectedPlayer.guildName;
-    registrationModel.guildRealm = this.selectedPlayer.guildRealm;
+
+    if (this.selectedPlayer)
+    {
+      registrationModel.playerName = this.selectedPlayer.name;
+      registrationModel.playerRealm = this.selectedPlayer.realm;
+      registrationModel.playerRegion = this.selectedPlayer.region.Name;
+      registrationModel.guildName = this.selectedPlayer.guildName;
+      registrationModel.guildRealm = this.selectedPlayer.guildRealm;
+    }
 
     this.busyService.setBusy();
 

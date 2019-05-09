@@ -1,0 +1,22 @@
+{
+  "name": "Kromzul",
+  "race": "Orc",
+  "class": "Death Knight",
+  "active_spec_name": "Blood",
+  "active_spec_role": "TANK",
+  "gender": "male",
+  "faction": "horde",
+  "achievement_points": 19070,
+  "honorable_kills": 1553,
+  "thumbnail_url": "https://render-us.worldofwarcraft.com/character/burning-blade/204/37505740-avatar.jpg?alt=wow/static/images/2d/avatar/2-0.jpg",
+  "region": "us",
+  "realm": "Burning Blade",
+  "profile_url": "https://raider.io/characters/us/burning-blade/Kromzul",
+  "profile_banner": "hordebanner1",
+  "mythic_plus_scores": {
+    "all": 0,
+    "dps": 0,
+    "healer": 0,
+    "tank": 0
+  }
+}

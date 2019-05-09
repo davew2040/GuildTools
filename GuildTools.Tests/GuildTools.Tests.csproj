@@ -7,16 +7,21 @@
 
   <ItemGroup>
     <None Remove="Assets\JSON\player.json" />
+    <None Remove="Assets\JSON\RaiderIo\player.json" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\JSON\player.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="Assets\JSON\RaiderIo\player.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
+    <PackageReference Include="Moq" Version="4.10.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
     <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />
   </ItemGroup>

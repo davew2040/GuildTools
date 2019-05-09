@@ -7,3 +7,9 @@
 .container {
   width: 600px;
 }
+
+.character-not-required-label {
+  font-size: 10px;
+  color: rgb(156, 156, 156);
+  transform: translate(145px, -15px);
+}

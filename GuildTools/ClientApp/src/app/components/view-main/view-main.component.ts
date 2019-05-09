@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, Output, EventEmitter, ViewChild } from '@angular/core';
-import { PlayerMain, BlizzardPlayer, PlayerAlt } from 'app/services/ServiceTypes/service-types';
+import { PlayerMain, PlayerAlt } from 'app/services/ServiceTypes/service-types';
 import { WowService } from 'app/services/wow-service';
 import { DataService } from 'app/services/data-services';
 import { ContextMenuComponent } from 'ngx-contextmenu';

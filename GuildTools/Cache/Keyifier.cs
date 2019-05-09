@@ -27,7 +27,7 @@ namespace GuildTools.Cache
             return BlizzardService.BuildRealmSlug(realmName);
         }
 
-        public static string GetRegionKey(GameRegion region)
+        public static string GetRegionKey(GameRegionEnum region)
         {
             return region.ToString().ToLower();
         }

@@ -31,7 +31,7 @@ namespace GuildTools.Cache.SpecificCaches
             this.cache = new MemoryCachedDatabaseValueWithSource<StoredRealm>(memoryCache, this.MemoryDuration, resourceManager);
         }
 
-        public async Task<StoredRealm> GetRealmAsync(string name, EfEnums.GameRegion region)
+        public async Task<StoredRealm> GetRealmAsync(string name, EfEnums.GameRegionEnum region)
         {
             return await this.cache.GetOrCacheAsync(
                 this.GetFromDatabase(name, region),
@@ -40,7 +40,7 @@ namespace GuildTools.Cache.SpecificCaches
                 this.GetKey(name, region));
         }
 
-        private Func<Task<StoredRealm>> GetFromDatabase(string name, EfEnums.GameRegion region)
+        private Func<Task<StoredRealm>> GetFromDatabase(string name, EfEnums.GameRegionEnum region)
         {
             return (async () =>
             {
@@ -51,7 +51,7 @@ namespace GuildTools.Cache.SpecificCaches
             });
         }
 
-        private Func<Task<CacheResult<StoredRealm>>> GetFromSource(string name, EfEnums.GameRegion region)
+        private Func<Task<CacheResult<StoredRealm>>> GetFromSource(string name, EfEnums.GameRegionEnum region)
         {
             return (async () =>
             {
@@ -78,17 +78,19 @@ namespace GuildTools.Cache.SpecificCaches
             });
         }
 
-        private Func<StoredRealm, Task> Store()
+        private Func<StoredRealm, Task<StoredRealm>> Store()
         {
             return async (realm) =>
             {
                 this.context.StoredRealms.Add(realm);
 
                 await this.context.SaveChangesAsync();
+
+                return realm;
             };
         }
 
-        private Func<string> GetKey(string name, EfEnums.GameRegion region)
+        private Func<string> GetKey(string name, EfEnums.GameRegionEnum region)
         {
             return () =>
             {

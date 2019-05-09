@@ -84,8 +84,8 @@ export class ManagePermissionsComponent implements OnInit {
   }
 
   private getAvailablePermissions(): Array<PermissionLabelPair> {
-    return this.orderedPermissions.filter(p =>
-      PermissionsOrder.LessThanOrEqual(p.level, this.activeProfilePermission));
+    // TODO - Figure out how to restrict selection of invalid permissions
+    return this.orderedPermissions;
   }
 
   private updateRouteParams(params: any): void {

@@ -13,7 +13,7 @@ export class NewProfilePageComponent implements OnInit {
   ngOnInit() {
   }
 
-  public profileCreated(): void{
-    this.router.navigate(['/' + RoutePaths.MyProfiles]);
+  public profileCreated(profileId): void{
+    this.router.navigate([`/${RoutePaths.ViewProfile}/${profileId}`]);
   }
 }

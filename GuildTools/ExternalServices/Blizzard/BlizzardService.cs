@@ -148,7 +148,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             realmName = realmName.Trim().ToLower();
 
-            realmName = realmName.Replace('\'', '-');
+            realmName = realmName.Replace("\'", "");
             realmName = realmName.Replace(' ', '-');
 
             return realmName;

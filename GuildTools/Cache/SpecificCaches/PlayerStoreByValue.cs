@@ -48,6 +48,20 @@ namespace GuildTools.Cache.SpecificCaches
                 this.GetKey(playerName, realm.Name, profileId));
         }
 
+        public async Task InsertPlayerAsync(StoredPlayer player, int profileId)
+        {
+            await this.cache.InsertIfMissingAsync(
+                player,
+                this.GetFromDatabase(player.Name, player.RealmId, player.ProfileId),
+                this.Store(),
+                this.GetKey(player.Name, player.Realm.Name, player.ProfileId));
+        }
+
+        public Task<StoredPlayer> GetPlayersAsync(IEnumerable<StoredPlayer> players)
+        {
+            throw new NotImplementedException();
+        }
+
         private Func<Task<StoredPlayer>> GetFromDatabase(string name, int realmId, int profileId)
         {
             return (async () =>
@@ -63,7 +77,7 @@ namespace GuildTools.Cache.SpecificCaches
             return (async () =>
             {
                 var result = await this.guildService.GetSinglePlayerAsync(
-                    BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegion)realm.Region.Id),
+                    BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegionEnum)realm.Region.Id),
                     realm.Slug,
                     name);
 
@@ -91,13 +105,15 @@ namespace GuildTools.Cache.SpecificCaches
             });
         }
 
-        private Func<StoredPlayer, Task> Store()
+        private Func<StoredPlayer, Task<StoredPlayer>> Store()
         {
             return async (player) =>
             {
                 this.context.StoredPlayers.Add(player);
 
                 await this.context.SaveChangesAsync();
+
+                return player;
             };
         }
 

@@ -47,6 +47,8 @@ import { FindPlayerDialogComponent } from './dialogs/find-player-dialog.componen
 import { LandingPageComponent } from './components/landing-page/landing-page.component';
 import { PlayerNotesComponentComponent } from './components/player-notes-component/player-notes-component.component';
 import { ConfirmationDialogComponent } from './dialogs/confirmation-dialog.component/confirmation-dialog.component';
+import { ShareLinkDialogComponent } from './dialogs/share-link-dialog.component/share-link-dialog.component';
+import { RaiderIoStatsComponent } from './components/raider-io-stats/raider-io-stats.component';
 
 @NgModule({
   declarations: [
@@ -59,6 +61,7 @@ import { ConfirmationDialogComponent } from './dialogs/confirmation-dialog.compo
     ResetPasswordComponent,
     ResetPasswordWithTokenComponent,
     GuildStatsComponent,
+    RaiderIoStatsComponent,
     GuildStatsLauncherComponent,
     GuildProfileComponent,
     MyGuildProfilesComponent,
@@ -77,7 +80,8 @@ import { ConfirmationDialogComponent } from './dialogs/confirmation-dialog.compo
     ManagePermissionsComponent,
     LandingPageComponent,
     PlayerNotesComponentComponent,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    ShareLinkDialogComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -102,6 +106,6 @@ import { ConfirmationDialogComponent } from './dialogs/confirmation-dialog.compo
     NotificationService,
     StoredValuesService],
   bootstrap: [AppComponent],
-  entryComponents: [FindGuildDialogComponent, FindPlayerDialogComponent, ConfirmationDialogComponent]
+  entryComponents: [FindGuildDialogComponent, FindPlayerDialogComponent, ConfirmationDialogComponent, ShareLinkDialogComponent]
 })
 export class AppModule { }

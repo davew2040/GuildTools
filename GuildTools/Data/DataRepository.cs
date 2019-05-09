@@ -14,17 +14,20 @@ using Microsoft.AspNetCore.Identity;
 using GuildTools.Controllers.Models;
 using GuildTools.EF.Models.StoredBlizzardModels;
 using EfModels = GuildTools.EF.Models;
+using EfBlizzardModels = GuildTools.EF.Models.StoredBlizzardModels;
 using ControllerModels = GuildTools.Controllers.Models;
 using GuildTools.ErrorHandling;
 using System.Net;
 using GuildTools.Controllers.InputModels;
 using GuildTools.Permissions;
+using GuildTools.Cache.SpecificCaches.CacheInterfaces;
+using GuildTools.Cache.SpecificCaches;
 
 namespace GuildTools.Data
 {
     public class DataRepository : IDataRepository
     {
-        private GuildToolsContext context;
+        private readonly GuildToolsContext context;
 
         public DataRepository(
             GuildToolsContext context)
@@ -32,12 +35,13 @@ namespace GuildTools.Data
             this.context = context;
         }
 
-        public async Task CreateGuildProfileAsync(
+        public async Task<int> CreateGuildProfileAsync(
             string creatorId, 
             string profileName, 
             GuildSlim guild,
             EfModels.StoredBlizzardModels.StoredRealm realm, 
-            EfEnums.GameRegion region)
+            EfEnums.GameRegionEnum region, 
+            bool isPublic)
         {
             using (var transaction = await this.context.Database.BeginTransactionAsync())
             {
@@ -45,7 +49,8 @@ namespace GuildTools.Data
                 {
                     CreatorId = creatorId,
                     ProfileName = profileName,
-                    RealmId = realm.Id
+                    RealmId = realm.Id,
+                    IsPublic = isPublic
                 };
 
                 this.context.GuildProfile.Add(newProfile);
@@ -62,17 +67,52 @@ namespace GuildTools.Data
                 this.context.StoredGuilds.Add(storedGuild);
                 newProfile.CreatorGuild = storedGuild;
 
-                this.context.User_GuildProfilePermissions.Add(new EF.Models.User_GuildProfilePermissions()
+                if (!isPublic)
                 {
-                    PermissionLevelId = (int)EF.Models.Enums.GuildProfilePermissionLevel.Admin,
-                    ProfileId = newProfile.Id,
-                    UserId = creatorId
-                });
+                    this.context.User_GuildProfilePermissions.Add(new EF.Models.User_GuildProfilePermissions()
+                    {
+                        PermissionLevelId = (int)EF.Models.Enums.GuildProfilePermissionLevel.Admin,
+                        ProfileId = newProfile.Id,
+                        UserId = creatorId
+                    });
+                }
 
                 await this.context.SaveChangesAsync();
 
                 transaction.Commit();
+
+                return newProfile.Id;
             }
+        }
+
+        public async Task<IEnumerable<EfBlizzardModels.StoredPlayer>> InsertPlayersIfNeededAsync(IEnumerable<EfBlizzardModels.StoredPlayer> players, int profileId)
+        {
+            var realmIds = players.Select(x => x.RealmId).Distinct();
+            var playerNames = players.Select(x => x.Name).Distinct();
+
+            var existingStoredPlayers = await this.context.StoredPlayers.Where(x => x.ProfileId == profileId && playerNames.Contains(x.Name)).AsNoTracking().ToListAsync();
+
+            var notFoundStoredPlayers = players
+                .Where(
+                    x => !existingStoredPlayers.Any(
+                        y => x.Name == y.Name && x.RealmId == y.RealmId));
+
+            foreach (var notFoundPlayer in notFoundStoredPlayers)
+            {
+                this.context.StoredPlayers.Add(notFoundPlayer);
+            }
+
+            await this.context.SaveChangesAsync();
+
+            var finalValues = await this
+                .context
+                .StoredPlayers
+                .Include(x => x.Realm)
+                    .ThenInclude(x => x.Region)
+                .Include(x => x.Guild)
+                .Where(x => x.ProfileId == profileId).ToListAsync();
+
+            return finalValues;
         }
 
         public async Task<CachedValue> GetCachedValueAsync(string key)
@@ -133,23 +173,43 @@ namespace GuildTools.Data
                 .ThenInclude(g => g.Region)
                 .Include(g => g.CreatorGuild)
                 .Include(g => g.Creator)
-                .Where(g => g.CreatorId == userId)
+                .Include(g => g.User_GuildProfilePermissions)
+                .Where(g => g.CreatorId == userId || g.User_GuildProfilePermissions.Any(x => x.UserId == userId))
                 .ToListAsync();
         }
 
         public async Task<EfEnums.GuildProfilePermissionLevel?> GetProfilePermissionForUserAsync(int profileId, string userId)
         {
-            var query = await this.context.User_GuildProfilePermissions
-                .Include(p => p.PermissionLevel)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.UserId == userId && p.ProfileId == profileId);
-
-            if (query == null)
+            if (string.IsNullOrEmpty(userId))
             {
                 return null;
             }
 
-            return (EfEnums.GuildProfilePermissionLevel)query.PermissionLevel.Id;
+            var profile = await this.context.GuildProfile.FirstOrDefaultAsync(x => x.Id == profileId);
+
+            var permission = await this.context.User_GuildProfilePermissions
+                .Include(p => p.PermissionLevel)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.ProfileId == profileId);
+
+            if (permission == null)
+            {
+                return null;
+            }
+
+            return (EfEnums.GuildProfilePermissionLevel)permission.PermissionLevel.Id;
+        }
+
+        public async Task<bool> ProfileIsPublicAsync(int profileId)
+        {
+            var profile = await this.context.GuildProfile.FirstOrDefaultAsync(x => x.Id == profileId);
+    
+            if (profile == null)
+            {
+                throw new UserReportableError($"No profile found with ID {profileId}.", (int)HttpStatusCode.BadRequest);
+            }
+
+            return profile.IsPublic;
         }
 
         public async Task<IdentityUser> GetUserByEmailAddressAsync(string email)
@@ -157,7 +217,7 @@ namespace GuildTools.Data
             return await this.context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public async Task<RepositoryModels.FullGuildProfile> GetFullGuildProfileAsync(int id)
+        public async Task<EfModels.GuildProfile> GetFullGuildProfileAsync(int profileId)
         {
             var profile = await this.context.GuildProfile
                 .Include(x => x.Creator)
@@ -177,12 +237,9 @@ namespace GuildTools.Data
                     .ThenInclude(y => y.PermissionLevel)
                 .Include(x => x.AccessRequests)
                 .AsNoTracking()
-                .SingleOrDefaultAsync(x => x.Id == id);
+                .SingleOrDefaultAsync(x => x.Id == profileId);
 
-            return new RepositoryModels.FullGuildProfile()
-            {
-                Profile = profile
-            };
+            return profile;
         }
 
         public async Task DeleteProfileAsync(int id)
@@ -229,9 +286,39 @@ namespace GuildTools.Data
 
         public async Task<EfModels.PlayerMain> AddMainToProfileAsync(int playerId, int profileId)
         {
-            var profile = await this.context.GuildProfile
+            var profileTask = this.context.GuildProfile
                 .Include(x => x.PlayerMains)
+                .Include(x => x.PlayerAlts)
+                .Include(x => x.Players)
                 .SingleOrDefaultAsync(x => x.Id == profileId);
+
+            var playerTask = this.context.StoredPlayers
+                .SingleOrDefaultAsync(x => x.Id == playerId);
+
+            await Task.WhenAll(profileTask, playerTask);
+
+            var profile = profileTask.Result;
+            var player = playerTask.Result;
+
+            if (profile == null)
+            {
+                throw new UserReportableError($"Profile {profileId} not found.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (player == null)
+            {
+                throw new UserReportableError($"Player {playerId} not found.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (!profile.Players.Any(x => x.Id == playerId))
+            {
+                throw new UserReportableError($"Player {playerId} does not belong to this profile.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (profile.PlayerMains.Any(x => x.PlayerId == playerId) || profile.PlayerAlts.Any(x => x.PlayerId == playerId))
+            {
+                throw new UserReportableError($"Player {playerId} is already assigned!.", (int)HttpStatusCode.BadRequest);
+            }
 
             var newPlayer = new EfModels.PlayerMain()
             {
@@ -254,15 +341,46 @@ namespace GuildTools.Data
         {
             var profileTask = this.context.GuildProfile
                 .Include(x => x.PlayerMains)
+                .Include(x => x.PlayerAlts)
+                .Include(x => x.Players)
                 .SingleOrDefaultAsync(x => x.Id == profileId);
 
             var mainTask = this.context.PlayerMains
                 .SingleOrDefaultAsync(x => x.Id == mainId);
 
-            var playerTask = this.context.PlayerMains
+            var playerTask = this.context.StoredPlayers
                 .SingleOrDefaultAsync(x => x.Id == playerId);
 
             await Task.WhenAll(profileTask, mainTask, playerTask);
+
+            var profile = profileTask.Result;
+            var player = playerTask.Result;
+            var main = mainTask.Result;
+
+            if (profile == null)
+            {
+                throw new UserReportableError($"Profile {profileId} not found.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (player == null)
+            {
+                throw new UserReportableError($"Player {playerId} not found.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (main == null)
+            {
+                throw new UserReportableError($"Main {mainId} not found.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (!profile.Players.Any(x => x.Id == playerId))
+            {
+                throw new UserReportableError($"Player {playerId} does not belong to this profile.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (profile.PlayerMains.Any(x => x.PlayerId == playerId) || profile.PlayerAlts.Any(x => x.PlayerId == playerId))
+            {
+                throw new UserReportableError($"Player {playerId} is already assigned!.", (int)HttpStatusCode.BadRequest);
+            }
 
             var newAlt = new EfModels.PlayerAlt()
             {
@@ -281,7 +399,6 @@ namespace GuildTools.Data
 
             return newAlt;
         }
-
 
         public async Task AddAccessRequestAsync(string userId, int profileId)
         {
@@ -364,6 +481,38 @@ namespace GuildTools.Data
 
                 transaction.Commit();
             }
+        }
+
+        public async Task AddNotification(string email, string operationKey, EfEnums.NotificationRequestTypeEnum type)
+        {
+            this.context.NotificationRequests.Add(new NotificationRequest()
+            {
+                Email = email,
+                NotificationRequestTypeId = (int)type,
+                OperationKey = operationKey
+            });
+
+            await this.context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<NotificationRequest>> GetAndClearNotifications(EfEnums.NotificationRequestTypeEnum type, string operationKey = null)
+        {
+            var query = this.context.NotificationRequests
+                .AsNoTracking()
+                .Where(x => x.NotificationRequestTypeId == (int)type);
+
+            if (operationKey != null)
+            {
+                query = query.Where(x => x.OperationKey == operationKey);
+            }
+
+            var results = await query.ToListAsync();
+
+            this.context.NotificationRequests.RemoveRange(results);
+
+            await this.context.SaveChangesAsync();
+
+            return results;
         }
 
         private async Task UpdateSinglePermission(

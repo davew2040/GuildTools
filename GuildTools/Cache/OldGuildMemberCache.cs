@@ -19,7 +19,6 @@ namespace GuildTools.Cache
         private HashSet<string> updatingSet;
         private Dictionary<string, ExpiringData<IEnumerable<GuildMemberStats>>> cache;
         private IGuildService guildMemberService;
-        private const string SqlCacheType = "GuildMember";
         private readonly TimeSpan CacheEntryDuration = new TimeSpan(24, 0, 0);
         private readonly IBackgroundTaskQueue backgroundTaskQueue;
         private readonly IDataRepository dataRepository;
@@ -67,10 +66,15 @@ namespace GuildTools.Cache
 
             if (!this.updatingSet.Contains(key))
             {
-                this.backgroundTaskQueue.QueueBackgroundWorkItem(async (token, serviceProvider) =>
-                {
-                    await this.Refresh(region, guild, realm, serviceProvider);
-                });
+                this.backgroundTaskQueue.QueueBackgroundWorkItem(
+                    new BackgroundWorkItem()
+                    {
+                        Key = key,
+                        Worker = async (token, serviceProvider) =>
+                        {
+                            await this.Refresh(region, guild, realm, serviceProvider);
+                        }
+                    });
             }
 
             return null;
@@ -87,14 +91,7 @@ namespace GuildTools.Cache
 
             this.updatingSet.Add(key);
 
-            using (var serviceScope = serviceProvider.CreateScope())
-            {
-                var repo = serviceScope.ServiceProvider.GetService<IDataRepository>();
-
-                await repo.SetCachedValueAsync("test_key", "test_value", TimeSpan.FromSeconds(10));
-            }
-
-            var guildPlayers = await this.guildMemberService.GetLargeGuildMembersDataAsync(region, guild, realm);
+            var guildPlayers = await this.guildMemberService.GetLargeGuildMembersDataAsync(region, guild, realm, new Progress<double>());
 
             using (var serviceScope = serviceProvider.CreateScope())
             {
@@ -102,7 +99,6 @@ namespace GuildTools.Cache
 
                 await this.AddAsync(realm, guild, guildPlayers, CacheEntryDuration, repo);
             }
-
 
             this.updatingSet.Remove(key);
         }

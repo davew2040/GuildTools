@@ -17,5 +17,6 @@ namespace GuildTools.Cache.SpecificCaches
     public interface IGuildStoreByName
     {
         Task<StoredGuild> GetGuildAsync(string guildName, StoredRealm realm, int profileId);
+        Task<StoredGuild> InsertGuildAsync(StoredGuild guild, int profileId);
     }
 }

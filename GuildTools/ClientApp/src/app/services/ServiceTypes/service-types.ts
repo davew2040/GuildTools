@@ -273,6 +273,62 @@ export interface ILoginResponse {
     authenticationDetails?: { [key: string] : any; } | undefined;
 }
 
+export class GuildStatsResponse implements IGuildStatsResponse {
+    isCompleted?: boolean | undefined;
+    positionInQueue?: number | undefined;
+    completionProgress?: number | undefined;
+    values?: GuildMemberStats[] | undefined;
+
+    constructor(data?: IGuildStatsResponse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.isCompleted = data["isCompleted"];
+            this.positionInQueue = data["positionInQueue"];
+            this.completionProgress = data["completionProgress"];
+            if (data["values"] && data["values"].constructor === Array) {
+                this.values = [] as any;
+                for (let item of data["values"])
+                    this.values!.push(GuildMemberStats.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): GuildStatsResponse {
+        data = typeof data === 'object' ? data : {};
+        let result = new GuildStatsResponse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["isCompleted"] = this.isCompleted;
+        data["positionInQueue"] = this.positionInQueue;
+        data["completionProgress"] = this.completionProgress;
+        if (this.values && this.values.constructor === Array) {
+            data["values"] = [];
+            for (let item of this.values)
+                data["values"].push(item.toJSON());
+        }
+        return data; 
+    }
+}
+
+export interface IGuildStatsResponse {
+    isCompleted?: boolean | undefined;
+    positionInQueue?: number | undefined;
+    completionProgress?: number | undefined;
+    values?: GuildMemberStats[] | undefined;
+}
+
 export class GuildMemberStats implements IGuildMemberStats {
     name?: string | undefined;
     realm?: string | undefined;
@@ -369,6 +425,174 @@ export interface IGuildMemberStats {
     raiderIoMplusScore?: number | undefined;
 }
 
+export class RaiderIoStatsResponse implements IRaiderIoStatsResponse {
+    isCompleted?: boolean | undefined;
+    positionInQueue?: number | undefined;
+    completionProgress?: number | undefined;
+    values?: RaiderIoStats[] | undefined;
+
+    constructor(data?: IRaiderIoStatsResponse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.isCompleted = data["isCompleted"];
+            this.positionInQueue = data["positionInQueue"];
+            this.completionProgress = data["completionProgress"];
+            if (data["values"] && data["values"].constructor === Array) {
+                this.values = [] as any;
+                for (let item of data["values"])
+                    this.values!.push(RaiderIoStats.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): RaiderIoStatsResponse {
+        data = typeof data === 'object' ? data : {};
+        let result = new RaiderIoStatsResponse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["isCompleted"] = this.isCompleted;
+        data["positionInQueue"] = this.positionInQueue;
+        data["completionProgress"] = this.completionProgress;
+        if (this.values && this.values.constructor === Array) {
+            data["values"] = [];
+            for (let item of this.values)
+                data["values"].push(item.toJSON());
+        }
+        return data; 
+    }
+}
+
+export interface IRaiderIoStatsResponse {
+    isCompleted?: boolean | undefined;
+    positionInQueue?: number | undefined;
+    completionProgress?: number | undefined;
+    values?: RaiderIoStats[] | undefined;
+}
+
+export class RaiderIoStats implements IRaiderIoStats {
+    name?: string | undefined;
+    realm?: string | undefined;
+    class?: number | undefined;
+    raiderIoOverall?: number | undefined;
+    raiderIoDps?: number | undefined;
+    raiderIoTank?: number | undefined;
+    raiderIoHealer?: number | undefined;
+
+    constructor(data?: IRaiderIoStats) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.name = data["name"];
+            this.realm = data["realm"];
+            this.class = data["class"];
+            this.raiderIoOverall = data["raiderIoOverall"];
+            this.raiderIoDps = data["raiderIoDps"];
+            this.raiderIoTank = data["raiderIoTank"];
+            this.raiderIoHealer = data["raiderIoHealer"];
+        }
+    }
+
+    static fromJS(data: any): RaiderIoStats {
+        data = typeof data === 'object' ? data : {};
+        let result = new RaiderIoStats();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["name"] = this.name;
+        data["realm"] = this.realm;
+        data["class"] = this.class;
+        data["raiderIoOverall"] = this.raiderIoOverall;
+        data["raiderIoDps"] = this.raiderIoDps;
+        data["raiderIoTank"] = this.raiderIoTank;
+        data["raiderIoHealer"] = this.raiderIoHealer;
+        return data; 
+    }
+}
+
+export interface IRaiderIoStats {
+    name?: string | undefined;
+    realm?: string | undefined;
+    class?: number | undefined;
+    raiderIoOverall?: number | undefined;
+    raiderIoDps?: number | undefined;
+    raiderIoTank?: number | undefined;
+    raiderIoHealer?: number | undefined;
+}
+
+export class RequestStatsCompleteNotification implements IRequestStatsCompleteNotification {
+    email?: string | undefined;
+    region?: string | undefined;
+    guild?: string | undefined;
+    realm?: string | undefined;
+    requestType?: number | undefined;
+
+    constructor(data?: IRequestStatsCompleteNotification) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.email = data["email"];
+            this.region = data["region"];
+            this.guild = data["guild"];
+            this.realm = data["realm"];
+            this.requestType = data["requestType"];
+        }
+    }
+
+    static fromJS(data: any): RequestStatsCompleteNotification {
+        data = typeof data === 'object' ? data : {};
+        let result = new RequestStatsCompleteNotification();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["email"] = this.email;
+        data["region"] = this.region;
+        data["guild"] = this.guild;
+        data["realm"] = this.realm;
+        data["requestType"] = this.requestType;
+        return data; 
+    }
+}
+
+export interface IRequestStatsCompleteNotification {
+    email?: string | undefined;
+    region?: string | undefined;
+    guild?: string | undefined;
+    realm?: string | undefined;
+    requestType?: number | undefined;
+}
+
 export class GuildFound implements IGuildFound {
     found?: boolean | undefined;
     realmName?: string | undefined;
@@ -455,7 +679,7 @@ export interface IPlayerFound {
 
 export class BlizzardPlayer implements IBlizzardPlayer {
     playerName?: string | undefined;
-    realmName?: string | undefined;
+    playerRealmName?: string | undefined;
     class?: number | undefined;
     level?: number | undefined;
     guildName?: string | undefined;
@@ -473,7 +697,7 @@ export class BlizzardPlayer implements IBlizzardPlayer {
     init(data?: any) {
         if (data) {
             this.playerName = data["playerName"];
-            this.realmName = data["realmName"];
+            this.playerRealmName = data["playerRealmName"];
             this.class = data["class"];
             this.level = data["level"];
             this.guildName = data["guildName"];
@@ -491,7 +715,7 @@ export class BlizzardPlayer implements IBlizzardPlayer {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["playerName"] = this.playerName;
-        data["realmName"] = this.realmName;
+        data["playerRealmName"] = this.playerRealmName;
         data["class"] = this.class;
         data["level"] = this.level;
         data["guildName"] = this.guildName;
@@ -502,20 +726,68 @@ export class BlizzardPlayer implements IBlizzardPlayer {
 
 export interface IBlizzardPlayer {
     playerName?: string | undefined;
-    realmName?: string | undefined;
+    playerRealmName?: string | undefined;
     class?: number | undefined;
     level?: number | undefined;
     guildName?: string | undefined;
     guildRealm?: string | undefined;
 }
 
-export class AddMainToProfile implements IAddMainToProfile {
-    playerName?: string | undefined;
+export class CreateNewGuildProfile implements ICreateNewGuildProfile {
+    profileName?: string | undefined;
     guildName?: string | undefined;
-    playerRealmName?: string | undefined;
     guildRealmName?: string | undefined;
-    profileId?: number | undefined;
     regionName?: string | undefined;
+    isPublic?: boolean | undefined;
+
+    constructor(data?: ICreateNewGuildProfile) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.profileName = data["profileName"];
+            this.guildName = data["guildName"];
+            this.guildRealmName = data["guildRealmName"];
+            this.regionName = data["regionName"];
+            this.isPublic = data["isPublic"];
+        }
+    }
+
+    static fromJS(data: any): CreateNewGuildProfile {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateNewGuildProfile();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["profileName"] = this.profileName;
+        data["guildName"] = this.guildName;
+        data["guildRealmName"] = this.guildRealmName;
+        data["regionName"] = this.regionName;
+        data["isPublic"] = this.isPublic;
+        return data; 
+    }
+}
+
+export interface ICreateNewGuildProfile {
+    profileName?: string | undefined;
+    guildName?: string | undefined;
+    guildRealmName?: string | undefined;
+    regionName?: string | undefined;
+    isPublic?: boolean | undefined;
+}
+
+export class AddMainToProfile implements IAddMainToProfile {
+    profileId?: number | undefined;
+    playerId?: number | undefined;
 
     constructor(data?: IAddMainToProfile) {
         if (data) {
@@ -528,12 +800,8 @@ export class AddMainToProfile implements IAddMainToProfile {
 
     init(data?: any) {
         if (data) {
-            this.playerName = data["playerName"];
-            this.guildName = data["guildName"];
-            this.playerRealmName = data["playerRealmName"];
-            this.guildRealmName = data["guildRealmName"];
             this.profileId = data["profileId"];
-            this.regionName = data["regionName"];
+            this.playerId = data["playerId"];
         }
     }
 
@@ -546,23 +814,15 @@ export class AddMainToProfile implements IAddMainToProfile {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["playerName"] = this.playerName;
-        data["guildName"] = this.guildName;
-        data["playerRealmName"] = this.playerRealmName;
-        data["guildRealmName"] = this.guildRealmName;
         data["profileId"] = this.profileId;
-        data["regionName"] = this.regionName;
+        data["playerId"] = this.playerId;
         return data; 
     }
 }
 
 export interface IAddMainToProfile {
-    playerName?: string | undefined;
-    guildName?: string | undefined;
-    playerRealmName?: string | undefined;
-    guildRealmName?: string | undefined;
     profileId?: number | undefined;
-    regionName?: string | undefined;
+    playerId?: number | undefined;
 }
 
 export class PlayerMain implements IPlayerMain {
@@ -778,13 +1038,9 @@ export interface IStoredRealm {
 }
 
 export class AddAltToMain implements IAddAltToMain {
-    playerName?: string | undefined;
-    guildName?: string | undefined;
-    playerRealmName?: string | undefined;
-    guildRealmName?: string | undefined;
-    regionName?: string | undefined;
-    mainId?: number | undefined;
     profileId?: number | undefined;
+    mainId?: number | undefined;
+    playerId?: number | undefined;
 
     constructor(data?: IAddAltToMain) {
         if (data) {
@@ -797,13 +1053,9 @@ export class AddAltToMain implements IAddAltToMain {
 
     init(data?: any) {
         if (data) {
-            this.playerName = data["playerName"];
-            this.guildName = data["guildName"];
-            this.playerRealmName = data["playerRealmName"];
-            this.guildRealmName = data["guildRealmName"];
-            this.regionName = data["regionName"];
-            this.mainId = data["mainId"];
             this.profileId = data["profileId"];
+            this.mainId = data["mainId"];
+            this.playerId = data["playerId"];
         }
     }
 
@@ -816,25 +1068,17 @@ export class AddAltToMain implements IAddAltToMain {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["playerName"] = this.playerName;
-        data["guildName"] = this.guildName;
-        data["playerRealmName"] = this.playerRealmName;
-        data["guildRealmName"] = this.guildRealmName;
-        data["regionName"] = this.regionName;
-        data["mainId"] = this.mainId;
         data["profileId"] = this.profileId;
+        data["mainId"] = this.mainId;
+        data["playerId"] = this.playerId;
         return data; 
     }
 }
 
 export interface IAddAltToMain {
-    playerName?: string | undefined;
-    guildName?: string | undefined;
-    playerRealmName?: string | undefined;
-    guildRealmName?: string | undefined;
-    regionName?: string | undefined;
-    mainId?: number | undefined;
     profileId?: number | undefined;
+    mainId?: number | undefined;
+    playerId?: number | undefined;
 }
 
 export class RemoveAltFromMain implements IRemoveAltFromMain {
@@ -968,6 +1212,7 @@ export class GuildProfile implements IGuildProfile {
     guildName?: string | undefined;
     realm?: string | undefined;
     region?: string | undefined;
+    isPublic?: boolean | undefined;
 
     constructor(data?: IGuildProfile) {
         if (data) {
@@ -986,6 +1231,7 @@ export class GuildProfile implements IGuildProfile {
             this.guildName = data["guildName"];
             this.realm = data["realm"];
             this.region = data["region"];
+            this.isPublic = data["isPublic"];
         }
     }
 
@@ -1004,6 +1250,7 @@ export class GuildProfile implements IGuildProfile {
         data["guildName"] = this.guildName;
         data["realm"] = this.realm;
         data["region"] = this.region;
+        data["isPublic"] = this.isPublic;
         return data; 
     }
 }
@@ -1015,6 +1262,7 @@ export interface IGuildProfile {
     guildName?: string | undefined;
     realm?: string | undefined;
     region?: string | undefined;
+    isPublic?: boolean | undefined;
 }
 
 export class UserStub implements IUserStub {
@@ -1070,8 +1318,10 @@ export class FullGuildProfile implements IFullGuildProfile {
     region?: string | undefined;
     currentPermissionLevel?: number | undefined;
     accessRequestCount?: number | undefined;
-    players?: BlizzardPlayer[] | undefined;
+    isPublic?: boolean | undefined;
+    players?: StoredPlayer[] | undefined;
     mains?: PlayerMain[] | undefined;
+    playerPool?: StoredPlayer[] | undefined;
 
     constructor(data?: IFullGuildProfile) {
         if (data) {
@@ -1092,15 +1342,21 @@ export class FullGuildProfile implements IFullGuildProfile {
             this.region = data["region"];
             this.currentPermissionLevel = data["currentPermissionLevel"];
             this.accessRequestCount = data["accessRequestCount"];
+            this.isPublic = data["isPublic"];
             if (data["players"] && data["players"].constructor === Array) {
                 this.players = [] as any;
                 for (let item of data["players"])
-                    this.players!.push(BlizzardPlayer.fromJS(item));
+                    this.players!.push(StoredPlayer.fromJS(item));
             }
             if (data["mains"] && data["mains"].constructor === Array) {
                 this.mains = [] as any;
                 for (let item of data["mains"])
                     this.mains!.push(PlayerMain.fromJS(item));
+            }
+            if (data["playerPool"] && data["playerPool"].constructor === Array) {
+                this.playerPool = [] as any;
+                for (let item of data["playerPool"])
+                    this.playerPool!.push(StoredPlayer.fromJS(item));
             }
         }
     }
@@ -1122,6 +1378,7 @@ export class FullGuildProfile implements IFullGuildProfile {
         data["region"] = this.region;
         data["currentPermissionLevel"] = this.currentPermissionLevel;
         data["accessRequestCount"] = this.accessRequestCount;
+        data["isPublic"] = this.isPublic;
         if (this.players && this.players.constructor === Array) {
             data["players"] = [];
             for (let item of this.players)
@@ -1131,6 +1388,11 @@ export class FullGuildProfile implements IFullGuildProfile {
             data["mains"] = [];
             for (let item of this.mains)
                 data["mains"].push(item.toJSON());
+        }
+        if (this.playerPool && this.playerPool.constructor === Array) {
+            data["playerPool"] = [];
+            for (let item of this.playerPool)
+                data["playerPool"].push(item.toJSON());
         }
         return data; 
     }
@@ -1145,8 +1407,10 @@ export interface IFullGuildProfile {
     region?: string | undefined;
     currentPermissionLevel?: number | undefined;
     accessRequestCount?: number | undefined;
-    players?: BlizzardPlayer[] | undefined;
+    isPublic?: boolean | undefined;
+    players?: StoredPlayer[] | undefined;
     mains?: PlayerMain[] | undefined;
+    playerPool?: StoredPlayer[] | undefined;
 }
 
 export class PendingAccessRequest implements IPendingAccessRequest {

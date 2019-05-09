@@ -64,6 +64,34 @@ Thanks!";
             return newEmail;
         }
 
+        public static StatsGenerationComplete GenerateStatsCompleteEmail(string url)
+        {
+            var newEmail = new StatsGenerationComplete();
+
+            newEmail.Subject = "Stats generation complete!";
+
+            newEmail.TextContent =
+                $@"Hello from the GuildTools Team!
+
+Your guild stats generation is complete: 
+
+{url}
+
+Have a great day!";
+
+
+            newEmail.HtmlContent =
+                $@"Hello from the GuildTools Team!<br/><br/>
+
+Your guild stats generation is complete: 
+
+<a href='{url}'>{url}.<br/><br/>
+
+Thanks!";
+
+            return newEmail;
+        }
+
         public class ResetPasswordEmail
         {
             public string Subject { get; set; }
@@ -72,6 +100,13 @@ Thanks!";
         }
 
         public class RegistrationConfirmationEmail
+        {
+            public string Subject { get; set; }
+            public string TextContent { get; set; }
+            public string HtmlContent { get; set; }
+        }
+
+        public class StatsGenerationComplete
         {
             public string Subject { get; set; }
             public string TextContent { get; set; }

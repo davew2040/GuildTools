@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace GuildTools.EF.Models.Enums
 {
-    public enum GameRegion
+    public enum GameRegionEnum
     {
         US = 1,
         EU = 2

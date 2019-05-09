@@ -38,6 +38,15 @@ namespace GuildTools.Cache.SpecificCaches
                 this.GetKey(guildName, profileId, realm.Id));
         }
 
+        public async Task<StoredGuild> InsertGuildAsync(StoredGuild guild, int profileId)
+        {
+            return await this.cache.InsertIfMissingAsync(
+                guild,
+                this.GetFromDatabase(guild.Name, profileId, guild.Realm),
+                this.Store(),
+                this.GetKey(guild.Name, profileId, guild.RealmId));
+        }
+
         private Func<Task<StoredGuild>> GetFromDatabase(string guildName, int profileId, StoredRealm realm)
         {
             return (async () =>
@@ -56,7 +65,7 @@ namespace GuildTools.Cache.SpecificCaches
                 var json = await this.blizzardService.GetGuildAsync(
                     guildName, 
                     realm.Name, 
-                    BlizzardUtilities.GetBlizzardRegionFromEfRegion((EfEnums.GameRegion)realm.Region.Id));
+                    BlizzardUtilities.GetBlizzardRegionFromEfRegion((EfEnums.GameRegionEnum)realm.Region.Id));
 
                 if (BlizzardService.DidGetFail(json))
                 {
@@ -76,13 +85,15 @@ namespace GuildTools.Cache.SpecificCaches
             });
         }
 
-        private Func<StoredGuild, Task> Store()
+        private Func<StoredGuild, Task<StoredGuild>> Store()
         {
             return async (guild) =>
             {
                 this.context.StoredGuilds.Add(guild);
 
                 await this.context.SaveChangesAsync();
+
+                return guild;
             };
         }
 

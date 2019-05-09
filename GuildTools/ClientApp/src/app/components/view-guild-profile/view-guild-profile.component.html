@@ -1,30 +1,36 @@
 
 <div fxLayout="column" fxLayoutAlign="start center" class="container">
   <div class="operations-container" fxLayout="row" fxLayoutAlign="end">
-      <div *ngIf="hasAdminPermissions" fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
+      <div fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
+          <button mat-raised-button color="primary" (click)="shareProfile()">Share</button>
           <button
+            *ngIf="showAdminToolbar"
             mat-raised-button color="primary"
             [matBadge]="getAccessRequestBadge"
             matBadgeColor="warn"
             (click)="navigateToAccessRequests()">Manage Permissions</button>
       </div>
 
-      <div *ngIf="isVisitor" fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
+      <div *ngIf="showVisitorToolbar" fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
           <button mat-raised-button color="primary" (click)="requestAccess()">Request Access</button>
       </div>
 </div>
 
   <div fxLayout="row" fxLayoutAlign="center" class="main-container" style="margin-top: 15px">
     <div fxLayout="row" fxLayoutAlign="space-between" class="secondary-container" fxLayoutGap="10px">
-        <div class="main-list" fxLayout="column" fxLayoutAlign="start center" fxLayoutGap="15px" fxFlex>
-            <h2>Mains</h2>
-
-            <mat-card
-              class="drag-box"
-              droppable
-              [dragOverClass]="'dragover-class'"
-              [dropScope]="dropScopes.DropMain"
-              (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
+        <div class="main-list" fxLayout="column" fxLayoutAlign="start stretch" fxLayoutGap="15px" fxFlex>
+            <div fxLayout="row" fxLayoutAlign="center">
+              <h2>{{ profile.profileName }}</h2>
+            </div>
+            <mat-divider></mat-divider>
+            <div fxLayout="row" fxLayoutAlign="center">
+              <mat-card
+                class="drag-box"
+                droppable
+                [dragOverClass]="'dragover-class'"
+                [dropScope]="dropScopes.DropMain"
+                (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
+            </div>
 
             <div class="no-mains-message" *ngIf="orderedMains.length === 0" fxLayout="column" fxLayoutAlign="center">
               No mains have been entered.
@@ -71,7 +77,7 @@
                       <mat-header-cell mat-header-cell class="player-name-header" *matHeaderCellDef> Name </mat-header-cell>
                       <mat-cell class="player-name-cell" mat-cell *matCellDef="let player">
                         <div>
-                            <div>{{ player.playerName }}</div>
+                            <div>{{ player.name }}</div>
                         </div>
                       </mat-cell>
                   </ng-container>

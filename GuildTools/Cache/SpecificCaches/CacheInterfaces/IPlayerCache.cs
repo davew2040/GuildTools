@@ -7,6 +7,6 @@ namespace GuildTools.Cache.SpecificCaches.CacheInterfaces
 {
     public interface IPlayerCache
     {
-        Task<BlizzardPlayer> GetPlayer(GameRegion region, string playerName, string realmName);
+        Task<BlizzardPlayer> GetPlayer(GameRegionEnum region, string playerName, string realmName);
     }
 }

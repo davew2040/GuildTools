@@ -1,6 +1,6 @@
 <div class="player-main-content" fxLayout="column">
-  <div fxLayout="row" fxLayoutAlign="end">
-    <a (click)="removeMain(playerMain)">Delete Main</a>
+  <div fxLayout="row" fxLayoutAlign="end" class="delete-main-container">
+    <a *ngIf="isAdmin" (click)="removeMain(playerMain)">Delete Main</a>
   </div>
   <div fxLayout="column" *ngIf="playerMain.alts && playerMain.alts.length > 0">
     <div class="group-title">Alts:</div>
@@ -70,7 +70,7 @@
   <ng-template contextMenuItem (execute)="promoteToMain($event.item)">
     Promote to Main
   </ng-template>
-  <ng-template contextMenuItem (execute)="removeMain($event.item)">
+  <ng-template contextMenuItem (execute)="removeAlt(playerMain, $event.item)">
     Delete
   </ng-template>
 

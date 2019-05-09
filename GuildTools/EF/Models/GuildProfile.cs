@@ -16,13 +16,14 @@ namespace GuildTools.EF.Models
         [Required]
         public string ProfileName { get; set; }
 
-        [Required]
         public string CreatorId { get; set; }
 
         [Required]
         public int RealmId { get; set; }
 
         public int? CreatorGuildId { get; set; }
+
+        public bool IsPublic { get; set; }
 
         public virtual UserWithData Creator { get; set; }
         public virtual IEnumerable<User_GuildProfilePermissions> User_GuildProfilePermissions { get; set; }

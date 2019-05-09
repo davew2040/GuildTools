@@ -13,8 +13,10 @@ namespace GuildTools.Controllers.Models
         public string Region { get; set; }
         public int? CurrentPermissionLevel { get; set; }
         public int AccessRequestCount { get; set; }
+        public bool IsPublic { get; set; }
 
-        public IEnumerable<BlizzardPlayer> Players { get; set; }
+        public IEnumerable<StoredPlayer> Players { get; set; }
         public IEnumerable<PlayerMain> Mains { get; set; }
+        public IEnumerable<StoredPlayer> PlayerPool { get; set; }
     }
 }

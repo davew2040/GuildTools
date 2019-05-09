@@ -1,8 +1,10 @@
     <div fxLayout="column">
       <div fxLayout="column" fxLayoutAlign="start center" >
         <div *ngIf="!authService.isAuthenticated" class="must-be-logged-in">
-            <div>You must be authenticated to view your profiles!</div>
-            <div style="margin-top:10px;"><a (click)="navigateToLogin()">Log In</a></div>
+            <div class='unauthenticated-title'>Welcome to the Alt Tracker!</div>
+            <div class='unauthenticated-text'>You can use the Alt Tracker to group together a player's main and alternate characters! You can <a (click)="addProfile()">create a public profile</a> to
+            experiment with the functionality, or <a (click)="navigateToLogin()">log in</a> to create a private profile, which allows you to
+            control permissions and access.</div>
         </div>
 
     <div *ngIf="authService.isAuthenticated" fxLayout="column" class="list-holder">

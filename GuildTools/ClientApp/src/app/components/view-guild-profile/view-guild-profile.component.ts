@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild, ViewChildren, AfterViewChecked, QueryList, ElementRef, ViewContainerRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewChildren, AfterViewChecked, QueryList, ElementRef, ViewContainerRef, Inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FullGuildProfile, BlizzardPlayer, PlayerMain, PlayerAlt } from 'app/services/ServiceTypes/service-types';
+import { FullGuildProfile, BlizzardPlayer, PlayerMain, PlayerAlt, StoredPlayer } from 'app/services/ServiceTypes/service-types';
 import { DataService, WowClass } from 'app/services/data-services';
 import { BusyService } from 'app/shared-services/busy-service';
 import { WowService } from 'app/services/wow-service';
@@ -9,13 +9,19 @@ import { Observable, Subject, combineLatest } from 'rxjs';
 import { startWith, map, filter } from 'rxjs/operators';
 import { DropEvent } from 'ng-drag-drop';
 import { MatExpansionPanel, MatDialog } from '@angular/material';
-import { RemoveAltEvent, RemoveMainEvent, EditPlayerNotesEvent, EditOfficerNotesEvent, PromoteAltToMainEvent } from '../view-main/view-main.component';
+import {
+  RemoveAltEvent,
+  RemoveMainEvent,
+  EditPlayerNotesEvent,
+  EditOfficerNotesEvent,
+  PromoteAltToMainEvent } from '../view-main/view-main.component';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 import { PermissionsOrder } from 'app/permissions/permissions-order';
 import { GuildProfilePermissionLevel, AuthService } from 'app/auth/auth.service';
 import { NotificationService } from 'app/shared-services/notification-service';
 import { RoutePaths } from 'app/data/route-paths';
 import { ConfirmationDialogComponent } from 'app/dialogs/confirmation-dialog.component/confirmation-dialog.component';
+import { ShareLinkDialogData, ShareLinkDialogComponent } from 'app/dialogs/share-link-dialog.component/share-link-dialog.component';
 
 class DropScopes {
   public DropMain = 'DropMain';
@@ -35,15 +41,15 @@ interface ComponentWithElement {
 export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
   public profile: FullGuildProfile = null;
   public playerColumns: Array<string> = ['playerName', 'playerLevel'];
-  public unassignedPlayers = new Subject<Array<BlizzardPlayer>>();
+  public unassignedPlayers = new Subject<Array<StoredPlayer>>();
   public mains = new Array<PlayerMain>();
   public mainsSubject = new Subject<Array<PlayerMain>>();
   public altsSubject = new Subject<Array<PlayerAlt>>();
   public altsObservable: Observable<Array<PlayerAlt>>;
   public orderedMains = new Array<PlayerMain>();
   public orderedMainsObs = new Observable<Array<PlayerMain>>();
-  public filteredPlayersObs: Observable<Array<BlizzardPlayer>>;
-  public filteredPlayers: Array<BlizzardPlayer>;
+  public filteredPlayersObs: Observable<Array<StoredPlayer>>;
+  public filteredPlayers: Array<StoredPlayer>;
   public playerFilterText: Subject<string> = new Subject<string>();
   public dropScopes = new DropScopes();
   public isAdmin = false;
@@ -62,7 +68,8 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
       private authService: AuthService,
       private notificationService: NotificationService,
       private dialog: MatDialog,
-      private errorService: ErrorReportingService) {
+      private errorService: ErrorReportingService,
+      @Inject('BASE_URL') private baseUrl: string) {
 
     this.orderedMainsObs = this.mainsSubject.pipe(
       map(m => {
@@ -119,8 +126,12 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
     }
   }
 
-  public get hasAdminPermissions(): boolean {
+  public get showAdminToolbar(): boolean {
     if (!this.profile) {
+      return false;
+    }
+
+    if (this.profile.isPublic) {
       return false;
     }
 
@@ -131,13 +142,18 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
     return PermissionsOrder.GreaterThanOrEqual(this.profile.currentPermissionLevel, GuildProfilePermissionLevel.Officer);
   }
 
-  public get isVisitor(): boolean {
+  public get showVisitorToolbar(): boolean {
     if (!this.profile) {
+      return false;
+    }
+
+    if (this.profile.isPublic){
       return false;
     }
 
     return (!this.authService.isAuthenticated || !this.profile.currentPermissionLevel);
   }
+
 
   public get getAccessRequestBadge(): number {
     if (!this.profile) {
@@ -155,7 +171,7 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
     this.playerFilterText.next($e.target.value);
   }
 
-  public getPlayerCssClass(player: BlizzardPlayer): string {
+  public getPlayerCssClass(player: StoredPlayer): string {
     const classString = this.wowService.getClassTag(player.class as WowClass);
 
     return `background-${classString}`;
@@ -312,10 +328,14 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
       success => {
         this.busyService.unsetBusy();
 
+        success.alts = this.sortAlts(success.alts);
+
         const oldMainIndex = this.mains.findIndex(x => x.id === event.main.id);
         this.mains.splice(oldMainIndex, 1);
         this.mains.push(success);
         this.mainsSubject.next(this.mains);
+
+        this.altsSubject.next(this.getAltsFromMains(this.mains));
 
         this.playerFlaggedForExpansion = success.id;
       },
@@ -352,15 +372,23 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
           });
   }
 
-  public showMessage(message: string) {
-    alert(message);
+  public shareProfile() {
+    const profileUrl = `${this.baseUrl}/${RoutePaths.ViewProfile}/${this.profile.id}`;
+
+    const dialogRef = this.dialog.open(ShareLinkDialogComponent, {
+      disableClose: false,
+      data: {
+        url: profileUrl
+      } as ShareLinkDialogData,
+      width: '400px'
+    });
   }
 
   private getPlayerFilterer(): Observable<Array<BlizzardPlayer>> {
     return combineLatest(
       [
         this.unassignedPlayers.pipe(
-          startWith([]),
+          startWith(new Array<StoredPlayer>()),
           map(p => {
             return this.sortPlayers(p);
           })
@@ -371,18 +399,18 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
             s => s.trim())
         ),
         this.orderedMainsObs.pipe(
-          startWith([])
+          startWith(new Array<PlayerMain>())
         ),
         this.altsSubject.pipe(
-          startWith([])
+          startWith(new Array<PlayerAlt>())
         )
       ])
     .pipe(
       map(([players, searchText, orderedMains, alts]) => {
         return players
-          .filter(p => p.playerName.toLowerCase().includes(searchText.toLowerCase()))
-          .filter(p => !orderedMains.find(o => o.player.name.toLowerCase() === p.playerName.toLowerCase()))
-          .filter(p => !alts.find(a => a.player.name.toLowerCase() === p.playerName.toLowerCase()));
+          .filter(p => p.name.toLowerCase().includes(searchText.toLowerCase()))
+          .filter(p => !orderedMains.find(o => o.player.name.toLowerCase() === p.name.toLowerCase()))
+          .filter(p => !alts.find(a => a.player.name.toLowerCase() === p.name.toLowerCase()));
       }));
   }
 
@@ -402,6 +430,10 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
 
         this.unassignedPlayers.next(this.profile.players);
 
+        if (this.profile.isPublic) {
+          this.isAdmin = true;
+        }
+
         this.mains = this.transformMainsList(this.profile.mains);
         this.mainsSubject.next(this.mains);
       },
@@ -412,13 +444,13 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
     );
   }
 
-  private sortPlayers(players: BlizzardPlayer[]): BlizzardPlayer[] {
+  private sortPlayers(players: StoredPlayer[]): StoredPlayer[] {
     return players.sort((a, b) => {
       if (a.level === b.level) {
-        if (a.playerName < b.playerName){
+        if (a.name < b.name){
           return -1;
         }
-        else if (a.playerName > b.playerName){
+        else if (a.name > b.name){
           return 1;
         }
 

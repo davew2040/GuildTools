@@ -7,22 +7,29 @@ using System.Threading.Tasks;
 
 namespace GuildTools.Scheduler
 {
+    public class BackgroundWorkItem
+    {
+        public string Key { get; set; }
+        public Func<CancellationToken, IServiceProvider, Task> Worker { get; set; }
+    }
+
     public interface IBackgroundTaskQueue
     {
-        void QueueBackgroundWorkItem(Func<CancellationToken, IServiceProvider, Task> workItem);
+        void QueueBackgroundWorkItem(BackgroundWorkItem workItem);
 
-        Task<Func<CancellationToken, IServiceProvider, Task>> DequeueAsync(
+        Task<BackgroundWorkItem> DequeueAsync(
             CancellationToken cancellationToken);
+
+        int? FindItemPlaceInQueue(string key);
     }
 
     public class BackgroundTaskQueue : IBackgroundTaskQueue
     {
-        private ConcurrentQueue<Func<CancellationToken, IServiceProvider, Task>> _workItems =
-            new ConcurrentQueue<Func<CancellationToken, IServiceProvider, Task>>();
+        private ConcurrentQueue<BackgroundWorkItem> _workItems =
+            new ConcurrentQueue<BackgroundWorkItem>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
 
-        public void QueueBackgroundWorkItem(
-            Func<CancellationToken, IServiceProvider, Task> workItem)
+        public void QueueBackgroundWorkItem(BackgroundWorkItem workItem)
         {
             if (workItem == null)
             {
@@ -33,13 +40,29 @@ namespace GuildTools.Scheduler
             _signal.Release();
         }
 
-        public async Task<Func<CancellationToken, IServiceProvider, Task>> DequeueAsync(
+        public async Task<BackgroundWorkItem> DequeueAsync(
             CancellationToken cancellationToken)
         {
             await _signal.WaitAsync(cancellationToken);
             _workItems.TryDequeue(out var workItem);
 
             return workItem;
+        }
+
+        public int? FindItemPlaceInQueue(string key)
+        {
+            int place = 1;
+            foreach (var item in _workItems)
+            {
+                if (item.Key == key)
+                {
+                    return place;
+                }
+
+                place++;
+            }
+
+            return null;
         }
     }
 }

@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router'
+import { ActivatedRoute, Router, NavigationStart } from '@angular/router'
 import { DataService } from '../services/data-services';
 import { BlizzardService } from '../blizzard-services/blizzard-services';
-import { GuildMemberStats } from '../services/ServiceTypes/service-types';
+import { GuildMemberStats, GuildStatsResponse } from '../services/ServiceTypes/service-types';
 import { BusyService } from 'app/shared-services/busy-service';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 import { WowService } from 'app/services/wow-service';
+import { NotificationRequestType } from 'app/data/notification-request-type';
 
 enum GuildStatsStatus {
   Loading,
@@ -23,17 +24,29 @@ export class GuildStatsComponent implements OnInit {
 
   pageStatus: GuildStatsStatus = GuildStatsStatus.Loading;
   guildMembers: GuildMemberStats[] = [];
+  isCompleted = false;
+  completionProgress = 0.0;
+  placeInLine: number;
   guild: string;
   realm: string;
   region: string;
   prettyGuild: string;
   prettyRealm: string;
-  guildExists: boolean = false;
-  dataReady: boolean = false;
+  guildExists = false;
+  dataReady = false;
   statsTables: StatsTable[];
+
+  public notificationEmailAddress = '';
+  public emailDisabled = false;
+
+  private timerHandler: any;
+
+
+  private get recheckTimer() { return 4000; }
 
   constructor(
     public route: ActivatedRoute,
+    public router: Router,
     public dataService: DataService,
     public blizzardService: BlizzardService,
     private busyService: BusyService,
@@ -47,7 +60,13 @@ export class GuildStatsComponent implements OnInit {
       this.region = params['region'];
     });
 
-    this.busyService.setBusy()
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationStart) {
+        clearTimeout(this.timerHandler);
+      }
+    });
+
+    this.busyService.setBusy();
 
     this.dataService.getGuildExists(this.region, this.guild, this.realm).subscribe(
       success => {
@@ -196,19 +215,51 @@ export class GuildStatsComponent implements OnInit {
     this.dataService.getGuildMemberStats(region, guild, realm).subscribe(
       success => {
         this.busyService.unsetBusy();
-        if (success && success.length > 0) {
-          this.guildMembers = success;
+        if (success.isCompleted) {
+          this.guildMembers = success.values;
           this.populateStatsTableDefinitions();
           this.pageStatus = GuildStatsStatus.Ready;
         }
         else {
+          this.completionProgress = success.completionProgress;
+          this.placeInLine = success.positionInQueue;
           this.pageStatus = GuildStatsStatus.DataNotReady;
+          this.timerHandler = setTimeout(() => {
+            this.loadGuildStats(region, realm, guild);
+          },
+          this.recheckTimer);
         }
       },
       error => {
         this.busyService.unsetBusy();
         this.errorService.reportApiError(error);
       });
+  }
+
+  public requestNotification() {
+    const email = this.notificationEmailAddress;
+
+    this.busyService.setBusy();
+    this.dataService.requestStatsCompleteNotification(
+        email, this.region, this.guild, this.realm, NotificationRequestType.StatsRequestComplete)
+      .subscribe(
+        success => {
+          this.emailDisabled = true;
+          this.busyService.unsetBusy();
+        },
+        error => {
+          this.busyService.unsetBusy();
+          this.errorService.reportApiError(error);
+        }
+      )
+  }
+
+  public get inLine(): boolean {
+    return this.placeInLine !== undefined && this.placeInLine !== null;
+  }
+
+  getCompletionPercentage(percentage: number): string {
+    return (percentage * 100).toFixed(0);
   }
 
   pageLoading(): boolean {

@@ -13,6 +13,7 @@ import { ViewGuildProfileComponent } from './components/view-guild-profile/view-
 import { ConfirmRegistrationComponent } from './components/account/confirm-registration/confirm-registration.component';
 import { ManagePermissionsComponent } from './components/manage-permissions/manage-permissions.component';
 import { LandingPageComponent } from './components/landing-page/landing-page.component';
+import { RaiderIoStatsComponent } from './components/raider-io-stats/raider-io-stats.component';
 
 export const ROUTES: Routes = [
   { path: '', component: LandingPageComponent },
@@ -21,7 +22,8 @@ export const ROUTES: Routes = [
   { path: RoutePaths.Login, component: LoginComponent },
   { path: RoutePaths.GuildStats, component: GuildStatsLauncherComponent },
   { path: RoutePaths.GuildStats + '/:region/:guild/:realm', component: GuildStatsComponent },
-  { path: RoutePaths.MyProfiles, component: MyGuildProfilesComponent },
+  { path: RoutePaths.RaiderIoStats + '/:region/:guild/:realm', component: RaiderIoStatsComponent },
+  { path: RoutePaths.AltTracker, component: MyGuildProfilesComponent },
   { path: RoutePaths.NewProfile, component: NewProfilePageComponent },
   { path: RoutePaths.ResetPassword, component: ResetPasswordComponent },
   { path: RoutePaths.ResetPasswordWithToken, component: ResetPasswordWithTokenComponent },

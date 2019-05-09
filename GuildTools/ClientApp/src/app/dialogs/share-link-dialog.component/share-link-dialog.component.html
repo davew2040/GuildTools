@@ -1,0 +1,15 @@
+<mat-card>
+    <mat-card-title class='header'>Share Link</mat-card-title>
+
+    <mat-divider></mat-divider>
+
+    <div fxLayout="column" fxLayoutAlign="start center">
+    <mat-form-field fxFill>
+      <input type="text" id="copier" matInput [(ngModel)]="url" class="url-box" style="margin-top: 10px;"/>
+    </mat-form-field>
+
+    <div fxLayout="column" fxLayoutAlign="start center" style="margin-top: 5px;">
+      <button mat-raised-button (click)="copyToClipboard()">Copy to Clipboard</button>
+    </div>
+  </div>
+</mat-card>

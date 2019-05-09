@@ -1,40 +1,40 @@
+using GuildTools.Cache;
+using GuildTools.Cache.LongRunningRetrievers;
+using GuildTools.Cache.LongRunningRetrievers.Interfaces;
+using GuildTools.Cache.SpecificCaches;
+using GuildTools.Cache.SpecificCaches.CacheInterfaces;
+using GuildTools.Configuration;
+using GuildTools.Data;
+using GuildTools.EF;
+using GuildTools.EF.Models;
+using GuildTools.ErrorHandling;
+using GuildTools.ExternalServices;
+using GuildTools.ExternalServices.Blizzard;
+using GuildTools.Mocks;
+using GuildTools.Permissions;
+using GuildTools.Scheduler;
+using GuildTools.Services;
+using GuildTools.Services.Mail;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using GuildTools.Permissions;
-using GuildTools.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using GuildTools.Cache;
-using GuildTools.ExternalServices;
-using GuildTools.Scheduler;
 using Serilog;
-using Serilog.Sinks.MSSqlServer;
-using GuildTools.Services;
-using GuildTools.EF;
-using GuildTools.Data;
-using GuildTools.ExternalServices.Blizzard;
-using GuildTools.Services.Mail;
 using Swashbuckle.AspNetCore.Swagger;
-using System.IO;
-using System.Reflection;
-using GuildTools.Cache.SpecificCaches;
-using System.Security.Claims;
-using GuildTools.Cache.SpecificCaches.CacheInterfaces;
-using Microsoft.AspNetCore.Diagnostics;
-using GuildTools.ErrorHandling;
-using GuildTools.EF.Models;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Security.Claims;
+using System.Text;
 
 namespace GuildTools
 {
@@ -54,6 +54,7 @@ namespace GuildTools
             services.Configure<JwtSettings>(Configuration.GetSection("JWTSettings"));
             services.Configure<BlizzardApiSecrets>(Configuration.GetSection("BlizzardApiSecrets"));
             services.Configure<ConnectionStrings>(Configuration.GetSection("ConnectionStrings"));
+            services.AddMemoryCache();
 
             // In production, the Angular files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
@@ -62,12 +63,16 @@ namespace GuildTools
             });
             
             services
-                .AddDbContext<GuildToolsContext>(options => options.UseSqlServer(Configuration.GetValue<string>("ConnectionStrings:Database")));
+                .AddDbContext<GuildToolsContext>(options => {
+                    options.UseSqlServer(Configuration.GetValue<string>("ConnectionStrings:Database"));
+                    options.EnableSensitiveDataLogging(true);
+                });
 
             services
                 .AddIdentity<UserWithData, IdentityRole>(x =>
                 {
                     x.Password.RequiredLength = 8;
+                    x.Password.RequireNonAlphanumeric = false;
                     x.ClaimsIdentity.UserIdClaimType = GuildToolsClaims.UserId;
                 })
                 .AddEntityFrameworkStores<GuildToolsContext>()
@@ -113,20 +118,49 @@ namespace GuildTools
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            services.AddHostedService<QueuedHostedService>();
-            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+            IBackgroundTaskQueue blizzardTaskQueue = new BackgroundTaskQueue();
+            IBackgroundTaskQueue raiderIoTaskQueue = new BackgroundTaskQueue();
+
+            ICallThrottler blizzardThrottler = new CallThrottler(TimeSpan.FromMilliseconds(50));
+            ICallThrottler raiderIoThrottler = new CallThrottler(TimeSpan.FromSeconds(3));
+
+            services.AddTransient<IHostedService>((serviceProvider) => { return new QueuedHostedService(blizzardTaskQueue, serviceProvider); });
+            services.AddTransient<IHostedService>((serviceProvider) => { return new QueuedHostedService(raiderIoTaskQueue, serviceProvider); });
             services.AddScoped<IKeyedResourceManager, KeyedResourceManager>();
             services.AddScoped<IDatabaseCache, DatabaseCache>();
             services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddScoped<IBlizzardService, BlizzardService>();
-            services.AddScoped<IGuildService, GuildService>();
             services.AddScoped<IGuildStatsCache, GuildStatsCache>();
             services.AddScoped<IDataRepository, DataRepository>();
-            services.AddScoped<IOldGuildMemberCache, OldGuildMemberCache>();
             services.AddScoped<IGuildMemberCache, GuildMemberCache>();
             services.AddScoped<IRealmStoreByValues, RealmStoreByValues>();
             services.AddScoped<IPlayerStoreByValue, PlayerStoreByValue>();
             services.AddScoped<IGuildStoreByName, GuildStoreByName>();
+            //services.AddScoped<ILocalRaiderIoService, LocalRaiderIoService>();
+            services.AddScoped<ILocalRaiderIoService, MockLocalRaiderIoService>();
+
+            services.AddScoped<IRaiderIoService>((serviceProvider) => { return new RaiderIoService(raiderIoThrottler, serviceProvider.GetService<IBlizzardService>()); });
+            services.AddScoped<IGuildService>((serviceProvider) => { return new GuildService(serviceProvider.GetService<IBlizzardService>(), blizzardThrottler); });
+            services.AddScoped<IGuildStatsRetriever>(
+                (serviceProvider) => 
+                {
+                    return new GuildStatsRetriever(
+                        serviceProvider.GetService<IMemoryCache>(),
+                        blizzardTaskQueue,
+                        serviceProvider.GetService<IGuildService>(),
+                        serviceProvider.GetService<IMailSender>(),
+                        serviceProvider.GetService<ICommonValuesProvider>());
+                });
+            services.AddScoped<IRaiderIoStatsRetriever>(
+                (serviceProvider) =>
+                {
+                    return new RaiderIoStatsRetriever(
+                        serviceProvider.GetService<IMemoryCache>(),
+                        raiderIoTaskQueue,
+                        serviceProvider.GetService<ILocalRaiderIoService>(),
+                        serviceProvider.GetService<IMailSender>(),
+                        serviceProvider.GetService<ICommonValuesProvider>());
+                });
 
             this.InitializeCaches(services);
 
@@ -172,8 +206,8 @@ namespace GuildTools
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(
-            IApplicationBuilder app, 
-            IHostingEnvironment env, 
+            IApplicationBuilder app,
+            Microsoft.AspNetCore.Hosting.IHostingEnvironment env, 
             IServiceProvider serviceProvider) 
         {
             if (!env.IsDevelopment())
@@ -310,7 +344,6 @@ namespace GuildTools
             using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
                 .CreateScope())
             {
-
                 serviceScope.ServiceProvider.GetService<GuildToolsContext>()
                     .Database.Migrate();
             }

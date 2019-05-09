@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,42 +11,42 @@ namespace GuildTools.Scheduler
 {
     public class QueuedHostedService : BackgroundService
     {
-        private readonly ILogger _logger;
         private readonly IServiceProvider serviceProvider;
 
         public QueuedHostedService(
             IBackgroundTaskQueue taskQueue,
-            ILoggerFactory loggerFactory, 
             IServiceProvider serviceProvider)
         {
             TaskQueue = taskQueue;
-            _logger = loggerFactory.CreateLogger<QueuedHostedService>();
             this.serviceProvider = serviceProvider;
         }
+
+        public BackgroundWorkItem ActiveWorkItem { get; private set; }
 
         public IBackgroundTaskQueue TaskQueue { get; }
 
         protected async override Task ExecuteAsync(
             CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Queued Hosted Service is starting.");
+            Log.Information("Queued Hosted Service is starting.");
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 var workItem = await TaskQueue.DequeueAsync(cancellationToken);
+                this.ActiveWorkItem = workItem;
 
                 try
                 {
-                    await workItem(cancellationToken, serviceProvider);
+                    await workItem.Worker(cancellationToken, serviceProvider);
+                    this.ActiveWorkItem = null;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex,
-                       $"Error occurred executing {nameof(workItem)}.");
+                    Log.Error(ex, $"Error occurred executing item {workItem.Key}.");
                 }
             }
 
-            _logger.LogInformation("Queued Hosted Service is stopping.");
+            Log.Information("Queued Hosted Service is starting.");
         }
     }
 }

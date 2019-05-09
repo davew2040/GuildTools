@@ -17,6 +17,6 @@ namespace GuildTools.Cache.SpecificCaches.CacheInterfaces
 {
     public interface IRealmsCache
     {
-        Task<IEnumerable<Realm>> GetRealms(EfEnums.GameRegion region);
+        Task<IEnumerable<Realm>> GetRealms(EfEnums.GameRegionEnum region);
     }
 }

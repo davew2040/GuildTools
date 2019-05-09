@@ -16,16 +16,16 @@ namespace GuildTools.EF.Models.Enums
 
         public static class GameRegionUtilities
         {
-            public static GameRegion GetGameRegionFromString(string region)
+            public static GameRegionEnum GetGameRegionFromString(string region)
             {
                 var upper = region.ToUpper();
 
                 switch (upper)
                 {
                     case "US":
-                        return GameRegion.US;
+                        return GameRegionEnum.US;
                     case "EU":
-                        return GameRegion.EU;
+                        return GameRegionEnum.EU;
                     default:
                         throw new ArgumentException("Unrecognized region type!");
                 }

@@ -9,17 +9,26 @@
 
           <div class="form-contents" fxLayout="column" fxLayoutAlign="space-between" fxLayoutGap="10px" style='margin-top: 25px;'>
               <mat-form-field >
-                <input matInput type="text" placeholder="Profile Name" formControlName="profileName">
+                <input matInput type="text" placeholder="Profile Name" [formControlName]="profileNameControlKey">
               </mat-form-field>
 
               <div fxLayout="row" fxLayoutAlign="start start">
                 <mat-form-field fxFlex>
-                  <input matInput type="text" placeholder="Guild" formControlName="guildName">
+                  <input matInput type="text" placeholder="Guild" [formControlName]="guildNameControlKey">
                 </mat-form-field>
                 <button mat-raised-button (click)="findGuild()" style="margin-left: 55px; margin-top: 0px;">Find</button>
               </div>
               <div *ngIf="errors.length !== 0" class="alert alert-danger" style="margin-top: 5px">
                   <div *ngFor="let error of errors">{{error}}</div>
+              </div>
+
+              <div fxLayout="row" fxLayoutAlign="end start">
+                <mat-checkbox
+                  id="is-public-checkbox"
+                  labelPosition="before"
+                  color="primary"
+                  [matTooltip]="publicCheckboxTooltip"
+                  [formControlName]="isPublicControlKey">Public Profile</mat-checkbox>
               </div>
           </div>
 

@@ -20,6 +20,9 @@ using GuildTools.Services;
 using GuildTools.EF.Models.StoredBlizzardModels;
 using GuildTools.EF.Models;
 using GuildTools.Data;
+using GuildTools.Cache.SpecificCaches.CacheInterfaces;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace GuildTools.Tests
 {
@@ -77,12 +80,12 @@ namespace GuildTools.Tests
 
             DateTime initial = DateTime.Now;
 
-            var realms = await cache.GetRealms(EF.Models.Enums.GameRegion.US);
+            var realms = await cache.GetRealms(EF.Models.Enums.GameRegionEnum.US);
 
             DateTime second = DateTime.Now;
             TimeSpan sinceInitial = second - initial;
 
-            var realms2 = await cache.GetRealms(EF.Models.Enums.GameRegion.US);
+            var realms2 = await cache.GetRealms(EF.Models.Enums.GameRegionEnum.US);
 
             DateTime third = DateTime.Now;
             TimeSpan sinceSecond = third - second;
@@ -107,23 +110,24 @@ namespace GuildTools.Tests
 
             IDataRepository repo = new DataRepository(context);
             IBlizzardService blizzardService = new BlizzardService(repo, this.config);
-            IGuildService guildService = new GuildService(blizzardService);
+            CallThrottler throttler = new CallThrottler(TimeSpan.FromSeconds(1));
+            IGuildService guildService = new GuildService(blizzardService, throttler);
 
             RealmStoreByValues store = new RealmStoreByValues(guildService, memoryCache, context, manager);
 
             DateTime initial = DateTime.Now;
 
-            var realms = await store.GetRealmAsync("Burning Blade", EF.Models.Enums.GameRegion.US);
+            var realms = await store.GetRealmAsync("Burning Blade", EF.Models.Enums.GameRegionEnum.US);
 
             DateTime second = DateTime.Now;
             TimeSpan sinceInitial = second - initial;
 
-            var realms2 = await store.GetRealmAsync("Burning Blade", EF.Models.Enums.GameRegion.US);
+            var realms2 = await store.GetRealmAsync("Burning Blade", EF.Models.Enums.GameRegionEnum.US);
 
             DateTime third = DateTime.Now;
             TimeSpan sinceSecond = third - second;
 
-            var realms3 = await store.GetRealmAsync("Akama", EF.Models.Enums.GameRegion.US);
+            var realms3 = await store.GetRealmAsync("Akama", EF.Models.Enums.GameRegionEnum.US);
 
             DateTime fourth = DateTime.Now;
             TimeSpan sinceThird = fourth - third;
@@ -148,7 +152,8 @@ namespace GuildTools.Tests
 
             IDataRepository repo = new DataRepository(context);
             IBlizzardService blizzardService = new BlizzardService(repo, this.config);
-            IGuildService guildService = new GuildService(blizzardService);
+            CallThrottler throttler = new CallThrottler(TimeSpan.FromSeconds(1));
+            IGuildService guildService = new GuildService(blizzardService, throttler);
 
             int profileId = 1;
 
@@ -215,6 +220,159 @@ namespace GuildTools.Tests
             var endTime = DateTime.Now;
 
             int x = 42;
+        }
+
+        [TestMethod]
+        public async Task LongRunningCacheTest()
+        {
+            MemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+            LongRunningCache<int> cache = new LongRunningCache<int>(memoryCache, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(2));
+
+            Debug.WriteLine("Starting...");
+
+            var result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            Debug.WriteLine(result.State);
+            Assert.IsTrue(result.State == CachedValueState.Updating);
+
+            await Task.Delay(1000);
+
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            Debug.WriteLine(result.State);
+            Assert.IsTrue(result.State == CachedValueState.FoundAndNotUpdating);
+
+            await Task.Delay(2000);
+
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            Debug.WriteLine("#3: " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.FoundButUpdating);
+
+            await Task.Delay(1000);
+
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            Debug.WriteLine("#4: " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.FoundAndNotUpdating);
+
+            await Task.Delay(5000);
+
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            Debug.WriteLine("#5: " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.Updating);
+        }
+
+        [TestMethod]
+        public async Task LongRunningCacheTest_NoRefresh_InstantGet()
+        {
+            MemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+            LongRunningCache<int> cache = new LongRunningCache<int>(memoryCache, TimeSpan.FromSeconds(2));
+
+            Debug.WriteLine("Starting...");
+
+            var result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            Debug.WriteLine(result.State);
+            Assert.IsTrue(result.State == CachedValueState.Updating);
+
+            await Task.Delay(1000);
+
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            Debug.WriteLine(result.State);
+            Assert.IsTrue(result.State == CachedValueState.FoundAndNotUpdating);
+
+            await Task.Delay(3000);
+
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            Debug.WriteLine("#3: " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.Updating);
+
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.immediateValueGetter());
+
+            await Task.Delay(500);
+
+            Debug.WriteLine("#4: " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.FoundAndNotUpdating);
+        }
+
+        [TestMethod]
+        public async Task LongRunningCacheTest_WithRefresh_WaitingGet()
+        {
+            MemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
+            LongRunningCache<int> cache = new LongRunningCache<int>(memoryCache, TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(3));
+
+            DateTime startTime = DateTime.Now;
+            Debug.WriteLine("Starting...");
+
+            var result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.waitingValueGetter(500));
+
+            Debug.WriteLine("0.00: " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.Updating);
+
+            await Task.Delay(250);
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.waitingValueGetter(500));
+
+            Debug.WriteLine((DateTime.Now - startTime).TotalMilliseconds + ": " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.Updating);
+
+            await Task.Delay(1000);
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.waitingValueGetter(500));
+
+            Debug.WriteLine((DateTime.Now - startTime).TotalMilliseconds + ": " + result.State);
+            Assert.IsTrue(result.State ==CachedValueState.FoundAndNotUpdating);
+
+            await Task.Delay(3000);
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.waitingValueGetter(500));
+
+            Debug.WriteLine((DateTime.Now - startTime).TotalMilliseconds + ": " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.FoundButUpdating);
+
+            await Task.Delay(1000);
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.waitingValueGetter(500));
+
+            Debug.WriteLine((DateTime.Now - startTime).TotalMilliseconds + ": " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.FoundAndNotUpdating);
+
+
+            await Task.Delay(10000);
+            result = await cache.GetOrRefreshCachedValueAsync("testKey", this.testRunner(), this.waitingValueGetter(500));
+
+            Debug.WriteLine((DateTime.Now - startTime).TotalMilliseconds + ": " + result.State);
+            Assert.IsTrue(result.State == CachedValueState.Updating);
+        }
+
+        private Func<Func<CancellationToken, IServiceProvider, Task<int>>, Task> testRunner()
+        {
+            Mock<IServiceProvider> serviceProvider = new Mock<IServiceProvider>();
+
+            return async (runner) =>
+            {
+                await Task.Run(() =>
+                {
+                    runner(new CancellationToken(), serviceProvider.Object);
+                });
+            }; 
+        }
+
+        private Func<IProgress<double>, Task<int>> immediateValueGetter()
+        {
+            return async (progress) =>
+            {
+                return 42;
+            };
+        }
+
+        private Func<IProgress<double>, Task<int>> waitingValueGetter(int milliseconds)
+        {
+            return async (progress) =>
+            {
+                await Task.Delay(milliseconds);
+                return 42;
+            };
         }
 
         public static IConfigurationRoot GetIConfigurationRoot(string outputPath)

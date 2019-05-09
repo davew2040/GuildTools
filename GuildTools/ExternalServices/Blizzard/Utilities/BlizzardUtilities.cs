@@ -9,30 +9,55 @@ namespace GuildTools.ExternalServices.Blizzard.Utilities
 {
     public class BlizzardUtilities
     {
-        public static GameRegion GetEfRegionFromBlizzardRegion(BlizzardRegion blizzardRegion)
+        private static Dictionary<string, int> ClassMap_StringToInt = new Dictionary<string, int>()
+        {
+            { "Warrior", 1 },
+            { "Paladin", 2 },
+            { "Hunter", 3 },
+            { "Rogue", 4 },
+            { "Priest", 5 },
+            { "Death Knight", 6 },
+            { "Mage", 8 },
+            { "Warlock", 9 },
+            { "Monk", 10 },
+            { "Druid", 11 },
+            { "Demon Hunter", 12 },
+        };
+
+        public static GameRegionEnum GetEfRegionFromBlizzardRegion(BlizzardRegion blizzardRegion)
         {
             if (blizzardRegion == BlizzardRegion.EU)
             {
-                return GameRegion.EU;
+                return GameRegionEnum.EU;
             }
             else if (blizzardRegion == BlizzardRegion.US)
             {
-                return GameRegion.US;
+                return GameRegionEnum.US;
             }
             throw new ArgumentException("Unrecognized Blizzard region.");
         }
 
-        public static BlizzardRegion GetBlizzardRegionFromEfRegion(GameRegion efRegion)
+        public static BlizzardRegion GetBlizzardRegionFromEfRegion(GameRegionEnum efRegion)
         {
-            if (efRegion == GameRegion.EU)
+            if (efRegion == GameRegionEnum.EU)
             {
                 return BlizzardRegion.EU;
             }
-            else if (efRegion == GameRegion.US)
+            else if (efRegion == GameRegionEnum.US)
             {
                 return BlizzardRegion.US;
             }
             throw new ArgumentException("Unrecognized EF region.");
+        }
+
+        public static int GetBlizzardClassFromString(string className)
+        {
+            if (ClassMap_StringToInt.ContainsKey(className))
+            {
+                return ClassMap_StringToInt[className];
+            }
+
+            throw new ArgumentException("Invalid class name.");
         }
     }
 }

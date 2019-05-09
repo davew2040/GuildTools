@@ -27,7 +27,7 @@ namespace GuildTools.Cache
         public async Task<T> GetOrCacheAsync(
             Func<Task<T>> databaseRetriever,
             Func<Task<CacheResult<T>>> sourceRetriever,
-            Func<T, Task> databaseStorer,
+            Func<T, Task<T>> databaseStorer,
             Func<string> keyCreator)
         {
             var key = keyCreator();
@@ -62,6 +62,43 @@ namespace GuildTools.Cache
                 this.SetMemoryCacheEntry(key, retrieved);
 
                 return foundFromSource.Result;
+            }
+            finally
+            {
+                await this.resourceManager.ReleaseKeyLockAsync(key);
+            }
+        }
+
+        public async Task<T> InsertIfMissingAsync(
+            T value,
+            Func<Task<T>> databaseRetriever,
+            Func<T, Task<T>> databaseStorer,
+            Func<string> keyCreator)
+        {
+            var key = keyCreator();
+            await this.resourceManager.AcquireKeyLockAsync(key);
+
+            try
+            {
+                T foundValue;
+                var foundInCache = this.cache.TryGetValue(key, out foundValue);
+
+                if (foundInCache)
+                {
+                    return foundValue;
+                }
+
+                var foundInDatabase = await databaseRetriever();
+                if (foundInDatabase != null)
+                {
+                    this.SetMemoryCacheEntry(key, foundInDatabase);
+                    return foundInDatabase;
+                }
+
+                await databaseStorer(value);
+                this.SetMemoryCacheEntry(key, value);
+
+                return value;
             }
             finally
             {

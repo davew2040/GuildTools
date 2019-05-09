@@ -29,7 +29,7 @@ namespace GuildTools.Cache.SpecificCaches
             this.guildService = guildService;
         }
 
-        public async Task<BlizzardPlayer> GetPlayer(GameRegion region, string playerName, string realmName)
+        public async Task<BlizzardPlayer> GetPlayer(GameRegionEnum region, string playerName, string realmName)
         {
             return await this.cache.GetOrCacheAsync(async () =>
             {
@@ -40,7 +40,7 @@ namespace GuildTools.Cache.SpecificCaches
             () => this.GetKey(region, playerName, realmName));
         }
 
-        private string GetKey(GameRegion region, string playerName, string realmName)
+        private string GetKey(GameRegionEnum region, string playerName, string realmName)
         {
             var realmKey = Keyifier.GetRealmKey(realmName);
             var regionKey = Keyifier.GetRegionKey(region);

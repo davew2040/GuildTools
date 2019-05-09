@@ -78,16 +78,14 @@ namespace GuildTools.Cache
             Task.Factory.StartNew(async () =>
             {
 
-                using (GuildToolsContext context = this.serviceProvider.GetService<GuildToolsContext>())
-                using (IDataRepository dataRepo = new DataRepository(context))
+                using (IDataRepository dataRepo = this.serviceProvider.GetService<IDataRepository>())
                 {
                     await dataRepo.SetCachedValueAsync("test_key", "test_value", TimeSpan.FromSeconds(10));
                 }
 
                 var guildData = await this.blizzardService.GetGuildMembersAsync(guild, realm, region);
 
-                using (GuildToolsContext context = this.serviceProvider.GetService<GuildToolsContext>())
-                using (IDataRepository dataRepo = new DataRepository(context))
+                using (IDataRepository dataRepo = this.serviceProvider.GetService<IDataRepository>())
                 {
                     await this.Add(region, realm, guild, guildData, CacheEntryDuration, dataRepo);
                 }

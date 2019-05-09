@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GuildTools.EF.Models.StoredBlizzardModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,9 +9,9 @@ using EfModels = GuildTools.EF.Models;
 
 namespace GuildTools.Data.RepositoryModels
 {
-    public class FullGuildProfile
+    public class ProfilePermission
     {
-        public string Name { get; set; }
-        public EfModels.GuildProfile Profile { get; set; }
+        public int ProfileId { get; set; }
+        public EfEnums.GuildProfilePermissionLevel PermissionLevel { get; set; }
     }
 }

@@ -9,11 +9,11 @@
     <form (ngSubmit)="onSubmit()" [formGroup]="registrationForm" fxLayout="column">
 
       <mat-form-field style="margin-top: 8px;">
-          <input matInput type="text" placeholder="Username" [formControlName]="usernameControlName">
+        <input matInput type="text" placeholder="Email Address:" [formControlName]="emailControlName">
       </mat-form-field>
 
       <mat-form-field style="margin-top: 8px;">
-          <input matInput type="text" placeholder="Email Address:" [formControlName]="emailControlName">
+          <input matInput type="text" placeholder="Username" [formControlName]="usernameControlName">
       </mat-form-field>
 
       <mat-form-field style="margin-top: 8px;">
@@ -29,6 +29,9 @@
           <input matInput type="text" placeholder="Character" [formControlName]="playerNameControlName">
         </mat-form-field>
         <button mat-raised-button (click)="findCharacter()" style="margin-left: 55px; margin-top: 0px;">Find</button>
+      </div>
+      <div class='character-not-required-label'>
+        (character is not required)
       </div>
 
       <div *ngIf="this.errors.length !== 0" class="alert alert-danger">

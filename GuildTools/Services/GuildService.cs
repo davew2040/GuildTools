@@ -19,24 +19,32 @@ namespace GuildTools.Services
         private readonly TimeSpan FilterPlayersOlderThan = new TimeSpan(90, 0, 0, 0);
 
         private IBlizzardService blizzardService;
+        private ICallThrottler throttler;
 
-        public GuildService(IBlizzardService blizzardService)
+        public GuildService(IBlizzardService blizzardService, ICallThrottler throttler)
         {
             this.blizzardService = blizzardService;
+            this.throttler = throttler;
         }
 
-        public async Task<IEnumerable<GuildMemberStats>> GetLargeGuildMembersDataAsync(BlizzardRegion region, string guild, string realm)
+        public async Task<IEnumerable<GuildMemberStats>> GetLargeGuildMembersDataAsync(BlizzardRegion region, string guild, string realm, IProgress<double> progress)
         {
             var guildDataJson = await this.blizzardService.GetGuildMembersAsync(guild, realm, region);
 
             var members = GuildMemberParsing.GetSlimPlayersFromGuildPlayerList(guildDataJson).ToList();
 
+            int totalCount = members.Count();
+
             List<GuildMemberStats> validMembers = new List<GuildMemberStats>();
+
+            int count = 0;
 
             foreach (var member in members)
             {
                 try
                 {
+                    progress.Report((double)count++ / totalCount);
+
                     if (await this.PopulateMemberDataAsync(member, region))
                     {
                         validMembers.Add(member);
@@ -53,16 +61,36 @@ namespace GuildTools.Services
 
         private async Task<bool> PopulateMemberDataAsync(GuildMemberStats member, BlizzardRegion region)
         {
-            var itemsTask = this.blizzardService.GetPlayerItemsAsync(member.Name, member.Realm, region);
-            var mountsTask = this.blizzardService.GetPlayerMountsAsync(member.Name, member.Realm, region);
-            var petsTask = this.blizzardService.GetPlayerPetsAsync(member.Name, member.Realm, region);
-            var pvpTask = this.blizzardService.GetPlayerPvpStatsAsync(member.Name, member.Realm, region);
+            string items = string.Empty;
+            string mounts = string.Empty;
+            string pets = string.Empty;
+            string pvp = string.Empty;
+
+            var itemsTask = this.throttler.Throttle(async () =>
+            {
+                items = await this.blizzardService.GetPlayerItemsAsync(member.Name, member.Realm, region);
+            });
+
+            var mountsTask = this.throttler.Throttle(async () =>
+            {
+                mounts = await this.blizzardService.GetPlayerMountsAsync(member.Name, member.Realm, region);
+            });
+
+            var petsTask = this.throttler.Throttle(async () =>
+            {
+                pets = await this.blizzardService.GetPlayerPetsAsync(member.Name, member.Realm, region);
+            });
+
+            var pvpTask = this.throttler.Throttle(async () =>
+            {
+                pvp = await this.blizzardService.GetPlayerPvpStatsAsync(member.Name, member.Realm, region);
+            });
 
             await Task.WhenAll(new Task[] { itemsTask, mountsTask, petsTask, pvpTask });
 
             try
             {
-                var itemDetails = GuildMemberParsing.GetItemsDetailsFromJson(itemsTask.Result);
+                var itemDetails = GuildMemberParsing.GetItemsDetailsFromJson(items);
 
                 if (itemDetails.LastModifiedDateTime < DateTime.Now - FilterPlayersOlderThan)
                 {
@@ -71,31 +99,43 @@ namespace GuildTools.Services
 
                 this.PopulateItemsDetails(member, itemDetails);
             }
-            catch { Debug.WriteLine("Error reading player items for " + member.Name); }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error reading player items for " + member.Name);
+            }
 
             try
             {
-                var mountsDetails = GuildMemberParsing.GetMountDetailsFromJson(mountsTask.Result);
+                var mountsDetails = GuildMemberParsing.GetMountDetailsFromJson(mounts);
 
                 member.MountCount = mountsDetails.NumberCollected;
             }
-            catch { Debug.WriteLine("Error reading mounts for " + member.Name); }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error reading mounts for " + member.Name);
+            }
 
             try
             {
-                var petDetails = GuildMemberParsing.GetPetDetailsFromJson(petsTask.Result);
+                var petDetails = GuildMemberParsing.GetPetDetailsFromJson(pets);
 
                 member.PetCount = petDetails.NumberCollected;
             }
-            catch { Debug.WriteLine("Error reading pets for " + member.Name); }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error reading pets for " + member.Name);
+            }
 
             try
             {
-                var pvpDetails = GuildMemberParsing.GetPvpStatsFromJson(pvpTask.Result);
+                var pvpDetails = GuildMemberParsing.GetPvpStatsFromJson(pvp);
 
                 this.PopulatePvpStats(member, pvpDetails);
             }
-            catch { Debug.WriteLine("Error reading PvP stats for " + member.Name); }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error reading PvP stats for " + member.Name);
+            }
 
             Debug.WriteLine("Processed member " + member.Name);
 
@@ -155,7 +195,7 @@ namespace GuildTools.Services
             {
                 GuildName = guild,
                 PlayerName = x.Name,
-                RealmName = x.Realm,
+                PlayerRealmName = x.Realm,
                 Class = x.Class,
                 Level = x.Level
             });
@@ -179,7 +219,7 @@ namespace GuildTools.Services
                 Level = player.Level,
                 GuildName = player.GuildName,
                 GuildRealm = player.GuildRealm,
-                RealmName = player.Realm
+                PlayerRealmName = player.Realm
             };
         }
     }

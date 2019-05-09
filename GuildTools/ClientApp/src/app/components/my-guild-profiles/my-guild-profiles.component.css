@@ -1,6 +1,17 @@
 .must-be-logged-in {
-    text-align: center;
-    font-size: 25px;
+  margin-top: 60px;
+  text-align: center;
+  font-size: 30px;
+  width: 700px;
+}
+
+.unauthenticated-title {
+  font-size: 28px;
+}
+
+.unauthenticated-text {
+  margin-top: 25px;
+  font-size: 14px;
 }
 
 .list-holder {

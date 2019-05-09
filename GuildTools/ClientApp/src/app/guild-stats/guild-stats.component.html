@@ -7,8 +7,29 @@
   This guild could not be found.
 </div>
 
-<div *ngIf="dataNotReady()" style="text-align: center; font-size:25px;">
-  The data for this guild is being processed. Check back soon!
+<div *ngIf="dataNotReady()" style="text-align: center">
+  <div class="data-processing">
+    <div *ngIf="inLine">
+      This guild is currently #{{placeInLine}} in line for processing.
+    </div>
+    <div *ngIf="!inLine">
+      The data for this guild is being processed, and is currently {{ getCompletionPercentage(completionProgress) }}% complete!
+    </div>
+  </div>
+
+  <div fxLayout="column" fxLayoutAlign="start center" style="margin-top: 25px" fxLayoutGap="15px">
+    <div class="notification-request-text">
+      This operation must communicate with Blizzard servers and can take a long time. If you'd like to be notified when the stats generation
+      is complete, we can send an email to you:
+    </div>
+
+    <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="25px">
+      <mat-form-field id="notification-address">
+          <input matInput type="text" placeholder="Email:" [(ngModel)]="notificationEmailAddress">
+      </mat-form-field>
+      <button mat-raised-button [disabled]="emailDisabled" (click)="requestNotification()" id="btn-request-notification">Request Notification</button>
+    </div>
+  </div>
 </div>
 
 <div *ngIf="pageReady()">

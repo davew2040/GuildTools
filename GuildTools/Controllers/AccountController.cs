@@ -22,6 +22,7 @@ using JWT.Algorithms;
 using JWT.Serializers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -29,7 +30,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace GuildTools.Controllers
 {
     [Route("api/[controller]")]
-    public class AccountController : Controller
+    public class AccountController : GuildToolsController
     {
         private readonly UserManager<UserWithData> userManager;
         private readonly SignInManager<UserWithData> signInManager;
@@ -41,11 +42,8 @@ namespace GuildTools.Controllers
             UserManager<UserWithData> userManager,
             SignInManager<UserWithData> signInManager,
             IMailSender mailSender,
-            IDataRepository dataRepository,
-            IAccountRepository accountRepository,
             ICommonValuesProvider commonValues,
-            IOptions<JwtSettings> jwtSettings,
-            IOptions<ConnectionStrings> connectionStrings)
+            IOptions<JwtSettings> jwtSettings)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
@@ -60,7 +58,18 @@ namespace GuildTools.Controllers
         {
             if (!ModelState.IsValid)
             {
-                throw new UserReportableError("Encountered invalid user values.", (int)HttpStatusCode.BadRequest);
+                var errorDescriptions = new List<string>();
+
+                foreach (var modelState in ModelState.Values)
+                {
+                    foreach (ModelError error in modelState.Errors)
+                    {
+                        errorDescriptions.Add(error.ErrorMessage);
+                    }
+                }
+
+                throw new UserReportableError("Encountered errors in registration request: "
+                    + string.Join(", ", errorDescriptions), (int)HttpStatusCode.BadRequest);
             }
 
             var user = new UserWithData()
@@ -76,6 +85,13 @@ namespace GuildTools.Controllers
 
             var result = await this.userManager.CreateAsync(user, details.Password);
 
+            if (result.Errors.Any())
+            {
+                var errorsMessages = string.Join(", ", result.Errors.Select(x => x.Description));
+                throw new UserReportableError("Encountered errors creating this user account: "
+                    + errorsMessages, (int)HttpStatusCode.BadRequest);
+            }
+
             if (result.Succeeded)
             {
                 await this.userManager.AddToRoleAsync(user, GuildToolsRoles.StandardUser.Name);
@@ -84,7 +100,7 @@ namespace GuildTools.Controllers
 
                 var confirmationToken = await this.userManager.GenerateEmailConfirmationTokenAsync(user);
 
-                string baseUrl = $"{this.Request.Scheme}://{this.Request.Host}{this.Request.PathBase}";
+                string baseUrl = this.GetBaseUrl();
                 string resetUrl = $"{baseUrl}/confirmemail?userId={user.Id}&token={HttpUtility.UrlEncode(confirmationToken)}";
 
                 var confirmationEmail = MailGenerator.GenerateRegistrationConfirmationEmail(resetUrl);
@@ -149,7 +165,7 @@ namespace GuildTools.Controllers
 
             string resetToken = await this.userManager.GeneratePasswordResetTokenAsync(user);
 
-            string baseUrl = $"{this.Request.Scheme}://{this.Request.Host}{this.Request.PathBase}";
+            string baseUrl = this.GetBaseUrl();
             string resetUrl = $"{baseUrl}/resetpasswordtoken?userId={user.Id}&token={resetToken}";
 
             var resetEmail = MailGenerator.GenerateResetPasswordEmail(resetUrl);
@@ -201,7 +217,17 @@ namespace GuildTools.Controllers
         {
             if (!ModelState.IsValid)
             {
-                throw new UserReportableError("Encountered invalid user values during registration.", (int)HttpStatusCode.BadRequest);
+                var errorDescriptions = new List<string>();
+
+                foreach (var modelState in ModelState.Values)
+                {
+                    foreach (ModelError error in modelState.Errors)
+                    {
+                        errorDescriptions.Add(error.ErrorMessage);
+                    }
+                }
+
+                throw new Exception("Encountered errors: " + string.Join(", ", errorDescriptions));
             }
 
             var user = await this.userManager.FindByEmailAsync(credentials.Email);

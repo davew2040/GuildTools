@@ -17,6 +17,6 @@ namespace GuildTools.Cache.SpecificCaches.CacheInterfaces
 {
     public interface IRealmStoreByValues
     {
-        Task<StoredRealm> GetRealmAsync(string realmName, EfEnums.GameRegion region);
+        Task<StoredRealm> GetRealmAsync(string realmName, EfEnums.GameRegionEnum region);
     }
 }

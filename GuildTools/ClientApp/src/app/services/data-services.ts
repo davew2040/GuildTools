@@ -33,8 +33,16 @@ import {
     PlayerFound,
     IPlayerFound,
     EditNotes,
-    PromoteAltToMain} from './ServiceTypes/service-types';
+    PromoteAltToMain,
+    CreateNewGuildProfile,
+    StoredPlayer,
+    GuildStatsResponse,
+    IGuildStatsResponse,
+    RequestStatsCompleteNotification,
+    RaiderIoStatsResponse,
+    IRaiderIoStatsResponse} from './ServiceTypes/service-types';
 import { BlizzardRegionDefinition } from '../data/blizzard-realms';
+import { NotificationRequestType } from 'app/data/notification-request-type';
 
 export enum WowClass {
    Warrior = 1,
@@ -114,26 +122,59 @@ export class DataService {
       }));
   }
 
-  public getGuildMemberStats(region: string, guild: string, realm: string): Observable<Array<GuildMemberStats>> {
+  public getGuildMemberStats(region: string, guild: string, realm: string): Observable<GuildStatsResponse> {
     return this.http.get(this.baseUrl + `api/data/getGuildMemberStats?region=${region}&guild=${guild}&realm=${realm}`)
       .pipe(
         map(response  => {
-          const mappedResult = (response as Array<IGuildMemberStats>).map(i => new GuildMemberStats(i));
-
-          return mappedResult;
+          return new GuildStatsResponse(response as IGuildStatsResponse);
         }));
   }
 
-  public createNewGuildProfile(name: string, guild: string, realm: string, region: BlizzardRegionDefinition): Observable<Object> {
+  public getRaiderIoStats(region: string, guild: string, realm: string): Observable<RaiderIoStatsResponse> {
+    return this.http.get(this.baseUrl + `api/data/getRaiderIoStats?region=${region}&guild=${guild}&realm=${realm}`)
+      .pipe(
+        map(response  => {
+          return new RaiderIoStatsResponse(response as IRaiderIoStatsResponse);
+        }));
+  }
+
+  public requestStatsCompleteNotification(
+      email: string,
+      region: string,
+      guild: string,
+      realm: string,
+      requestType: NotificationRequestType): Observable<Object> {
+    const body = new RequestStatsCompleteNotification();
+
+    body.email = email;
+    body.region = region;
+    body.guild = guild;
+    body.realm = realm;
+    body.requestType = requestType;
+
+    return this.http.post(this.baseUrl + `api/data/requestStatsCompleteNotification`, body);
+  }
+
+  public createNewGuildProfile(
+      name: string,
+      guild: string,
+      realm: string,
+      region: BlizzardRegionDefinition,
+      isPublic: boolean): Observable<number> {
     const headers = this.getAuthorizeHeader();
 
-    const params = new HttpParams()
-      .append('name', name)
-      .append('guild', guild)
-      .append('realm', realm)
-      .append('region', region.Name);
+    const body = new CreateNewGuildProfile();
 
-    return this.http.post(this.baseUrl + `api/data/createGuildProfile`, null, { headers: headers, params: params });
+    body.profileName = name;
+    body.guildName = guild;
+    body.guildRealmName = realm;
+    body.isPublic = isPublic;
+    body.regionName = region.Name;
+
+    return this.http.post(this.baseUrl + `api/data/createGuildProfile`, body, { headers: headers })
+        .pipe(
+          map(response => response as number)
+        );
   }
 
   public getFullGuildProfile(profileId: number): Observable<FullGuildProfile> {
@@ -157,17 +198,13 @@ export class DataService {
   }
 
 
-  public addPlayerMainToProfile(player: BlizzardPlayer, profile: FullGuildProfile): Observable<PlayerMain> {
+  public addPlayerMainToProfile(player: StoredPlayer, profile: FullGuildProfile): Observable<PlayerMain> {
     const headers = this.getAuthorizeHeader();
 
     const input = new AddMainToProfile();
 
-    input.playerName = player.playerName;
-    input.guildName = player.guildName;
-    input.playerRealmName = player.realmName;
-    input.guildRealmName = profile.realm.name;
-    input.regionName = profile.region;
     input.profileId = profile.id;
+    input.playerId = player.id;
 
     return this.http.post(this.baseUrl + `api/data/addMainToProfile`, input, { headers: headers })
       .pipe(
@@ -176,18 +213,14 @@ export class DataService {
         }));
   }
 
-  public addAltToMain(player: BlizzardPlayer, main: PlayerMain, profile: FullGuildProfile): Observable<PlayerAlt> {
+  public addAltToMain(player: StoredPlayer, main: PlayerMain, profile: FullGuildProfile): Observable<PlayerAlt> {
     const headers = this.getAuthorizeHeader();
 
     const input = new AddAltToMain();
 
-    input.playerName = player.playerName;
-    input.guildName = player.guildName;
-    input.playerRealmName = player.realmName;
-    input.guildRealmName = profile.realm.name;
-    input.regionName = profile.region;
     input.profileId = profile.id;
     input.mainId = main.id;
+    input.playerId = player.id;
 
     return this.http.post(this.baseUrl + `api/data/addAltToMain`, input, { headers: headers })
       .pipe(

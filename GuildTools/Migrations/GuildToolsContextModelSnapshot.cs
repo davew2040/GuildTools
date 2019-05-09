@@ -69,10 +69,11 @@ namespace GuildTools.Migrations
 
                     b.Property<int?>("CreatorGuildId");
 
-                    b.Property<string>("CreatorId")
-                        .IsRequired();
+                    b.Property<string>("CreatorId");
 
                     b.Property<int?>("GameRegionId");
+
+                    b.Property<bool>("IsPublic");
 
                     b.Property<string>("ProfileName")
                         .IsRequired()
@@ -127,6 +128,55 @@ namespace GuildTools.Migrations
                         {
                             Id = 4,
                             PermissionName = "Visitor"
+                        });
+                });
+
+            modelBuilder.Entity("GuildTools.EF.Models.NotificationRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Email")
+                        .IsRequired();
+
+                    b.Property<int>("NotificationRequestTypeId");
+
+                    b.Property<string>("OperationKey");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Id");
+
+                    b.HasIndex("NotificationRequestTypeId");
+
+                    b.HasIndex("OperationKey");
+
+                    b.ToTable("NotificationRequests");
+                });
+
+            modelBuilder.Entity("GuildTools.EF.Models.NotificationRequestType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("RequestTypeName");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NotificationRequestTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            RequestTypeName = "StatsRequestComplete"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            RequestTypeName = "RaiderIoStatsRequestComplete"
                         });
                 });
 
@@ -524,6 +574,14 @@ namespace GuildTools.Migrations
                     b.HasOne("GuildTools.EF.Models.StoredBlizzardModels.StoredRealm", "Realm")
                         .WithMany("Profiles")
                         .HasForeignKey("RealmId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("GuildTools.EF.Models.NotificationRequest", b =>
+                {
+                    b.HasOne("GuildTools.EF.Models.NotificationRequestType", "RequestType")
+                        .WithMany("Requests")
+                        .HasForeignKey("NotificationRequestTypeId")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 

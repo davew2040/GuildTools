@@ -9,7 +9,7 @@
     <form (ngSubmit)="onSubmit()" #loginForm="ngForm" fxLayout="column">
 
       <mat-form-field style="margin-top: 25px;">
-          <input matInput type="text" placeholder="Login" id="email" required [(ngModel)]="model.Email" #email="ngModel" [ngModelOptions]="{standalone: true}">
+          <input matInput type="text" placeholder="Email Address" id="email" required [(ngModel)]="model.Email" #email="ngModel" [ngModelOptions]="{standalone: true}">
       </mat-form-field>
 
       <div [hidden]="email.valid || email.pristine" class="alert alert-danger">Email is required.</div>

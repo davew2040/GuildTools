@@ -7,6 +7,6 @@ namespace GuildTools.Cache.SpecificCaches.CacheInterfaces
 {
     public interface IGuildCache
     {
-        Task<GuildSlim> GetGuild(GameRegion region, string guildName, string realmName);
+        Task<GuildSlim> GetGuild(GameRegionEnum region, string guildName, string realmName);
     }
 }

@@ -28,7 +28,7 @@ namespace GuildTools.Cache.SpecificCaches
             this.blizzardService = blizzardService;
         }
 
-        public async Task<IEnumerable<Realm>> GetRealms(EfEnums.GameRegion region)
+        public async Task<IEnumerable<Realm>> GetRealms(EfEnums.GameRegionEnum region)
         {
             return await this.cache.GetOrCacheAsync(async () =>
             {
@@ -39,7 +39,7 @@ namespace GuildTools.Cache.SpecificCaches
             () => this.GetKey(region));
         }
 
-        private string GetKey(GameRegion region)
+        private string GetKey(GameRegionEnum region)
         {
             var regionKey = Keyifier.GetRegionKey(region);
 

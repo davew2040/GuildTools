@@ -31,6 +31,8 @@ namespace GuildTools.EF
         public virtual DbSet<StoredPlayer> StoredPlayers { get; set; }
         public virtual DbSet<StoredGuild> StoredGuilds { get; set; }
         public virtual DbSet<PendingAccessRequest> PendingAccessRequests { get; set; }
+        public virtual DbSet<NotificationRequest> NotificationRequests { get; set; }
+        public virtual DbSet<NotificationRequestType> NotificationRequestTypes { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -217,6 +219,18 @@ namespace GuildTools.EF
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            modelBuilder.Entity<NotificationRequest>(entity =>
+            {
+                entity.HasIndex(e => e.Id);
+                entity.HasIndex(e => e.OperationKey);
+
+                entity.HasOne(e => e.RequestType)
+                    .WithMany(f => f.Requests)
+                    .HasForeignKey(e => e.NotificationRequestTypeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+            });
+
             this.AddStaticEnumData(modelBuilder);
         }
 
@@ -230,10 +244,17 @@ namespace GuildTools.EF
                 }));
 
             modelBuilder.Entity<EfModels.GameRegion>().HasData(
-                EnumUtilities.GetEnumValues<EfEnums.GameRegion>().Select(p => new EfModels.GameRegion()
+                EnumUtilities.GetEnumValues<EfEnums.GameRegionEnum>().Select(p => new EfModels.GameRegion()
                 {
                     Id = (int)p,
                     RegionName = p.ToString()
+                }));
+
+            modelBuilder.Entity<EfModels.NotificationRequestType>().HasData(
+                EnumUtilities.GetEnumValues<EfEnums.NotificationRequestTypeEnum>().Select(p => new EfModels.NotificationRequestType()
+                {
+                    Id = (int)p,
+                    RequestTypeName = p.ToString()
                 }));
         }
     }

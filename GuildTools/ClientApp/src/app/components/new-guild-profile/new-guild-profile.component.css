@@ -11,3 +11,7 @@
 .form-contents {
   width: 400px;
 }
+
+#is-public-checkbox {
+  margin-right: 25px;
+}

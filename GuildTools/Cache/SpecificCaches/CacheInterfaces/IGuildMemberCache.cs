@@ -8,6 +8,6 @@ namespace GuildTools.Cache.SpecificCaches.CacheInterfaces
 {
     public interface IGuildMemberCache
     {
-        Task<IEnumerable<BlizzardPlayer>> GetMembers(GameRegion region, string realmName, string guildName);
+        Task<IEnumerable<BlizzardPlayer>> GetMembers(GameRegionEnum region, string realmName, string guildName);
     }
 }
