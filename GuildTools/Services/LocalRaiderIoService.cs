@@ -59,7 +59,7 @@ namespace GuildTools.Services
                         validMembers.Add(stats);
                     }
                 }
-                catch
+                catch (Exception e)
                 {
                     //Swallow any errors
                 }

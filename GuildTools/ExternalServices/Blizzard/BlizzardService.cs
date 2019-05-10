@@ -29,9 +29,9 @@ namespace GuildTools.ExternalServices.Blizzard
             EU
         }
 
-        public BlizzardService(IDataRepository dataRepository, IConfiguration configuration)
+        public BlizzardService(IDataRepository dataRepository, IConfiguration configuration, HttpClient client)
         {
-            client = new HttpClient();
+            this.client = client;
             this.dataRepo = dataRepository;
 
             this.secrets = new BlizzardApiSecrets()

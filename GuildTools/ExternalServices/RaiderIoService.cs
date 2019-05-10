@@ -14,20 +14,17 @@ namespace GuildTools.ExternalServices
     {
         private HttpClient client;
         private readonly ICallThrottler throttler;
-        private readonly IBlizzardService blizzardService;
 
-        public RaiderIoService(ICallThrottler throttler, IBlizzardService blizzardService)
+        public RaiderIoService(ICallThrottler throttler, IBlizzardService blizzardService, HttpClient client)
         {
+            this.client = client;
             this.throttler = throttler;
-            this.blizzardService = blizzardService;
-
-            client = new HttpClient();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
         public async Task<string> GetMythicPlusDungeonData(BlizzardRegion region, string playerName, string realm)
         {
-            string url = $"https://raider.io/api/v1/characters/profile?region=us&realm={BlizzardService.FormatRealmName(realm)}&name={playerName}&fields=mythic_plus_scores";
+            string url = $"https://raider.io/api/v1/characters/profile?region={region.ToString().ToLower()}&"
+                + $"realm={BlizzardService.FormatRealmName(realm)}&name={playerName}&fields=mythic_plus_scores";
 
             var result = await this.throttler.Throttle(async () => { return await client.GetAsync(url); });
 
