@@ -13,5 +13,6 @@ namespace GuildTools.Controllers.Models
         public int RealmId { get; set; }
         public string RegionName { get; set; }
         public StoredRealm Realm { get; set; }
+        public StoredGuild Guild { get; set; }
     }
 }

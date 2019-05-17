@@ -22,30 +22,31 @@ namespace GuildTools.Cache.LongRunningRetrievers
     {
         private readonly LongRunningCache<IEnumerable<GuildMemberStats>> cache;
         private readonly IBackgroundTaskQueue taskQueue;
-        private readonly IGuildService guildService;
         private readonly IMailSender mailSender;
         private readonly ICommonValuesProvider commonValues;
+        private readonly IMailGenerator mailGenerator;
 
         public GuildStatsRetriever(
             IMemoryCache memoryCache, 
             IBackgroundTaskQueue taskQueue, 
-            IGuildService guildService, 
             IMailSender mailSender, 
-            ICommonValuesProvider commonValues)
+            ICommonValuesProvider commonValues,
+            IMailGenerator mailGenerator)
         {
             this.cache = new LongRunningCache<IEnumerable<GuildMemberStats>>(memoryCache, TimeSpan.FromDays(3), TimeSpan.FromDays(1));
             this.taskQueue = taskQueue;
-            this.guildService = guildService;
             this.mailSender = mailSender;
             this.commonValues = commonValues;
+            this.mailGenerator = mailGenerator;
         }
 
-        public async Task<CacheEntry<IEnumerable<GuildMemberStats>>> GetCachedEntry(BlizzardRegion region, string realm, string guild, string baseUrl)
+        public async Task<CacheEntry<IEnumerable<GuildMemberStats>>> GetCachedEntry(BlizzardRegion region, string realm, string guild)
         {
             string key = this.GetKey(region, realm, guild);
+
             return await this.cache.GetOrRefreshCachedValueAsync(
                 key,
-                this.taskRunner(key, region, realm, guild, baseUrl),
+                this.taskRunner(key, region, realm, guild),
                 this.valueGetter(region, realm, guild));
         }
 
@@ -56,13 +57,15 @@ namespace GuildTools.Cache.LongRunningRetrievers
             return key;
         }
 
-        public int? GetPositionInQueue(string key)
+        public int? GetPositionInQueue(BlizzardRegion region, string realm, string guild)
         {
+            string key = this.GetKey(region, realm, guild);
+
             return this.taskQueue.FindItemPlaceInQueue(key);
         }
 
         private Func<Func<CancellationToken, IServiceProvider, Task<IEnumerable<GuildMemberStats>>>, Task> taskRunner(
-            string key, BlizzardRegion region, string realm, string guild, string baseUrl)
+            string key, BlizzardRegion region, string realm, string guild)
         {
             return async (runner) =>
             {
@@ -73,13 +76,17 @@ namespace GuildTools.Cache.LongRunningRetrievers
                     {
                         await runner(token, serviceProvider);
 
-                        await this.SendStatsCompleteNotifications(serviceProvider, key, region, realm, guild, baseUrl);
+                        await this.SendStatsCompleteNotifications(serviceProvider, key, region, realm, guild);
+                    },
+                    TaskFailed = () =>
+                    {
+                        this.cache.RemoveCacheItem(key);
                     }
                 });
             };
         }
 
-        private async Task SendStatsCompleteNotifications(IServiceProvider serviceProvider, string key, BlizzardRegion region, string realm, string guild, string baseUrl)
+        private async Task SendStatsCompleteNotifications(IServiceProvider serviceProvider, string key, BlizzardRegion region, string realm, string guild)
         {
             using (var serviceScope = serviceProvider.CreateScope())
             {
@@ -87,11 +94,11 @@ namespace GuildTools.Cache.LongRunningRetrievers
 
                 var notifications = await repo.GetAndClearNotifications(NotificationRequestTypeEnum.StatsRequestComplete, key);
 
-                string url = $"{baseUrl}/guildstats/{region.ToString()}/{BlizzardService.FormatGuildName(guild)}/{BlizzardService.FormatRealmName(realm)}";
+                string url = $"guildstats/{region.ToString()}/{BlizzardService.FormatGuildName(guild)}/{BlizzardService.FormatRealmName(realm)}";
 
                 List<Task> mailTasks = new List<Task>();
 
-                var generatedEmail = MailGenerator.GenerateStatsCompleteEmail(url);
+                var generatedEmail = this.mailGenerator.GenerateStatsCompleteEmail(url);
 
                 foreach (var notification in notifications)
                 {
@@ -107,11 +114,15 @@ namespace GuildTools.Cache.LongRunningRetrievers
             }
         }
 
-        private Func<IProgress<double>, Task<IEnumerable<GuildMemberStats>>> valueGetter(BlizzardRegion region, string realm, string guild)
+        private Func<IServiceProvider, IProgress<double>, Task<IEnumerable<GuildMemberStats>>> valueGetter(BlizzardRegion region, string realm, string guild)
         {
-            return async (progress) =>
+            return async (serviceProvider, progress) =>
             {
-                return await this.guildService.GetLargeGuildMembersDataAsync(region, guild, realm, progress);
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var service = scope.ServiceProvider.GetService<IGuildService>();
+                    return await service.GetLargeGuildMembersDataAsync(region, guild, realm, progress);
+                }
             };
         }
 

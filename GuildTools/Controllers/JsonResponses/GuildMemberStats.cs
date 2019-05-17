@@ -8,7 +8,9 @@ namespace GuildTools.Controllers.JsonResponses
     public class GuildMemberStats
     {
         public string Name { get; set; }
-        public string Realm { get; set; }
+        public string GuildName { get; set; }
+        public string RealmName { get; set; }
+        public string RegionName { get; set; }
         public int Level { get; set; }
         public int EquippedIlvl { get; set; }
         public int Class { get; set; }
@@ -22,6 +24,5 @@ namespace GuildTools.Controllers.JsonResponses
         public int TotalHonorableKills { get; set; }
         public int GuildRank { get; set; }
         public int AzeriteLevel { get; set; }
-        public int RaiderIoMplusScore { get; set; }
     }
 }

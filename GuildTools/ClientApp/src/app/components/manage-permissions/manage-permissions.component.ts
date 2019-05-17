@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { PendingAccessRequest, ProfilePermissionByUser, UpdatePermissionSet, UpdatePermission } from 'app/services/ServiceTypes/service-types';
+import { PendingAccessRequest, ProfilePermissionByUser, UpdatePermissionSet, UpdatePermission, FriendGuild, StoredGuild } from 'app/services/ServiceTypes/service-types';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DataService } from 'app/services/data-services';
 import { BusyService } from 'app/shared-services/busy-service';
@@ -9,6 +9,9 @@ import { NotificationService } from 'app/shared-services/notification-service';
 import { RoutePaths } from 'app/data/route-paths';
 import { GuildProfilePermissionLevel } from 'app/auth/auth.service';
 import { PermissionsOrder } from 'app/permissions/permissions-order';
+import { MatDialog } from '@angular/material';
+import { FindGuildDialogComponent } from 'app/dialogs/find-guild-dialog.component/find-guild-dialog.component';
+import { SelectedGuild } from 'app/models/selected-guild';
 
 class PermissionLabelPair {
   public label: string;
@@ -48,6 +51,8 @@ export class ManagePermissionsComponent implements OnInit {
   public orderedPermissions: Array<PermissionLabelPair>;
   public availablePermissions: Array<PermissionLabelPair>;
 
+  public friendGuilds = new Array<FriendGuild>();
+
   private profileId: number;
   private activeProfilePermission: GuildProfilePermissionLevel;
   private snapshot: PermissionsValuesSnapshot;
@@ -58,7 +63,8 @@ export class ManagePermissionsComponent implements OnInit {
       private dataService: DataService,
       private busyService: BusyService,
       private errorService: ErrorReportingService,
-      private notificationService: NotificationService) {
+      private notificationService: NotificationService,
+      private dialog: MatDialog) {
     this.orderedPermissions = this.getOrderedPermissions();
   }
 
@@ -93,6 +99,7 @@ export class ManagePermissionsComponent implements OnInit {
 
     this.getAccessRequests();
     this.getPermissions();
+    this.getFriendGuilds();
   }
 
   public onMouseEnter(event: any): void {
@@ -201,12 +208,62 @@ export class ManagePermissionsComponent implements OnInit {
     return `${date.getMonth()}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
   }
 
+  public getFormattedRealm(guild: StoredGuild): string {
+    return `${guild.realm.name} (${guild.realm.region.regionName})`;
+  }
+
   public getUserDescription(permission: ProfilePermissionByUser): string {
     return `${permission.user.username} (${permission.user.email})`;
   }
 
   public changeMarkForDelete(event: any, vm: PermissionByUserViewModel) {
     vm.markForDelete = event.checked;
+  }
+
+  public addFriendGuild(): void {
+    const dialogRef = this.dialog.open(FindGuildDialogComponent, {
+      disableClose: true,
+      width: '600px'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result) {
+        return;
+      }
+
+      this.busyService.setBusy();
+      const selectedGuild = result as SelectedGuild;
+
+      this.dataService.addFriendGuild(this.profileId, selectedGuild.region.Name, selectedGuild.realm, selectedGuild.name).subscribe(
+        success => {
+          this.busyService.unsetBusy();
+          this.friendGuilds.push(success);
+        },
+        error => {
+          this.busyService.unsetBusy();
+          this.errorService.reportApiError(error);
+        }
+      );
+    });
+  }
+
+  public deleteFriendGuild(friendGuild: FriendGuild): void {
+    this.busyService.setBusy();
+
+    this.dataService.deleteFriendGuild(this.profileId, friendGuild.id).subscribe(
+      success => {
+        this.busyService.unsetBusy();
+
+        const deleteIndex = this.friendGuilds.findIndex(p => p.id === friendGuild.id);
+        this.friendGuilds.splice(deleteIndex, 1);
+
+        this.notificationService.showNotification(`Removed friend guild '${friendGuild.guild.name}'.`);
+
+      },
+      error => {
+        this.busyService.unsetBusy();
+        this.errorService.reportApiError(error);
+      });
   }
 
   private getAccessRequests(): void {
@@ -248,6 +305,22 @@ export class ManagePermissionsComponent implements OnInit {
 
         this.profilePermissionsTableDataSource.data = this.profilePermissionsByUser;
         this.snapshot = this.getPermissionsSnapshot(this.profilePermissionsByUser);
+      },
+      error => {
+        this.busyService.unsetBusy();
+        this.errorService.reportApiError(error);
+      }
+    );
+  }
+
+  private getFriendGuilds(): void {
+    this.busyService.setBusy();
+
+    this.dataService.getFriendGuilds(this.profileId).subscribe(
+      success => {
+        this.busyService.unsetBusy();
+
+        this.friendGuilds = success;
       },
       error => {
         this.busyService.unsetBusy();

@@ -36,6 +36,27 @@ namespace GuildTools.Migrations
                     b.ToTable("BigValueCache");
                 });
 
+            modelBuilder.Entity("GuildTools.EF.Models.FriendGuild", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("ProfileId");
+
+                    b.Property<int>("StoredGuildId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.HasIndex("StoredGuildId");
+
+                    b.ToTable("FriendGuilds");
+                });
+
             modelBuilder.Entity("GuildTools.EF.Models.GameRegion", b =>
                 {
                     b.Property<int>("Id")
@@ -264,6 +285,8 @@ namespace GuildTools.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Abbreviation");
 
                     b.Property<string>("Name")
                         .IsRequired();
@@ -553,6 +576,19 @@ namespace GuildTools.Migrations
                     b.Property<string>("PlayerRegion");
 
                     b.HasDiscriminator().HasValue("UserWithData");
+                });
+
+            modelBuilder.Entity("GuildTools.EF.Models.FriendGuild", b =>
+                {
+                    b.HasOne("GuildTools.EF.Models.GuildProfile", "Profile")
+                        .WithMany("FriendGuilds")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GuildTools.EF.Models.StoredBlizzardModels.StoredGuild", "Guild")
+                        .WithMany("FriendGuilds")
+                        .HasForeignKey("StoredGuildId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("GuildTools.EF.Models.GuildProfile", b =>

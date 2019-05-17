@@ -18,5 +18,6 @@ namespace GuildTools.Controllers.Models
         public IEnumerable<StoredPlayer> Players { get; set; }
         public IEnumerable<PlayerMain> Mains { get; set; }
         public IEnumerable<StoredPlayer> PlayerPool { get; set; }
+        public IEnumerable<FriendGuild> FriendGuilds { get; set; }
     }
 }

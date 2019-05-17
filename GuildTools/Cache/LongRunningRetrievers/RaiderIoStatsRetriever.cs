@@ -26,19 +26,22 @@ namespace GuildTools.Cache.LongRunningRetrievers
         private readonly ILocalRaiderIoService raiderIoService;
         private readonly IMailSender mailSender;
         private readonly ICommonValuesProvider commonValues;
+        private readonly IMailGenerator mailGenerator;
 
         public RaiderIoStatsRetriever(
             IMemoryCache memoryCache, 
             IBackgroundTaskQueue taskQueue, 
             ILocalRaiderIoService raiderIoService, 
             IMailSender mailSender, 
-            ICommonValuesProvider commonValues)
+            ICommonValuesProvider commonValues,
+            IMailGenerator mailGenerator)
         {
             this.cache = new LongRunningCache<IEnumerable<RaiderIoStats>>(memoryCache, TimeSpan.FromDays(3), TimeSpan.FromDays(1));
             this.taskQueue = taskQueue;
             this.raiderIoService = raiderIoService;
             this.mailSender = mailSender;
             this.commonValues = commonValues;
+            this.mailGenerator = mailGenerator;
         }
 
         public async Task<CacheEntry<IEnumerable<RaiderIoStats>>> GetCachedEntry(BlizzardRegion region, string realm, string guild, string baseUrl)
@@ -75,6 +78,10 @@ namespace GuildTools.Cache.LongRunningRetrievers
                         await runner(token, serviceProvider);
 
                         await this.SendStatsCompleteNotifications(serviceProvider, key, region, realm, guild, baseUrl);
+                    },
+                    TaskFailed = () =>
+                    {
+                        this.cache.RemoveCacheItem(key);
                     }
                 });
             };
@@ -88,11 +95,11 @@ namespace GuildTools.Cache.LongRunningRetrievers
 
                 var notifications = await repo.GetAndClearNotifications(NotificationRequestTypeEnum.RaiderIoStatsRequestComplete, key);
 
-                string url = $"{baseUrl}/raideriostats/{region.ToString()}/{BlizzardService.FormatGuildName(guild)}/{BlizzardService.FormatRealmName(realm)}";
+                string url = $"raideriostats/{region.ToString()}/{BlizzardService.FormatGuildName(guild)}/{BlizzardService.FormatRealmName(realm)}";
 
                 List<Task> mailTasks = new List<Task>();
 
-                var generatedEmail = MailGenerator.GenerateStatsCompleteEmail(url);
+                var generatedEmail = this.mailGenerator.GenerateStatsCompleteEmail(url);
 
                 foreach (var notification in notifications)
                 {
@@ -108,11 +115,15 @@ namespace GuildTools.Cache.LongRunningRetrievers
             }
         }
 
-        private Func<IProgress<double>, Task<IEnumerable<RaiderIoStats>>> valueGetter(BlizzardRegion region, string realm, string guild)
+        private Func<IServiceProvider, IProgress<double>, Task<IEnumerable<RaiderIoStats>>> valueGetter(BlizzardRegion region, string realm, string guild)
         {
-            return async (progress) =>
+            return async (serviceProvider, progress) =>
             {
-                return await this.raiderIoService.GetGuildRaiderIoStats(region, guild, realm, progress);
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var service = scope.ServiceProvider.GetService<ILocalRaiderIoService>();
+                    return await service.GetGuildRaiderIoStats(region, guild, realm, progress);
+                }
             };
         }
 

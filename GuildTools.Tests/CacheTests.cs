@@ -23,6 +23,7 @@ using GuildTools.Data;
 using GuildTools.Cache.SpecificCaches.CacheInterfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using System.Net.Http;
 
 namespace GuildTools.Tests
 {
@@ -69,12 +70,13 @@ namespace GuildTools.Tests
                 ClientSecret = this.config.GetValue<string>("BlizzardApiSecrets:ClientSecret")
             };
 
+            HttpClient client = new HttpClient();
             IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
             GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
             DatabaseCache dbCache = new DatabaseCache(context);
 
             IDataRepository repo = new DataRepository(context);
-            IBlizzardService blizzardService = new BlizzardService(repo, this.config);
+            IBlizzardService blizzardService = new BlizzardService(repo, this.config, client);
 
             RealmsCache cache = new RealmsCache(blizzardService, memoryCache, dbCache, manager);
 
@@ -108,9 +110,10 @@ namespace GuildTools.Tests
             IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
             GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
 
+            HttpClient client = new HttpClient();
             IDataRepository repo = new DataRepository(context);
-            IBlizzardService blizzardService = new BlizzardService(repo, this.config);
-            CallThrottler throttler = new CallThrottler(TimeSpan.FromSeconds(1));
+            IBlizzardService blizzardService = new BlizzardService(repo, this.config, client);
+            PerRequestCallThrottler throttler = new PerRequestCallThrottler(TimeSpan.FromSeconds(1));
             IGuildService guildService = new GuildService(blizzardService, throttler);
 
             RealmStoreByValues store = new RealmStoreByValues(guildService, memoryCache, context, manager);
@@ -150,9 +153,10 @@ namespace GuildTools.Tests
             IMemoryCache memoryCache = new MemoryCache(new MemoryCacheOptions());
             GuildToolsContext context = new GuildToolsContext(SqlServerDbContextOptionsExtensions.UseSqlServer(new DbContextOptionsBuilder(), connectionString).Options as DbContextOptions);
 
+            HttpClient client = new HttpClient();
             IDataRepository repo = new DataRepository(context);
-            IBlizzardService blizzardService = new BlizzardService(repo, this.config);
-            CallThrottler throttler = new CallThrottler(TimeSpan.FromSeconds(1));
+            IBlizzardService blizzardService = new BlizzardService(repo, this.config, client);
+            PerRequestCallThrottler throttler = new PerRequestCallThrottler(TimeSpan.FromSeconds(1));
             IGuildService guildService = new GuildService(blizzardService, throttler);
 
             int profileId = 1;
@@ -358,17 +362,17 @@ namespace GuildTools.Tests
             }; 
         }
 
-        private Func<IProgress<double>, Task<int>> immediateValueGetter()
+        private Func<IServiceProvider, IProgress<double>, Task<int>> immediateValueGetter()
         {
-            return async (progress) =>
+            return async (provider, progress) =>
             {
                 return 42;
             };
         }
 
-        private Func<IProgress<double>, Task<int>> waitingValueGetter(int milliseconds)
+        private Func<IServiceProvider, IProgress<double>, Task<int>> waitingValueGetter(int milliseconds)
         {
-            return async (progress) =>
+            return async (provider, progress) =>
             {
                 await Task.Delay(milliseconds);
                 return 42;

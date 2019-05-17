@@ -1,5 +1,6 @@
 .container {
   width: 1000px;
+  padding-bottom: 50px;
 }
 
 .go-back {
@@ -60,7 +61,6 @@
 .permissions-cell-name {
 }
 
-
 .permissions-header-level {
   flex: 0 0 125px;
   justify-content: center;
@@ -84,4 +84,33 @@
 .btn-save-permissions {
   margin-top: 25px;
   margin-right: 100px;
+}
+
+ul.friend-guilds {
+
+}
+
+.btn-add-friend-guild {
+  margin-top: 25px;
+  margin-right: 100px;
+}
+
+.friend-guilds {
+  width: 100%;
+}
+
+.friend-guild-name {
+  width: 26.6%;
+}
+
+.friend-guild-realm {
+  width: 26.6%;
+}
+
+.friend-guild-abbrev {
+  width: 26.6%;
+}
+
+.friend-guild-delete {
+  width: 20%;
 }

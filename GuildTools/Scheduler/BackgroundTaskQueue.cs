@@ -11,6 +11,7 @@ namespace GuildTools.Scheduler
     {
         public string Key { get; set; }
         public Func<CancellationToken, IServiceProvider, Task> Worker { get; set; }
+        public Action TaskFailed { get; set; }
     }
 
     public interface IBackgroundTaskQueue

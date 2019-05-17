@@ -4,7 +4,7 @@ import { DataService } from '../../services/data-services';
 import { BlizzardService } from '../../blizzard-services/blizzard-services';
 import { AuthService } from '../../auth/auth.service';
 import { BusyService } from '../../shared-services/busy-service';
-import { GuildProfile } from '../../services/ServiceTypes/service-types';
+import { GuildProfileSlim } from '../../services/ServiceTypes/service-types';
 import { RoutePaths } from 'app/data/route-paths';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 import { MatTableDataSource } from '@angular/material/table';
@@ -17,8 +17,8 @@ import { MatTableDataSource } from '@angular/material/table';
 export class MyGuildProfilesComponent implements OnInit {
 
   private isLoaded = false;
-  public tableDataSource = new MatTableDataSource<GuildProfile>();
-  public myGuildProfiles = Array<GuildProfile>();
+  public tableDataSource = new MatTableDataSource<GuildProfileSlim>();
+  public myGuildProfiles = Array<GuildProfileSlim>();
   public displayedColumns: Array<string> = ['profileName', 'guildName', 'realmName', 'delete'];
 
   constructor(
@@ -67,7 +67,7 @@ export class MyGuildProfilesComponent implements OnInit {
       return '';
     }
 
-    return BlizzardService.GetGuildUrl(foundProfile.guildName, foundProfile.realm, foundProfile.region);
+    return BlizzardService.GetGuildUrl(foundProfile.primaryGuildName, foundProfile.realmName, foundProfile.regionName);
   }
 
   public navigateToProfile(profileId: number): boolean {
@@ -86,7 +86,7 @@ export class MyGuildProfilesComponent implements OnInit {
     targetDiv.classList.add('hidden');
   }
 
-  public deleteProfile(profile: GuildProfile) {
+  public deleteProfile(profile: GuildProfileSlim) {
     this.busyService.setBusy();
 
     this.dataService.deleteProfile(profile).subscribe(

@@ -8,6 +8,7 @@
             mat-raised-button color="primary"
             [matBadge]="getAccessRequestBadge"
             matBadgeColor="warn"
+            [matTooltip]="getManagePermissionsTooltip"
             (click)="navigateToAccessRequests()">Manage Permissions</button>
       </div>
 
@@ -76,9 +77,14 @@
                   <ng-container matColumnDef="playerName">
                       <mat-header-cell mat-header-cell class="player-name-header" *matHeaderCellDef> Name </mat-header-cell>
                       <mat-cell class="player-name-cell" mat-cell *matCellDef="let player">
-                        <div>
-                            <div>{{ player.name }}</div>
-                        </div>
+                        <div>{{ player.name }}</div>
+                      </mat-cell>
+                  </ng-container>
+
+                  <ng-container matColumnDef="playerGuild">
+                      <mat-header-cell mat-header-cell class="guildname-header" *matHeaderCellDef>Guild</mat-header-cell>
+                      <mat-cell class="guildname-cell" mat-cell *matCellDef="let player" style="user-select: none" >
+                          {{ getPlayerAbbreviation(player) }}
                       </mat-cell>
                   </ng-container>
 

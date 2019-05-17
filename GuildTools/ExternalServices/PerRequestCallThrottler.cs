@@ -8,25 +8,34 @@ using Timers = System.Timers;
 
 namespace GuildTools.ExternalServices
 {
-    public class CallThrottler : ICallThrottler
+    public class PerRequestCallThrottler : ICallThrottler
     {
         private TimeSpan timeBetweenCalls;
 
         private SemaphoreSlim semaphore;
         private Timers.Timer releaseTimer;
 
-        public CallThrottler(TimeSpan timeBetweenCalls)
+        public PerRequestCallThrottler(TimeSpan timeBetweenCalls)
         {
             this.timeBetweenCalls = timeBetweenCalls;
             this.semaphore = new SemaphoreSlim(1);
 
-            this.releaseTimer = new Timers.Timer(this.timeBetweenCalls.TotalMilliseconds);
-            this.releaseTimer.AutoReset = false;
-            this.releaseTimer.Elapsed += ReleaseTimer_Elapsed;
+            if (this.timeBetweenCalls.TotalMilliseconds > 0)
+            {
+                this.releaseTimer = new Timers.Timer(this.timeBetweenCalls.TotalMilliseconds);
+                this.releaseTimer.AutoReset = false;
+                this.releaseTimer.Elapsed += ReleaseTimer_Elapsed;
+            }
         }
 
         public async Task Throttle(Func<Task> action)
         {
+            if (this.timeBetweenCalls.TotalMilliseconds == 0)
+            {
+                await action();
+                return;
+            }
+
             await this.semaphore.WaitAsync();
 
             await action();
@@ -36,6 +45,11 @@ namespace GuildTools.ExternalServices
 
         public async Task<T> Throttle<T>(Func<Task<T>> action)
         {
+            if (this.timeBetweenCalls.TotalMilliseconds == 0)
+            {
+                return await action();
+            }
+
             await this.semaphore.WaitAsync();
 
             var result = await action();

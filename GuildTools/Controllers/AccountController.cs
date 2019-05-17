@@ -37,18 +37,21 @@ namespace GuildTools.Controllers
         private readonly JwtSettings jwtSettings;
         private readonly ICommonValuesProvider commonValues;
         private readonly IMailSender mailSender;
+        private readonly IMailGenerator mailGenerator;
 
         public AccountController(
             UserManager<UserWithData> userManager,
             SignInManager<UserWithData> signInManager,
             IMailSender mailSender,
             ICommonValuesProvider commonValues,
+            IMailGenerator mailGenerator,
             IOptions<JwtSettings> jwtSettings)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.mailSender = mailSender;
             this.commonValues = commonValues;
+            this.mailGenerator = mailGenerator;
             this.jwtSettings = jwtSettings.Value;
         }
 
@@ -103,7 +106,7 @@ namespace GuildTools.Controllers
                 string baseUrl = this.GetBaseUrl();
                 string resetUrl = $"{baseUrl}/confirmemail?userId={user.Id}&token={HttpUtility.UrlEncode(confirmationToken)}";
 
-                var confirmationEmail = MailGenerator.GenerateRegistrationConfirmationEmail(resetUrl);
+                var confirmationEmail = this.mailGenerator.GenerateRegistrationConfirmationEmail(resetUrl);
 
                 var mailResult = await this.mailSender.SendMailAsync(
                     user.Email, 
@@ -168,7 +171,7 @@ namespace GuildTools.Controllers
             string baseUrl = this.GetBaseUrl();
             string resetUrl = $"{baseUrl}/resetpasswordtoken?userId={user.Id}&token={resetToken}";
 
-            var resetEmail = MailGenerator.GenerateResetPasswordEmail(resetUrl);
+            var resetEmail = this.mailGenerator.GenerateResetPasswordEmail(resetUrl);
             var result = await this.mailSender.SendMailAsync(user.Email, this.commonValues.AdminEmail, resetEmail.Subject, resetEmail.TextContent, resetEmail.HtmlContent);
 
             if (result)

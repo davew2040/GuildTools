@@ -24,8 +24,8 @@ namespace GuildTools.Mocks
 
         public async Task<IEnumerable<GuildMemberStats>> GetLargeGuildMembersDataAsync(BlizzardService.BlizzardRegion region, string guild, string realm, IProgress<double> progress)
         {
-            int numRepeats = 15;
-            double numSeconds = 60.0;
+            int numRepeats = 10;
+            double numSeconds = 10.0;
 
             for (int i = 0; i < numRepeats; i++)
             {
@@ -51,7 +51,9 @@ namespace GuildTools.Mocks
                     Pvp2v2Rating = 1000,
                     Pvp3v3Rating = 1500,
                     PvpRbgRating = 2000,
-                    Realm = "Burning Blade",
+                    RealmName = "Burning Blade",
+                    GuildName = "Longanimity",
+                    RegionName = "US",
                     TotalHonorableKills = 25000
                 }
             };

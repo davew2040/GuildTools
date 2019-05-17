@@ -49,6 +49,8 @@ import { PlayerNotesComponentComponent } from './components/player-notes-compone
 import { ConfirmationDialogComponent } from './dialogs/confirmation-dialog.component/confirmation-dialog.component';
 import { ShareLinkDialogComponent } from './dialogs/share-link-dialog.component/share-link-dialog.component';
 import { RaiderIoStatsComponent } from './components/raider-io-stats/raider-io-stats.component';
+import { GuildProfileStatsComponent } from './guild-profile-stats/guild-profile-stats.component';
+import { StatsTableComponent } from './components/stats-table/stats-table.component';
 
 @NgModule({
   declarations: [
@@ -61,6 +63,7 @@ import { RaiderIoStatsComponent } from './components/raider-io-stats/raider-io-s
     ResetPasswordComponent,
     ResetPasswordWithTokenComponent,
     GuildStatsComponent,
+    GuildProfileStatsComponent,
     RaiderIoStatsComponent,
     GuildStatsLauncherComponent,
     GuildProfileComponent,
@@ -81,7 +84,8 @@ import { RaiderIoStatsComponent } from './components/raider-io-stats/raider-io-s
     LandingPageComponent,
     PlayerNotesComponentComponent,
     ConfirmationDialogComponent,
-    ShareLinkDialogComponent
+    ShareLinkDialogComponent,
+    StatsTableComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),

@@ -33,6 +33,7 @@ namespace GuildTools.EF
         public virtual DbSet<PendingAccessRequest> PendingAccessRequests { get; set; }
         public virtual DbSet<NotificationRequest> NotificationRequests { get; set; }
         public virtual DbSet<NotificationRequestType> NotificationRequestTypes { get; set; }
+        public virtual DbSet<FriendGuild> FriendGuilds { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -229,6 +230,22 @@ namespace GuildTools.EF
                     .HasForeignKey(e => e.NotificationRequestTypeId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+            });
+
+            modelBuilder.Entity<FriendGuild>(entity =>
+            {
+                entity.HasIndex(e => e.Id);
+                entity.HasIndex(e => e.ProfileId);
+
+                entity.HasOne(e => e.Guild)
+                    .WithMany(f => f.FriendGuilds)
+                    .HasForeignKey(e => e.StoredGuildId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Profile)
+                    .WithMany(f => f.FriendGuilds)
+                    .HasForeignKey(e => e.ProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             this.AddStaticEnumData(modelBuilder);

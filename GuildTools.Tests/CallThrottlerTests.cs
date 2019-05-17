@@ -15,7 +15,7 @@ namespace GuildTools.Tests
         [TestMethod]
         public async Task TestThrottler()
         {
-            var throttler = new CallThrottler(TimeSpan.FromSeconds(3));
+            var throttler = new PerRequestCallThrottler(TimeSpan.FromSeconds(3));
 
             var tasks = new List<Task>();
 
@@ -46,7 +46,7 @@ namespace GuildTools.Tests
         [TestMethod]
         public async Task TestThrottlerWithReturnType()
         {
-            var throttler = new CallThrottler(TimeSpan.FromSeconds(3));
+            var throttler = new PerRequestCallThrottler(TimeSpan.FromSeconds(3));
 
             var tasks = new List<Task>();
 

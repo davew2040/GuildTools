@@ -19,7 +19,7 @@
                 </mat-list>
             </div> -->
 
-            <mat-table [dataSource]="tableDataSource" *ngIf="myGuildProfiles.length > 0" class="profile-table standard-table">
+            <mat-table [dataSource]="tableDataSource" *ngIf="myGuildProfiles.length > 0" class="profile-table standard-mat-table">
                 <ng-container matColumnDef="profileName">
                     <mat-header-cell class="profilename-header-cell" mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
                     <mat-cell class="profilename-main-cell"  mat-cell *matCellDef="let profile">
@@ -29,12 +29,12 @@
                 <ng-container matColumnDef="guildName">
                     <mat-header-cell class="guild-header-cell" mat-header-cell *matHeaderCellDef> Guild </mat-header-cell>
                     <mat-cell class="guild-main-cell" mat-cell *matCellDef="let profile">
-                        <a [href]="getGuildUrl(profile.id)">{{profile.guildName}}  </a>
+                        <a [href]="getGuildUrl(profile.id)">{{profile.primaryGuildName}}  </a>
                     </mat-cell>
                 </ng-container>
                 <ng-container matColumnDef="realmName">
                     <mat-header-cell class="realm-header-cell" mat-header-cell *matHeaderCellDef> Realm </mat-header-cell>
-                    <mat-cell class="realm-main-cell" mat-cell *matCellDef="let profile"> {{profile.realm}}</mat-cell>
+                    <mat-cell class="realm-main-cell" mat-cell *matCellDef="let profile"> {{profile.realmName}}</mat-cell>
                 </ng-container>
                 <ng-container matColumnDef="delete">
                     <mat-header-cell class="delete-header-cell" mat-header-cell *matHeaderCellDef> </mat-header-cell>

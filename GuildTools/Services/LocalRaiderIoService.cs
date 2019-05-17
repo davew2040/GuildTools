@@ -70,7 +70,7 @@ namespace GuildTools.Services
 
         private async Task<RaiderIoStats> GetRaiderIoStats(GuildMemberStats member, BlizzardRegion region)
         {
-            var raiderIoJson = await this.raiderIoService.GetMythicPlusDungeonData(region, member.Name, member.Realm);
+            var raiderIoJson = await this.raiderIoService.GetMythicPlusDungeonData(region, member.Name, member.RealmName);
 
             if (!RaiderIoParsing.GetRequestSucceeded(raiderIoJson))
             {

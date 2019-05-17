@@ -19,7 +19,7 @@ export class BlizzardService {
     name = name.replace(/ /g, "-");
     name = name.replace(/`/g, "");
 
-    return name;
+    return name.toLowerCase();
   }
 
   public static FormatGuild(name: string): string {

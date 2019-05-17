@@ -20,9 +20,12 @@ namespace GuildTools.EF.Models.StoredBlizzardModels
         [Required]
         public int ProfileId { get; set; }
 
+        public string Abbreviation { get; set; }
+
         public virtual GuildProfile Profile { get; set; }
         public virtual StoredRealm Realm { get; set; }
         public virtual ICollection<GuildProfile> CreatorGuilds { get; set; }
         public virtual ICollection<StoredPlayer> StoredPlayers { get; set; }
+        public virtual ICollection<FriendGuild> FriendGuilds { get; set; }
     }
 }

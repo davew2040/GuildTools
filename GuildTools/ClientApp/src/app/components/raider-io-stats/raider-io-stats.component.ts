@@ -211,7 +211,7 @@ export class RaiderIoStatsComponent implements OnInit {
 
   getPlayerArmoryLink(player: RaiderIoStats): string {
     let url = `https://worldofwarcraft.com/${this.getPlayerRegionUrlSegment(this.region)}`
-      + `character/${BlizzardService.FormatRealm(player.realm)}/${player.name}`;
+      + `character/${this.region.toLowerCase()}/${BlizzardService.FormatRealm(player.realm)}/${player.name}`;
     return url;
   }
 
@@ -219,7 +219,7 @@ export class RaiderIoStatsComponent implements OnInit {
     let url = `http://${this.region}.battle.net/wow/en/guild/${BlizzardService.FormatRealm(realm)}/${guild}/`;
     return url;
   }
-
+s
   getPlayerRegionUrlSegment(realm: string): string {
     if (realm.toLowerCase() === "us") {
       return "en-us";

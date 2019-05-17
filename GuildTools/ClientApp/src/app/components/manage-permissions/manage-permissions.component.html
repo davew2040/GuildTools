@@ -11,7 +11,7 @@
   <div *ngIf="pendingAccessRequests.length === 0" class="no-access-requests">
     There are no pending accessing requests.
   </div>
-  <mat-table *ngIf="pendingAccessRequests.length > 0" [dataSource]="accessRequestsTableDataSource" class="access-requests-table standard-table">
+  <mat-table *ngIf="pendingAccessRequests.length > 0" [dataSource]="accessRequestsTableDataSource" class="access-requests-table standard-mat-table">
       <ng-container matColumnDef="name">
           <mat-header-cell class="request-col-header-name" mat-header-cell *matHeaderCellDef> Username </mat-header-cell>
           <mat-cell class="request-col-cell-name"  mat-cell *matCellDef="let request">
@@ -43,7 +43,7 @@
 
   <h3>Permissions:</h3>
 
-  <mat-table [dataSource]="profilePermissionsTableDataSource" class="permissions-table standard-table">
+  <mat-table [dataSource]="profilePermissionsTableDataSource" class="permissions-table standard-mat-table">
       <ng-container matColumnDef="name">
           <mat-header-cell class="permissions-header-name" mat-header-cell *matHeaderCellDef> User </mat-header-cell>
           <mat-cell class="permissions-cell-name"  mat-cell *matCellDef="let permission">
@@ -77,5 +77,43 @@
     <button mat-raised-button class="btn-save-permissions" (click)="savePermissions()">Save Permissions</button>
   </div>
 
+  <h3>Friend Guilds:</h3>
 
+  <div *ngIf="friendGuilds.length === 0" class="no-items">
+    You have no friend guilds configured.
+  </div>
+  <div *ngIf="friendGuilds.length > 0" fxFill>
+    <table class="friend-guilds standard-table">
+      <colgroup>
+        <col class="friend-guild-name"/>
+        <col class="friend-guild-realm"/>
+        <col class="friend-guild-abbrev"/>
+        <col class="friend-guild-delete"/>
+      </colgroup>
+      <thead>
+        <th>
+          Guild
+        </th>
+        <th>
+          Realm
+        </th>
+        <th>
+          Abbreviation
+        </th>
+        <th>
+          Delete
+        </th>
+      </thead>
+      <tr *ngFor="let friendGuild of friendGuilds" (mouseenter)="onMouseEnter($event)" (mouseleave)="onMouseLeave($event)">
+        <td>{{ friendGuild.guild.name }}</td>
+        <td>{{ getFormattedRealm(friendGuild.guild) }}</td>
+        <td>{{ friendGuild.guild.abbreviation }}</td>
+        <td><a class="hidden show-hide-column" (click)="deleteFriendGuild(friendGuild)">Delete</a></td>
+      </tr>
+    </table>
+  </div>
+
+  <div fxLayout="row" fxLayoutAlign="end">
+    <button mat-raised-button class="btn-add-friend-guild" (click)="addFriendGuild()">Add Friend Guild</button>
+  </div>
 </div>

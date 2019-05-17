@@ -7,6 +7,9 @@ import { BusyService } from 'app/shared-services/busy-service';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 import { WowService } from 'app/services/wow-service';
 import { NotificationRequestType } from 'app/data/notification-request-type';
+import { StatsTableDefinition } from 'app/components/stats-table/subtypes/stats-table-definition';
+import { BlizzardStatsPlayer } from 'app/components/stats-table/subtypes/blizzard-stats-player';
+import { BlizzardPlayerStatsTableDefinition } from 'app/components/stats-table/subtypes/blizzard-player-stats-table-definition';
 
 enum GuildStatsStatus {
   Loading,
@@ -41,17 +44,24 @@ export class GuildStatsComponent implements OnInit {
 
   private timerHandler: any;
 
+  public testTableDefinition = new BlizzardPlayerStatsTableDefinition();
 
-  private get recheckTimer() { return 4000; }
+  private get recheckTime() { return 4000; }
 
   constructor(
-    public route: ActivatedRoute,
-    public router: Router,
-    public dataService: DataService,
-    public blizzardService: BlizzardService,
-    private busyService: BusyService,
-    private wowService: WowService,
-    private errorService: ErrorReportingService) { }
+      public route: ActivatedRoute,
+      public router: Router,
+      public dataService: DataService,
+      public blizzardService: BlizzardService,
+      private busyService: BusyService,
+      private wowService: WowService,
+      private errorService: ErrorReportingService) {
+    this.testTableDefinition.ValueGetter = g => {
+      if (g instanceof BlizzardStatsPlayer) {
+        return g.player.azeriteLevel;
+      }
+    };
+  }
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -88,6 +98,10 @@ export class GuildStatsComponent implements OnInit {
         this.busyService.unsetBusy();
         this.errorService.reportApiError(error);
       });
+  }
+
+  public get getStatsTablePlayers(): Array<BlizzardStatsPlayer> {
+    return this.guildMembers.map(x => new BlizzardStatsPlayer(x));
   }
 
   populateStatsTableDefinitions(): void {
@@ -224,10 +238,11 @@ export class GuildStatsComponent implements OnInit {
           this.completionProgress = success.completionProgress;
           this.placeInLine = success.positionInQueue;
           this.pageStatus = GuildStatsStatus.DataNotReady;
-          this.timerHandler = setTimeout(() => {
-            this.loadGuildStats(region, realm, guild);
-          },
-          this.recheckTimer);
+          this.timerHandler = setTimeout(
+            () => {
+              this.loadGuildStats(region, realm, guild);
+            },
+            this.recheckTime);
         }
       },
       error => {
@@ -279,7 +294,7 @@ export class GuildStatsComponent implements OnInit {
   }
 
   getPlayerArmoryLink(player: GuildMemberStats): string {
-    let url = `https://worldofwarcraft.com/${this.getPlayerRegionUrlSegment(this.region)}/character/${BlizzardService.FormatRealm(player.realm)}/${player.name}`;
+    let url = `https://worldofwarcraft.com/${this.getPlayerRegionUrlSegment(this.region)}/character/${this.region.toLowerCase()}/${BlizzardService.FormatRealm(player.realmName)}/${player.name}`;
     return url;
   }
 

@@ -1,0 +1,59 @@
+<div class="container">
+  <div *ngIf="pageLoading()" style="text-align: center; font-size:25px;">
+    Loading...
+  </div>
+
+  <div *ngIf="guildNotFound()" style="text-align: center; font-size:25px;">
+    This guild could not be found.
+  </div>
+
+  <div *ngIf="dataNotReady()" style="text-align: center">
+    <table class="processing-items standard-table">
+      <colgroup>
+        <col class="processing-guild-name"/>
+        <col class="processing-percent-complete"/>
+        <col class="processing-position-in-line"/>
+      </colgroup>
+      <thead>
+        <th>
+          Guild
+        </th>
+        <th>
+          % Complete
+        </th>
+        <th>
+          Position in Line
+        </th>
+      </thead>
+      <tr *ngFor="let processingItem of individualStatsResponses">
+        <td>{{ getGuildName(processingItem) }}</td>
+        <td>{{ getPercentComplete(processingItem) }}</td>
+        <td>{{ getPositionInLine(processingItem) }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div *ngIf="pageReady()">
+
+    <div class="guild-header">
+      <div>Profile Stats</div>
+      <div style="text-align: center; font-size:10pt; margin-top:15px"><a [routerLink]="['/guildstats']">Back to Search</a></div>
+    </div>
+
+    <div class="stats-container" style="margin-top: 15px;">
+      <div *ngFor="let statsTable of statsTables">
+        <table class="statsTable">
+          <tr><td class="statsTableHeader" colspan="2">{{statsTable.Title}}</td></tr>
+          <tr [ngClass]="mapClassToColor(member.class) + ' data-row'" *ngFor="let member of statsTable.SortedMembers()">
+            <td><a [href]="getPlayerArmoryLink(member)">{{member.name}}</a></td>
+            <td class="guild-column">{{statsTable.GuildDisplayer(member)}}</td>
+            <td class="value-column">{{statsTable.NameDisplayer(member)}}</td>
+          </tr>
+          <tr>
+            <td class="statsTableShowMore" colspan="2"><a (click)="statsTable.ShowMore(10)">Show More</a></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

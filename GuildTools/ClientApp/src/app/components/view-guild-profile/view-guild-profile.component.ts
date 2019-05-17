@@ -1,9 +1,9 @@
 import { Component, OnInit, ViewChild, ViewChildren, AfterViewChecked, QueryList, ElementRef, ViewContainerRef, Inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FullGuildProfile, BlizzardPlayer, PlayerMain, PlayerAlt, StoredPlayer } from 'app/services/ServiceTypes/service-types';
-import { DataService, WowClass } from 'app/services/data-services';
+import { DataService } from 'app/services/data-services';
 import { BusyService } from 'app/shared-services/busy-service';
-import { WowService } from 'app/services/wow-service';
+import { WowService, WowClass } from 'app/services/wow-service';
 import { ContextMenuComponent } from 'ngx-contextmenu';
 import { Observable, Subject, combineLatest } from 'rxjs';
 import { startWith, map, filter } from 'rxjs/operators';
@@ -28,6 +28,12 @@ class DropScopes {
   public DropAlt = 'DropAlt';
 }
 
+class PlayerTableColumnLabels {
+  public static get PlayerName() { return 'playerName'; }
+  public static get PlayerGuild() { return 'playerGuild'; }
+  public static get PlayerLevel() { return 'playerLevel'; }
+}
+
 interface ComponentWithElement {
   component: MatExpansionPanel;
   element: ElementRef;
@@ -40,7 +46,6 @@ interface ComponentWithElement {
 })
 export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
   public profile: FullGuildProfile = null;
-  public playerColumns: Array<string> = ['playerName', 'playerLevel'];
   public unassignedPlayers = new Subject<Array<StoredPlayer>>();
   public mains = new Array<PlayerMain>();
   public mainsSubject = new Subject<Array<PlayerMain>>();
@@ -154,7 +159,6 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
     return (!this.authService.isAuthenticated || !this.profile.currentPermissionLevel);
   }
 
-
   public get getAccessRequestBadge(): number {
     if (!this.profile) {
       return null;
@@ -165,6 +169,12 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
     }
 
     return this.profile.accessRequestCount;
+  }
+
+  public get getManagePermissionsTooltip(): string {
+    if (this.profile && this.profile.accessRequestCount > 0) {
+      return `You have ${this.profile.accessRequestCount} pending access request${this.profile.accessRequestCount > 1 ? 's' : ''}.`;
+    }
   }
 
   public playersFilterChanged($e: any) {
@@ -382,6 +392,32 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
       } as ShareLinkDialogData,
       width: '400px'
     });
+  }
+
+
+  public get playerColumns(): Array<string> {
+    if (!this.profile) {
+      return [];
+    }
+
+    if (this.profile.friendGuilds.length === 0) {
+      return [PlayerTableColumnLabels.PlayerName, PlayerTableColumnLabels.PlayerLevel];
+    }
+    else {
+      return [
+        PlayerTableColumnLabels.PlayerName,
+        PlayerTableColumnLabels.PlayerGuild,
+        PlayerTableColumnLabels.PlayerLevel
+      ];
+    }
+  }
+
+  public getPlayerAbbreviation(player: StoredPlayer): string {
+    if (player.guild.abbreviation) {
+      return player.guild.abbreviation;
+    }
+
+    return player.guild.name.substr(0, Math.min(player.guild.name.length, 3)).toUpperCase();
   }
 
   private getPlayerFilterer(): Observable<Array<BlizzardPlayer>> {

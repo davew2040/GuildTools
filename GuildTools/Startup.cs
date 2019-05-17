@@ -1,3 +1,4 @@
+using AutoMapper;
 using GuildTools.Cache;
 using GuildTools.Cache.LongRunningRetrievers;
 using GuildTools.Cache.LongRunningRetrievers.Interfaces;
@@ -57,12 +58,6 @@ namespace GuildTools
             services.Configure<BlizzardApiSecrets>(Configuration.GetSection("BlizzardApiSecrets"));
             services.Configure<ConnectionStrings>(Configuration.GetSection("ConnectionStrings"));
             services.AddMemoryCache();
-
-            // In production, the Angular files will be served from this directory
-            services.AddSpaStaticFiles(configuration =>
-            {
-                configuration.RootPath = "ClientApp/dist";
-            });
             
             services
                 .AddDbContext<GuildToolsContext>(options => {
@@ -117,14 +112,16 @@ namespace GuildTools
                 .CreateLogger();
 
             services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddHttpContextAccessor();
 
             IBackgroundTaskQueue blizzardTaskQueue = new BackgroundTaskQueue();
             IBackgroundTaskQueue raiderIoTaskQueue = new BackgroundTaskQueue();
 
-            ICallThrottler blizzardThrottler = new CallThrottler(TimeSpan.FromMilliseconds(50));
-            ICallThrottler raiderIoThrottler = new CallThrottler(TimeSpan.FromSeconds(1));
+            ICallThrottler blizzardThrottler = new ConcurrencyLimitedCallThrottler(20);
+            ICallThrottler raiderIoThrottler = new PerRequestCallThrottler(TimeSpan.FromSeconds(1));
 
             HttpClient raiderIoClient = new HttpClient();
             raiderIoClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -158,9 +155,9 @@ namespace GuildTools
                     return new GuildStatsRetriever(
                         serviceProvider.GetService<IMemoryCache>(),
                         blizzardTaskQueue,
-                        serviceProvider.GetService<IGuildService>(),
                         serviceProvider.GetService<IMailSender>(),
-                        serviceProvider.GetService<ICommonValuesProvider>());
+                        serviceProvider.GetService<ICommonValuesProvider>(),
+                        serviceProvider.GetService<IMailGenerator>());
                 });
             services.AddScoped<IRaiderIoStatsRetriever>(
                 (serviceProvider) =>
@@ -170,13 +167,15 @@ namespace GuildTools
                         raiderIoTaskQueue,
                         serviceProvider.GetService<ILocalRaiderIoService>(),
                         serviceProvider.GetService<IMailSender>(),
-                        serviceProvider.GetService<ICommonValuesProvider>());
+                        serviceProvider.GetService<ICommonValuesProvider>(),
+                        serviceProvider.GetService<IMailGenerator>());
                 });
 
             this.InitializeCaches(services);
 
             IMailSender mailSender = new MailSender(Configuration.GetValue<string>("SendGridApiKey"));
             services.AddSingleton(mailSender);
+            services.AddSingleton<IMailGenerator, MailGenerator>();
 
             ICommonValuesProvider valuesProvider = new CommonValuesProvider()
             {
@@ -213,6 +212,12 @@ namespace GuildTools
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
+
+            // In production, the Angular files will be served from this directory
+            services.AddSpaStaticFiles(configuration =>
+            {
+                configuration.RootPath = "ClientApp/dist";
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -236,12 +241,12 @@ namespace GuildTools
                 app.UseHsts();
             }
 
-            app.ConfigureCustomExceptionMiddleware();
-
             //app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
             app.UseAuthentication();
+
+            app.ConfigureCustomExceptionMiddleware();
 
             app.UseMvc(routes =>
             {

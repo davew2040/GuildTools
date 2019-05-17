@@ -33,6 +33,8 @@ using EfBlizzardModels = GuildTools.EF.Models.StoredBlizzardModels;
 using GuildTools.Cache.LongRunningRetrievers;
 using GuildTools.Utilities;
 using GuildTools.Cache.LongRunningRetrievers.Interfaces;
+using AutoMapper;
+using GuildTools.ExternalServices.Blizzard.Utilities;
 
 namespace GuildTools.Controllers
 {
@@ -54,6 +56,7 @@ namespace GuildTools.Controllers
         private readonly IRealmStoreByValues realmStoreByValues;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly UserManager<EfModels.UserWithData> userManager;
+        private readonly IMapper mapper;
 
         private static bool sent = false;
 
@@ -72,7 +75,8 @@ namespace GuildTools.Controllers
             IPlayerStoreByValue playerStore,
             IRealmStoreByValues realmStoreByValues,
             RoleManager<IdentityRole> roleManager,
-            UserManager<EfModels.UserWithData> userManager)
+            UserManager<EfModels.UserWithData> userManager,
+            IMapper mapper)
         {
             this.connectionStrings = connectionStrings.Value;
             this.blizzardService = blizzardService;
@@ -90,6 +94,7 @@ namespace GuildTools.Controllers
 
             this.roleManager = roleManager;
             this.userManager = userManager;
+            this.mapper = mapper;
         }
 
         [HttpGet]
@@ -120,12 +125,16 @@ namespace GuildTools.Controllers
             realm = BlizzardService.FormatRealmName(realm);
             BlizzardRegion regionEnum = BlizzardService.GetRegionFromString(region);
 
-            var guildData = await this.guildStatsRetriever.GetCachedEntry(regionEnum, realm, guild, this.GetBaseUrl());
+            return await this.GetGuildMemberStatsResponse(regionEnum, realm, guild);
+        }
+
+        private async Task<GuildStatsResponse> GetGuildMemberStatsResponse(BlizzardRegion regionEnum, string realm, string guild)
+        {
+            var guildData = await this.guildStatsRetriever.GetCachedEntry(regionEnum, realm, guild);
 
             if (guildData.State == CachedValueState.Updating)
             {
-                string key = this.guildStatsRetriever.GetKey(regionEnum, realm, guild);
-                var positionInQueue = this.guildStatsRetriever.GetPositionInQueue(key);
+                var positionInQueue = this.guildStatsRetriever.GetPositionInQueue(regionEnum, realm, guild);
 
                 return new GuildStatsResponse()
                 {
@@ -142,6 +151,58 @@ namespace GuildTools.Controllers
                     Values = guildData.Value
                 };
             }
+        }
+
+        [HttpGet("getGuildProfileStats")]
+        public async Task<AggregatedProfileGuildStatsResponse> GetGuildProfileStats(int profileId)
+        {
+            var profile = await this.dataRepo.GetGuildProfile_GuildAndFriendGuildsAsync(profileId);
+
+            var friendGuildCachedEntries = new List<IndividualAggregatedStatsItem>();
+
+            var profileGuildCachedEntry = await this.GetGuildMemberStatsResponse(
+                BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegionEnum)profile.CreatorGuild.Realm.RegionId),
+                profile.CreatorGuild.Realm.Name,
+                profile.CreatorGuild.Name);
+
+            friendGuildCachedEntries.Add(new IndividualAggregatedStatsItem()
+            {
+                GuildName = profile.CreatorGuild.Name,
+                RealmName = profile.CreatorGuild.Realm.Name,
+                RegionName = profile.CreatorGuild.Realm.Region.RegionName,
+                IndividualStats = profileGuildCachedEntry
+            });
+
+            foreach (var friendGuild in profile.FriendGuilds)
+            {
+                var entry = await this.GetGuildMemberStatsResponse(
+                    BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegionEnum)friendGuild.Guild.Realm.RegionId),
+                    friendGuild.Guild.Realm.Name,
+                    friendGuild.Guild.Name);
+
+                friendGuildCachedEntries.Add(new IndividualAggregatedStatsItem()
+                {
+                    GuildName = friendGuild.Guild.Name,
+                    RealmName = friendGuild.Guild.Realm.Name,
+                    RegionName = friendGuild.Guild.Realm.Region.RegionName,
+                    IndividualStats = entry
+                });
+            }
+
+            if (friendGuildCachedEntries.Any(x => !x.IndividualStats.IsCompleted))
+            {
+                return new AggregatedProfileGuildStatsResponse()
+                {
+                    IsCompleted = false,
+                    IndividualGuildResponses = friendGuildCachedEntries
+                };
+            }
+
+            return new AggregatedProfileGuildStatsResponse()
+            {
+                IsCompleted = true,
+                Values = friendGuildCachedEntries.SelectMany(x => x.IndividualStats.Values)
+            };
         }
 
         [HttpGet("getRaiderIoStats")]
@@ -296,7 +357,7 @@ namespace GuildTools.Controllers
             {
                 Id = newPlayer.Id,
                 Notes = newPlayer.Notes,
-                Player = this.MapPlayer(newPlayer.Player)
+                Player = this.mapper.Map<StoredPlayer>(newPlayer.Player)
             };
         }
 
@@ -315,7 +376,7 @@ namespace GuildTools.Controllers
             return new PlayerAlt()
             {
                 Id = newAlt.Id,
-                Player = this.MapPlayer(newAlt.Player)
+                Player = this.mapper.Map<StoredPlayer>(newAlt.Player)
             };
         }
 
@@ -369,34 +430,18 @@ namespace GuildTools.Controllers
 
         [Authorize]
         [HttpGet("getGuildProfiles")]
-        public async Task<IEnumerable<GuildProfile>> GetGuildProfiles()
+        public async Task<IEnumerable<GuildProfileSlim>> GetGuildProfiles()
         {
             var user = await this.userManager.GetUserAsync(HttpContext.User);
 
             if (user == null)
             {
-                return new List<GuildProfile>();
+                return new List<GuildProfileSlim>();
             }
 
             var profiles = await this.dataRepo.GetGuildProfilesForUserAsync(user.Id);
 
-            var jsonProfiles = profiles.Select(p => new GuildProfile()
-            {
-                Id = p.Id,
-                ProfileName = p.ProfileName,
-                GuildName = p.CreatorGuild.Name,
-                Realm = p.Realm.Name,
-                Region = p.Realm.Region.RegionName,
-                Creator = new UserStub()
-                {
-                    Id = p.Creator.Id,
-                    Email = p.Creator.Email,
-                    Username = p.Creator.UserName
-                }, 
-                IsPublic = p.IsPublic
-            });
-
-            return jsonProfiles;
+            return profiles.Select(x => this.mapper.Map(x, new GuildProfileSlim()));
         }
 
         [HttpGet("getGuildProfile")]
@@ -433,19 +478,43 @@ namespace GuildTools.Controllers
                 },
                 Region = efProfile.Realm.Region.RegionName,
                 IsPublic = efProfile.IsPublic,
+                FriendGuilds = efProfile.FriendGuilds.Select(x => this.mapper.Map<FriendGuild>(x)),
                 AccessRequestCount = isOfficer ? efProfile.AccessRequests.Count() : 0
             };
 
-            returnProfile.Players = (await this.GetOrInsertProfileGuildMembers(
-                    profileId,
-                    efProfile.CreatorGuild,
-                    efProfile.Realm,
-                    (EfEnums.GameRegionEnum)efProfile.Realm.RegionId))
-                .Select(x => this.MapPlayer(x));
+            returnProfile.Players = 
+                (await this.GetOrInsertAllProfileGuilds(efProfile))
+                .Select(x => this.mapper.Map<StoredPlayer>(x));
 
             returnProfile.CurrentPermissionLevel = (int?)permissionLevel;
 
             return returnProfile;
+        }
+
+        private async Task<IEnumerable<EfBlizzardModels.StoredPlayer>> GetOrInsertAllProfileGuilds(EfModels.GuildProfile profile)
+        {
+            var efPlayers = new List<EfBlizzardModels.StoredPlayer>();
+
+            var primaryGuildPlayers = await this.GetOrInsertProfileGuildMembers(
+                profile.Id,
+                profile.CreatorGuild,
+                profile.CreatorGuild.Realm,
+                (EfEnums.GameRegionEnum)profile.CreatorGuild.Realm.Region.Id);
+
+            efPlayers.AddRange(primaryGuildPlayers);
+            
+            foreach (var friendGuild in profile.FriendGuilds)
+            {
+                var friendPlayers = await this.GetOrInsertProfileGuildMembers(
+                    profile.Id,
+                    friendGuild.Guild,
+                    friendGuild.Guild.Realm,
+                    (EfEnums.GameRegionEnum)friendGuild.Guild.Realm.Region.Id);
+
+                efPlayers.AddRange(friendPlayers);
+            }
+
+            return efPlayers;
         }
 
         private async Task<IEnumerable<EfBlizzardModels.StoredPlayer>> GetOrInsertProfileGuildMembers(int profileId, EfBlizzardModels.StoredGuild guild, EfBlizzardModels.StoredRealm realm, EfEnums.GameRegionEnum region)
@@ -459,7 +528,7 @@ namespace GuildTools.Controllers
 
             var realms = realmsTasks.Select(x => x.Result);
 
-            var newPlayers = await this.dataRepo.InsertPlayersIfNeededAsync(members.Select(x =>
+            var newPlayers = await this.dataRepo.InsertGuildPlayersIfNeededAsync(members.Select(x =>
                 new EfBlizzardModels.StoredPlayer()
                 {
                     Name = x.PlayerName,
@@ -468,7 +537,9 @@ namespace GuildTools.Controllers
                     GuildId = guild.Id,
                     RealmId = realms.SingleOrDefault(y => y.Name == x.PlayerRealmName).Id,
                     ProfileId = profileId
-                }), profileId);
+                }), 
+                profileId, 
+                guild.Id);
 
             return newPlayers;
         }
@@ -602,6 +673,64 @@ namespace GuildTools.Controllers
             await this.dataRepo.UpdatePermissions(user.Id, updates.Updates, updates.ProfileId, isAdmin);
         }
 
+        [HttpGet("getFriendGuilds")]
+        public async Task<IEnumerable<FriendGuild>> GetFriendGuilds(int profileId)
+        {
+            var efFriendGuilds = await this.dataRepo.GetFriendGuilds(profileId);
+
+            return efFriendGuilds.Select(x => this.mapper.Map<FriendGuild>(x));
+        }
+
+        [Authorize]
+        [HttpPost("addFriendGuild")]
+        public async Task<FriendGuild> AddFriendGuild([FromBody] AddFriendGuild input)
+        {
+            InputValidators.ValidateGuildName(input.GuildName);
+            InputValidators.ValidateRealmName(input.RealmName);
+
+            input.GuildName = BlizzardService.FormatGuildName(input.GuildName);
+            input.RealmName = BlizzardService.FormatRealmName(input.RealmName);
+            var regionEnum = GameRegionUtilities.GetGameRegionFromString(input.RegionName);
+
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!(await this.UserCanAddRemoveFriendGuilds(input.ProfileId, user)))
+            {
+                throw new UserReportableError($"This user does not have permission to add friend guilds for profile '{input.ProfileId}'.",
+                    (int)HttpStatusCode.Unauthorized);
+            }
+
+            var storedRealm = await this.realmStoreByValues.GetRealmAsync(input.RealmName, regionEnum);
+            if (storedRealm == null)
+            {
+                throw new UserReportableError($"Could not locate realm '{input.RealmName}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var storedGuild = await this.guildStore.GetGuildAsync(input.GuildName, storedRealm, input.ProfileId);
+            if (storedGuild == null)
+            {
+                throw new UserReportableError($"Could not locate guild '{input.GuildName}'.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var efFriendGuild = await this.dataRepo.AddFriendGuild(input.ProfileId, storedGuild);
+
+            return this.mapper.Map<FriendGuild>(efFriendGuild);
+        }
+
+        [Authorize]
+        [HttpPost("deleteFriendGuild")]
+        public async Task DeleteFriendGuild([FromBody] DeleteFriendGuild input)
+        {
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            if (!(await this.UserCanAddRemoveFriendGuilds(input.ProfileId, user)))
+            {
+                throw new UserReportableError($"This user does not have permission to delete friend guilds for profile '{input.ProfileId}'.",
+                    (int)HttpStatusCode.Unauthorized);
+            }
+
+            await this.dataRepo.DeleteFriendGuildAsync(input.ProfileId, input.FriendGuildId);
+        }
 
         [Authorize]
         [HttpPost("editPlayerNotes")]
@@ -684,8 +813,12 @@ namespace GuildTools.Controllers
             return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
 
-
         private async Task<bool> UserCanEditNotes(int profileId, EfModels.UserWithData user)
+        {
+            return await this.UserHasStandardOfficerPermissions(profileId, user);
+        }
+
+        private async Task<bool> UserCanAddRemoveFriendGuilds(int profileId, EfModels.UserWithData user)
         {
             return await this.UserHasStandardOfficerPermissions(profileId, user);
         }
@@ -761,7 +894,7 @@ namespace GuildTools.Controllers
                 Id = efMain.Id,
                 Notes = efMain.Notes,
                 OfficerNotes = isOfficer ? efMain.OfficerNotes : string.Empty,
-                Player = MapPlayer(efMain.Player),
+                Player = this.mapper.Map<StoredPlayer>(efMain.Player),
                 Alts = efMain.Alts.Select(x => MapPlayerAlt(x))
             };
         }
@@ -776,20 +909,7 @@ namespace GuildTools.Controllers
             return new PlayerAlt()
             {
                 Id = efAlt.Id,
-                Player = MapPlayer(efAlt.Player)
-            };
-        }
-
-        private StoredPlayer MapPlayer(EfModels.StoredBlizzardModels.StoredPlayer efPlayer)
-        {
-            return new StoredPlayer()
-            {
-                Id = efPlayer.Id,
-                Name = efPlayer.Name,
-                Class = efPlayer.Class,
-                Level = efPlayer.Level,
-                Realm = this.MapRealm(efPlayer.Realm),
-                RegionName = efPlayer.Realm.Region.RegionName
+                Player = this.mapper.Map<StoredPlayer>(efAlt.Player)
             };
         }
 

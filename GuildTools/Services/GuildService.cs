@@ -3,6 +3,7 @@ using GuildTools.Controllers.Models;
 using GuildTools.ExternalServices;
 using GuildTools.ExternalServices.Blizzard;
 using GuildTools.ExternalServices.Blizzard.JsonParsing;
+using GuildTools.ExternalServices.Blizzard.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -33,30 +34,47 @@ namespace GuildTools.Services
 
             var members = GuildMemberParsing.GetSlimPlayersFromGuildPlayerList(guildDataJson).ToList();
 
+            foreach (var member in members)
+            {
+                member.RegionName = BlizzardService.GetRegionString(region);
+                member.GuildName = guild;
+            }
+
             int totalCount = members.Count();
 
             List<GuildMemberStats> validMembers = new List<GuildMemberStats>();
 
             int count = 0;
 
+            var taskList = new List<Task<GuildMemberStats>>();
+
             foreach (var member in members)
             {
-                try
+                taskList.Add(Task.Run(async () =>
                 {
-                    progress.Report((double)count++ / totalCount);
-
-                    if (await this.PopulateMemberDataAsync(member, region))
+                    try
                     {
-                        validMembers.Add(member);
+                        if (await this.PopulateMemberDataAsync(member, region))
+                        {
+                            return member;
+                        }
+
+                        return null;
                     }
-                }
-                catch
-                {
-                    //Swallow any errors
-                }
+                    catch (Exception e)
+                    {
+                        return null;
+                    }
+                    finally
+                    {
+                        progress.Report((double)count++ / totalCount);
+                    }
+                }));
             }
 
-            return validMembers;
+            await Task.WhenAll(taskList);
+
+            return taskList.Select(x => x.Result).Where(x => x != null);
         }
 
         private async Task<bool> PopulateMemberDataAsync(GuildMemberStats member, BlizzardRegion region)
@@ -68,22 +86,22 @@ namespace GuildTools.Services
 
             var itemsTask = this.throttler.Throttle(async () =>
             {
-                items = await this.blizzardService.GetPlayerItemsAsync(member.Name, member.Realm, region);
+                items = await this.blizzardService.GetPlayerItemsAsync(member.Name, member.RealmName, region);
             });
 
             var mountsTask = this.throttler.Throttle(async () =>
             {
-                mounts = await this.blizzardService.GetPlayerMountsAsync(member.Name, member.Realm, region);
+                mounts = await this.blizzardService.GetPlayerMountsAsync(member.Name, member.RealmName, region);
             });
 
             var petsTask = this.throttler.Throttle(async () =>
             {
-                pets = await this.blizzardService.GetPlayerPetsAsync(member.Name, member.Realm, region);
+                pets = await this.blizzardService.GetPlayerPetsAsync(member.Name, member.RealmName, region);
             });
 
             var pvpTask = this.throttler.Throttle(async () =>
             {
-                pvp = await this.blizzardService.GetPlayerPvpStatsAsync(member.Name, member.Realm, region);
+                pvp = await this.blizzardService.GetPlayerPvpStatsAsync(member.Name, member.RealmName, region);
             });
 
             await Task.WhenAll(new Task[] { itemsTask, mountsTask, petsTask, pvpTask });
@@ -195,7 +213,7 @@ namespace GuildTools.Services
             {
                 GuildName = guild,
                 PlayerName = x.Name,
-                PlayerRealmName = x.Realm,
+                PlayerRealmName = x.RealmName,
                 Class = x.Class,
                 Level = x.Level
             });
@@ -221,6 +239,11 @@ namespace GuildTools.Services
                 GuildRealm = player.GuildRealm,
                 PlayerRealmName = player.Realm
             };
+        }
+
+        private string GetRegionString(BlizzardRegion region)
+        {
+            return region.ToString().ToUpper();
         }
     }
 }

@@ -16,17 +16,32 @@ namespace GuildTools.ExternalServices.Blizzard.JsonParsing
         {
             var jObject = JsonConvert.DeserializeObject(guildJson) as JObject;
 
-            var members = jObject.SelectToken("members").Select(c => new GuildMemberStats()
-            {
-                Name = c.SelectToken("character.name").ToString(),
-                GuildRank = int.Parse(c.SelectToken("rank").ToString()),
-                Realm = c.SelectToken("character.realm").ToString(),
-                Class = int.Parse(c.SelectToken("character.class").ToString()),
-                Level = int.Parse(c.SelectToken("character.level").ToString()),
-                AchievementPoints = int.Parse(c.SelectToken("character.achievementPoints").ToString())
-            });
+            var membersList = new List<GuildMemberStats>();
 
-            return members;
+            var membersTokens = jObject.SelectToken("members");
+
+            foreach (var token in membersTokens)
+            {
+                try
+                {
+                    var newMember = new GuildMemberStats()
+                    {
+                        Name = token.SelectToken("character.name").ToString(),
+                        GuildRank = int.Parse(token.SelectToken("rank").ToString()),
+                        RealmName = token.SelectToken("character.realm").ToString(),
+                        Class = int.Parse(token.SelectToken("character.class").ToString()),
+                        Level = int.Parse(token.SelectToken("character.level").ToString()),
+                        AchievementPoints = int.Parse(token.SelectToken("character.achievementPoints").ToString())
+                    };
+
+                    membersList.Add(newMember);
+                }
+                catch (Exception e)
+                {
+                }
+            }
+
+            return membersList;
         }
 
         public static PlayerItemDetails GetItemsDetailsFromJson(string json)

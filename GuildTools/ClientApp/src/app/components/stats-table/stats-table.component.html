@@ -1,0 +1,18 @@
+<div class="statsTableContainer">
+    <div fxLayout="row" class="statsTableHeader" fxLayoutAlign="center">
+        {{ title }}
+    </div>
+
+  <table class="statsTableInnerTable">
+    <tr [ngClass]="mapClassToColor(player) + ' data-row'" *ngFor="let player of getDisplayedPlayers">
+      <td><a [href]="getPlayerArmoryLink(player)">{{ player.name }}</a></td>
+      <td *ngIf="showGuild">{{ player.guildName }}</td>
+      <td class="value-column">{{ getValue(player) }}</td>
+    </tr>
+  </table>
+
+  <div fxLayout="row" class="show-more-less" fxLayoutAlign="start">
+    <a *ngIf="canShowLess" (click)="showLess()" class="show-less">Show Less</a>
+    <a *ngIf="canShowMore" (click)="showMore()" class="show-more">Show More</a>
+  </div>
+</div>

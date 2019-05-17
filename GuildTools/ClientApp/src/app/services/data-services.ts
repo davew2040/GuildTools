@@ -7,8 +7,8 @@ import { AuthService } from '../auth/auth.service';
 import {
     Realm,
     IRealm,
-    IGuildProfile,
-    GuildProfile,
+    IGuildProfileSlim,
+    GuildProfileSlim,
     IGuildMemberStats,
     GuildMemberStats,
     GuildFound,
@@ -40,30 +40,15 @@ import {
     IGuildStatsResponse,
     RequestStatsCompleteNotification,
     RaiderIoStatsResponse,
-    IRaiderIoStatsResponse} from './ServiceTypes/service-types';
+    IRaiderIoStatsResponse,
+    FriendGuild,
+    IFriendGuild,
+    AddFriendGuild,
+    DeleteFriendGuild,
+    AggregatedProfileGuildStatsResponse,
+    IAggregatedProfileGuildStatsResponse} from './ServiceTypes/service-types';
 import { BlizzardRegionDefinition } from '../data/blizzard-realms';
 import { NotificationRequestType } from 'app/data/notification-request-type';
-
-export enum WowClass {
-   Warrior = 1,
-   Paladin = 2,
-   Hunter = 3,
-   Rogue = 4,
-   Priest = 5,
-   DK = 6,
-   Shaman = 7,
-   Mage = 8,
-   Warlock = 9,
-   Monk = 10,
-   Druid = 11,
-   DH = 12
-}
-
-export class WowClassTags {
-  constructor() {
-
-  }
-}
 
 @Injectable()
 export class DataService {
@@ -76,11 +61,11 @@ export class DataService {
 
   }
 
-  public getGuildProfile(profileId: number): Observable<GuildProfile> {
+  public getGuildProfile(profileId: number): Observable<GuildProfileSlim> {
     return this.http.get(this.baseUrl + `api/data/guildProfile?id=${profileId}`)
       .pipe(
         map(response => {
-          return new GuildProfile(response as IGuildProfile);
+          return new GuildProfileSlim(response as IGuildProfileSlim);
         }));
   }
 
@@ -104,13 +89,13 @@ export class DataService {
         }));
   }
 
-  public getGuildProfilesForUser(): Observable<Array<GuildProfile>> {
+  public getGuildProfilesForUser(): Observable<Array<GuildProfileSlim>> {
     const headers = this.getAuthorizeHeader();
 
     return this.http.get(this.baseUrl + `api/data/getGuildProfiles`, { headers: headers })
       .pipe(
         map(response => {
-          return (response as Array<IGuildProfile>).map(i => new GuildProfile(i));
+          return (response as Array<IGuildProfileSlim>).map(i => new GuildProfileSlim(i));
         }));
   }
 
@@ -127,6 +112,14 @@ export class DataService {
       .pipe(
         map(response  => {
           return new GuildStatsResponse(response as IGuildStatsResponse);
+        }));
+  }
+
+  public getProfileStats(profileId: number): Observable<AggregatedProfileGuildStatsResponse> {
+    return this.http.get(this.baseUrl + `api/data/getGuildProfileStats?profileId=${profileId}`)
+      .pipe(
+        map(response  => {
+          return new AggregatedProfileGuildStatsResponse(response as IAggregatedProfileGuildStatsResponse);
         }));
   }
 
@@ -197,6 +190,42 @@ export class DataService {
             .map(i => new PendingAccessRequest(i))));
   }
 
+  public getFriendGuilds(profileId: number): Observable<Array<FriendGuild>> {
+
+    return this.http.get(this.baseUrl + `api/data/getFriendGuilds?profileId=${profileId}`)
+      .pipe(
+        map(
+          response => (response as Array<IFriendGuild>)
+            .map(i => new FriendGuild(i))));
+  }
+
+  public addFriendGuild(profileId: number, regionName: string, realmName: string, guildName: string): Observable<FriendGuild> {
+    const headers = this.getAuthorizeHeader();
+
+    const body = new AddFriendGuild();
+
+    body.profileId = profileId;
+    body.regionName = regionName;
+    body.realmName = realmName;
+    body.guildName = guildName;
+
+    return this.http.post(this.baseUrl + `api/data/addFriendGuild`, body, { headers: headers })
+      .pipe(
+        map(response => {
+          return new FriendGuild(response as IFriendGuild);
+        }));
+  }
+
+  public deleteFriendGuild(profileId: number, friendGuildId: number): Observable<Object> {
+    const headers = this.getAuthorizeHeader();
+
+    const body = new DeleteFriendGuild();
+
+    body.profileId = profileId;
+    body.friendGuildId = friendGuildId;
+
+    return this.http.post(this.baseUrl + `api/data/deleteFriendGuild`, body, { headers: headers });
+  }
 
   public addPlayerMainToProfile(player: StoredPlayer, profile: FullGuildProfile): Observable<PlayerMain> {
     const headers = this.getAuthorizeHeader();
@@ -290,7 +319,7 @@ export class DataService {
     return this.http.post(this.baseUrl + `api/data/editOfficerNotes`, input, { headers: headers });
   }
 
-  public deleteProfile(profile: GuildProfile): Observable<Object> {
+  public deleteProfile(profile: GuildProfileSlim): Observable<Object> {
     const headers = this.getAuthorizeHeader();
 
     return this.http.delete(this.baseUrl + `api/data/deleteProfile?profileId=${profile.id}`, { headers: headers });

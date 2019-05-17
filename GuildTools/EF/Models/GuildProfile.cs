@@ -34,5 +34,6 @@ namespace GuildTools.EF.Models
         public virtual ICollection<PlayerMain> PlayerMains { get; set; }
         public virtual ICollection<PlayerAlt> PlayerAlts { get; set; }
         public virtual ICollection<PendingAccessRequest> AccessRequests { get; set; }
+        public virtual ICollection<FriendGuild> FriendGuilds { get; set; }
     }
 }

@@ -85,12 +85,18 @@ namespace GuildTools.Data
             }
         }
 
-        public async Task<IEnumerable<EfBlizzardModels.StoredPlayer>> InsertPlayersIfNeededAsync(IEnumerable<EfBlizzardModels.StoredPlayer> players, int profileId)
+        public async Task<IEnumerable<EfBlizzardModels.StoredPlayer>> InsertGuildPlayersIfNeededAsync(
+            IEnumerable<EfBlizzardModels.StoredPlayer> players, 
+            int profileId,
+            int guildId)
         {
             var realmIds = players.Select(x => x.RealmId).Distinct();
             var playerNames = players.Select(x => x.Name).Distinct();
 
-            var existingStoredPlayers = await this.context.StoredPlayers.Where(x => x.ProfileId == profileId && playerNames.Contains(x.Name)).AsNoTracking().ToListAsync();
+            var existingStoredPlayers = await this.context.StoredPlayers
+                .Where(x => x.ProfileId == profileId && playerNames.Contains(x.Name))
+                .AsNoTracking()
+                .ToListAsync();
 
             var notFoundStoredPlayers = players
                 .Where(
@@ -110,7 +116,9 @@ namespace GuildTools.Data
                 .Include(x => x.Realm)
                     .ThenInclude(x => x.Region)
                 .Include(x => x.Guild)
-                .Where(x => x.ProfileId == profileId).ToListAsync();
+                .Where(x => x.ProfileId == profileId && x.GuildId == guildId)
+                .AsNoTracking()
+                .ToListAsync();
 
             return finalValues;
         }
@@ -222,22 +230,44 @@ namespace GuildTools.Data
             var profile = await this.context.GuildProfile
                 .Include(x => x.Creator)
                 .Include(x => x.CreatorGuild)
+                    .ThenInclude(x => x.Realm)
+                    .ThenInclude(x => x.Region)
                 .Include(x => x.PlayerMains)
                     .ThenInclude(y => y.Alts)
-                        .ThenInclude(z => z.Player)
-                            .ThenInclude(a => a.Realm)
-                                .ThenInclude(b => b.Region)
+                    .ThenInclude(z => z.Player)
+                    .ThenInclude(a => a.Realm)
+                    .ThenInclude(b => b.Region)
                 .Include(x => x.PlayerMains)
                     .ThenInclude(y => y.Player)
-                        .ThenInclude(z => z.Realm)
-                            .ThenInclude(z => z.Region)
+                    .ThenInclude(z => z.Realm)
+                    .ThenInclude(z => z.Region)
                 .Include(x => x.Realm)
                     .ThenInclude(y => y.Region)
                 .Include(x => x.User_GuildProfilePermissions)
                     .ThenInclude(y => y.PermissionLevel)
                 .Include(x => x.AccessRequests)
+                .Include(x => x.FriendGuilds)
+                    .ThenInclude(x => x.Guild)
+                    .ThenInclude(x => x.Realm)
+                    .ThenInclude(x => x.Region)
                 .AsNoTracking()
                 .SingleOrDefaultAsync(x => x.Id == profileId);
+
+            return profile;
+        }
+
+        public async Task<GuildProfile> GetGuildProfile_GuildAndFriendGuildsAsync(int id)
+        {
+            var profile = await this.context.GuildProfile
+                .Include(x => x.CreatorGuild)
+                    .ThenInclude(x => x.Realm)
+                    .ThenInclude(x => x.Region)
+                .Include(x => x.FriendGuilds)
+                    .ThenInclude(x => x.Guild)
+                    .ThenInclude(x => x.Realm)
+                    .ThenInclude(x => x.Region)
+                .AsNoTracking()
+                .SingleAsync(x => x.Id == id);
 
             return profile;
         }
@@ -250,8 +280,9 @@ namespace GuildTools.Data
             var mainsTask = this.context.PlayerMains.Where(x => x.ProfileId == id).ToListAsync();
             var altsTask = this.context.PlayerAlts.Where(x => x.ProfileId == id).ToListAsync();
             var permissionsTask = this.context.User_GuildProfilePermissions.Where(x => x.ProfileId == id).ToListAsync();
+            var friendGuildsTask = this.context.FriendGuilds.Where(x => x.ProfileId == id).ToListAsync();
 
-            await Task.WhenAll(profileTask, playersTask, guildsTask, mainsTask, altsTask, permissionsTask);
+            await Task.WhenAll(profileTask, playersTask, guildsTask, mainsTask, altsTask, permissionsTask, friendGuildsTask);
 
             using (var transaction = await this.context.Database.BeginTransactionAsync())
             {
@@ -277,6 +308,10 @@ namespace GuildTools.Data
                 await this.context.SaveChangesAsync();
 
                 this.context.GuildProfile.Remove(profileTask.Result);
+
+                await this.context.SaveChangesAsync();
+
+                this.context.FriendGuilds.RemoveRange(friendGuildsTask.Result);
 
                 await this.context.SaveChangesAsync();
 
@@ -481,6 +516,67 @@ namespace GuildTools.Data
 
                 transaction.Commit();
             }
+        }
+
+        public async Task<IEnumerable<EfModels.FriendGuild>> GetFriendGuilds(int profileId)
+        {
+            return await this.context.FriendGuilds
+                .Include(x => x.Guild)
+                    .ThenInclude(x => x.Realm)
+                    .ThenInclude(x => x.Region)
+                .Where(x => x.ProfileId == profileId)
+                .ToListAsync();
+        }
+
+        public async Task<EfModels.FriendGuild> AddFriendGuild(int profileId, EfModels.StoredBlizzardModels.StoredGuild storedGuild)
+        {
+            var profile = await this.context.GuildProfile
+                .Include(x => x.FriendGuilds)
+                .FirstOrDefaultAsync(x => x.Id == profileId);
+
+            if (profile.CreatorGuildId == storedGuild.Id)
+            {
+                throw new UserReportableError("Guild profile is already targeting this guild.", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (profile.FriendGuilds.Any(x => x.StoredGuildId == storedGuild.Id))
+            {
+                throw new UserReportableError("This guild is already associated as a friend guild.", (int)HttpStatusCode.BadRequest);
+            }
+
+            string abbreviation = storedGuild.Name.Substring(0, Math.Min(storedGuild.Name.Length, 3)).ToUpper();
+
+            var newFriendGuild = new EfModels.FriendGuild()
+            {
+                ProfileId = profileId,
+                StoredGuildId = storedGuild.Id
+            };
+
+            storedGuild.Abbreviation = abbreviation;
+
+            this.context.FriendGuilds.Add(newFriendGuild);
+
+            await this.context.SaveChangesAsync();
+
+            return await this.context.FriendGuilds
+                .Include(x => x.Guild)
+                    .ThenInclude(x => x.Realm)
+                    .ThenInclude(x => x.Region)
+                .SingleAsync(x => x.Id == newFriendGuild.Id);
+        }
+
+        public async Task DeleteFriendGuildAsync(int profileId, int friendGuildId)
+        {
+            var profile = await this.context.GuildProfile
+                .Include(x => x.FriendGuilds)
+                .FirstOrDefaultAsync(x => x.Id == profileId);
+
+            var friendGuild = profile.FriendGuilds.Single(x => x.Id == friendGuildId);
+
+            profile.FriendGuilds.Remove(friendGuild);
+            this.context.FriendGuilds.Remove(friendGuild);
+
+            await this.context.SaveChangesAsync();
         }
 
         public async Task AddNotification(string email, string operationKey, EfEnums.NotificationRequestTypeEnum type)

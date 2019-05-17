@@ -1,14 +1,24 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace GuildTools.Services.Mail
 {
-    public class MailGenerator
+    public class MailGenerator: IMailGenerator
     {
-        public static RegistrationConfirmationEmail GenerateRegistrationConfirmationEmail(string url)
+        private readonly string _baseUrl;
+
+        public MailGenerator(IHttpContextAccessor httpContext)
         {
+            _baseUrl = this.GetBaseUrl(httpContext.HttpContext.Request);
+        }
+
+        public RegistrationConfirmationEmail GenerateRegistrationConfirmationEmail(string url)
+        {
+            var fullUrl = _baseUrl + url;
+
             var newEmail = new RegistrationConfirmationEmail();
 
             newEmail.Subject = "Registration Confirmation";
@@ -18,17 +28,18 @@ namespace GuildTools.Services.Mail
 
 Click the following link to confirm your GuildTools account registration:
 
-{url}
+{fullUrl}
 
 Thanks!";
 
 
             newEmail.HtmlContent =
-                $@"Hello from the GuildTools Team!
+                $@"
+Hello from the GuildTools Team!
 
 Click the following link to confirm your GuildTools account registration:<br/>
 <br/>
-<a href='{url}'>{url}.<br/>
+<a href='{fullUrl}'>{fullUrl}.<br/>
 <br/>
 
 Thanks!";
@@ -36,81 +47,75 @@ Thanks!";
             return newEmail;
         }
 
-        public static ResetPasswordEmail GenerateResetPasswordEmail(string url)
+        public ResetPasswordEmail GenerateResetPasswordEmail(string url)
         {
+            var fullUrl = _baseUrl + url;
+
             var newEmail = new ResetPasswordEmail();
 
             newEmail.Subject = "Reset your GuildTools password:";
 
             newEmail.TextContent =
-                $@"Hello from the GuildTools Team!
+                $@"
+Hello from the GuildTools Team!
 
 Click the following link to reset your GuildTools password: 
 
-{url}
+{fullUrl}
 
 Thanks!";
 
 
             newEmail.HtmlContent =
-                $@"Hello from the GuildTools Team!<br/><br/>
+                $@"
+Hello from the GuildTools Team!<br/><br/>
 
 Click the following link to reset your GuildTools password: 
 
-<a href='{url}'>{url}.<br/><br/>
+<a href='{fullUrl}'>{fullUrl}.<br/><br/>
 
 Thanks!";
 
             return newEmail;
         }
 
-        public static StatsGenerationComplete GenerateStatsCompleteEmail(string url)
+        public StatsGenerationComplete GenerateStatsCompleteEmail(string url)
         {
+            var fullUrl = _baseUrl + url;
+
             var newEmail = new StatsGenerationComplete();
 
             newEmail.Subject = "Stats generation complete!";
 
             newEmail.TextContent =
-                $@"Hello from the GuildTools Team!
+                $@"
+Hello from the GuildTools Team!
 
 Your guild stats generation is complete: 
 
-{url}
+{fullUrl}
 
 Have a great day!";
 
 
             newEmail.HtmlContent =
-                $@"Hello from the GuildTools Team!<br/><br/>
+                $@"
+Hello from the GuildTools Team!<br/><br/>
 
 Your guild stats generation is complete: 
 
-<a href='{url}'>{url}.<br/><br/>
+<a href='{fullUrl}'>{fullUrl}.<br/><br/>
 
 Thanks!";
 
             return newEmail;
         }
 
-        public class ResetPasswordEmail
+        protected string GetBaseUrl(HttpRequest request)
         {
-            public string Subject { get; set; }
-            public string TextContent { get; set; }
-            public string HtmlContent { get; set; }
-        }
+            string baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
 
-        public class RegistrationConfirmationEmail
-        {
-            public string Subject { get; set; }
-            public string TextContent { get; set; }
-            public string HtmlContent { get; set; }
-        }
-
-        public class StatsGenerationComplete
-        {
-            public string Subject { get; set; }
-            public string TextContent { get; set; }
-            public string HtmlContent { get; set; }
+            return baseUrl;
         }
     }
 }

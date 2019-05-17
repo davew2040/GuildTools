@@ -43,6 +43,7 @@ namespace GuildTools.Scheduler
                 catch (Exception ex)
                 {
                     Log.Error(ex, $"Error occurred executing item {workItem.Key}.");
+                    this.ActiveWorkItem.TaskFailed();
                 }
             }
 

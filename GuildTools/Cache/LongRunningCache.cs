@@ -25,7 +25,6 @@ namespace GuildTools.Cache
 
     public class LongRunningCache<T>
     {
-
         private IMemoryCache cache;
         private TimeSpan expiresAfter;
         private TimeSpan? refreshAfter;
@@ -46,8 +45,8 @@ namespace GuildTools.Cache
 
         public async Task<CacheEntry<T>> GetOrRefreshCachedValueAsync(
             string key, 
-            Func<Func<CancellationToken, IServiceProvider, Task<T>>, Task> taskRunner, Func<IProgress<double>, 
-            Task<T>> valueRetriever)
+            Func<Func<CancellationToken, IServiceProvider, Task<T>>, Task> taskRunner, 
+            Func<IServiceProvider, IProgress<double>, Task<T>> valueRetriever)
         {
             await semaphore.WaitAsync();
 
@@ -64,7 +63,7 @@ namespace GuildTools.Cache
                         {
                             await taskRunner(async (token, serviceProvider) =>
                             {
-                                var result = await valueRetriever(new Progress<double>());
+                                var result = await valueRetriever(serviceProvider, new Progress<double>());
                                 this.InsertData(key, result);
                                 return result;
                             });
@@ -100,7 +99,7 @@ namespace GuildTools.Cache
 
                     await taskRunner(async (token, serviceProvider) =>
                     {
-                        var result = await valueRetriever(progress);
+                        var result = await valueRetriever(serviceProvider, progress);
                         this.InsertData(key, result);
                         return result;
                     });
@@ -116,7 +115,10 @@ namespace GuildTools.Cache
             }
         }
 
-
+        public void RemoveCacheItem(string key)
+        {
+            this.cache.Remove(key);
+        }
 
         private void InsertData(string key, T newData)
         {
