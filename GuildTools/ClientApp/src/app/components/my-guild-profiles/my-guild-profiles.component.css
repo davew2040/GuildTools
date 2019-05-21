@@ -14,49 +14,52 @@
   font-size: 14px;
 }
 
-.list-holder {
-  width: 800px;
-}
-
 a:hover {
   cursor: pointer;
 }
 
+.col-profile-name {
+  width: 30%;
+}
+
+.col-guild-name {
+  width: 30%;
+}
+
+.col-realm-name {
+  width: 30%;
+}
+
+.col-delete{
+  width: 10%;
+}
+
 .profile-table {
-  margin-top: 5px;
-  margin-left: 10px;
-  margin-right: 0px;
   border: 1px solid #CCC;
 }
 
-.profilename-header-cell {
-  flex: 0 0 300px;
+@media only screen and (max-width: 600px)
+{
+
 }
 
-.profilename-main-cell {
-  flex: 0 0 300px;
-}
+@media only screen and (min-width: 600px)
+{
+  .profile-table {
+    margin-top: 5px;
+    margin-left: 10px;
+    margin-right: 0px;
+  }
 
-.guild-header-cell {
-  flex: 0 0 200px;
-}
+  .list-holder {
+    width: 700px;
+  }
 
-.guild-main-cell {
-  flex: 0 0 200px;
-}
+  .profile-table-row .cell-delete a {
+    display: none;
+  }
 
-.realm-header-cell {
-  flex: 0 0 200px;
-}
-
-.realm-main-cell {
-  flex: 0 0 200px;
-}
-
-.delete-header-cell {
-  flex: 0 0 75px;
-}
-
-.delete-main-cell {
-  flex: 0 0 75px;
+  .profile-table-row:hover .cell-delete a {
+    display: block;
+  }
 }

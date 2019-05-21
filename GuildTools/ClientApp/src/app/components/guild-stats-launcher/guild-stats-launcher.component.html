@@ -1,0 +1,45 @@
+<div class="container">
+  <div fxLayout="column" fxLayoutAlign="start center" fxFill>
+    <mat-card class="stats-section stats-by-guild">
+      <h3>Stats by Guild:</h3>
+      <mat-divider></mat-divider>
+      <mat-card-content>
+        <div class='launcher-container' fxLayout="column" fxLayoutAlign="start center" fxFill>
+            <form [formGroup]="byGuildForm">
+              <div style="margin-top: 30px">
+                <mat-radio-group  aria-label="Select an option" fxLayout="row"  formControlName="statsType" fxLayoutAlignment="center" fxLayoutGap="25px">
+                  <mat-radio-button color="primary" radioGroup="rb_statsType" [value]="selectionBlizzard">Blizzard API</mat-radio-button>
+                  <mat-radio-button color="primary" radioGroup="rb_statsType" [value]="selectionRaiderIo">Raider.IO</mat-radio-button>
+                </mat-radio-group>
+              </div>
+            </form>
+
+            <app-find-guild (guildSelected)="handleGuildSelected($event)" [showCancel]='false' [okayButtonText]="'View Stats'"></app-find-guild>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stats-section stats-by-profile">
+      <h3>Stats by Profile:</h3>
+      <mat-divider></mat-divider>
+      <mat-card-content>
+        <div class='launcher-container' fxLayout="column" fxLayoutAlign="start center" fxFill>
+            <form [formGroup]="byProfileForm" style="margin-top: 3em; width: 100%;" fxLayout="column" fxLayoutAlign="start center">
+              <mat-radio-group  aria-label="Select an option" fxLayout="row"  formControlName="statsType" fxLayoutAlignment="center" fxLayoutGap="25px">
+                <mat-radio-button color="primary" radioGroup="rb_profileStatsType" [value]="selectionBlizzard">Blizzard API</mat-radio-button>
+                <mat-radio-button color="primary" radioGroup="rb_profileStatsType" [value]="selectionRaiderIo">Raider.IO</mat-radio-button>
+              </mat-radio-group>
+
+              <mat-form-field class="example-full-width" style="margin-top: 1em">
+                <input matInput placeholder="Profile ID" formControlName="profileId">
+              </mat-form-field>
+
+              <div fxLayout="row" fxLayoutAlign="end" fxFill>
+                <button mat-raised-button class="btn-profile-stats" (click)="viewProfileStats()">View Stats</button>
+              </div>
+            </form>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

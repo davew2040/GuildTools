@@ -14,7 +14,7 @@ li.link-active a:focus {
 
 .main-nav {
     color: white;
-    padding-left: 15px;
+    width: 100%;
 
     background: linear-gradient(-45deg, rgb(27, 28, 82) 0%, rgb(86, 92, 148) 25%, rgb(27, 28, 82) 50%, rgb(86, 92, 148) 75%, rgb(27, 28, 82) 100%);
     background-size: 2000px 2000px;
@@ -27,39 +27,79 @@ li.link-active a:focus {
   100%{background-position:2000px 0}
 }
 
-.main-nav h1.page-title {
-    font-size: 75px;
+@media only screen and (min-width: 600px)
+{
+  .main-nav h1.page-title {
+    font-size: 5em;
     font-family: Arial;
     font-weight: bold;
-    margin-top: 35px;
-}
+    margin-top: 0.5em;
+    padding-left: 15px;
+  }
 
-.links-container {
-    margin-left: 20px;
-    margin-top: 10px;
-    margin-bottom: 30px;
-    font-size: 24px;
-}
+  .links-container {
+      margin-left: 20px;
+      margin-top: 10px;
+      margin-bottom: 30px;
+      font-size: 24px;
+  }
 
-.links-container a:not(:first-child) {
-    margin-left: 25px;
+  .links-container a:not(:first-child) {
+      margin-left: 25px;
+  }
+
+  .auth-content {
+    padding-top: 60px;
+    padding-bottom: 20px;
+    padding-right: 20px;
+    text-align: right;
+  }
+
+  .logged-in-as {
+    margin-top: 15px;
+  }
+
+  .auth-content button {
+    margin-left: 15px;
+  }
 }
 
 .links-container a {
     color: white;
 }
 
-.auth-content {
-    padding-top: 60px;
-    padding-bottom: 20px;
-    padding-right: 20px;
-    text-align: right;
-}
+@media only screen and (max-width: 600px)
+{
+  .title-and-links {
+    text-align: center;
+    width: 100%;
+  }
 
-.logged-in-as {
-    margin-top: 15px;
-}
+  .main-nav h1.page-title {
+    font-size: 4em;
+    font-family: Arial;
+    font-weight: bold;
+  }
 
-.auth-content button {
-    margin-left: 15px;
+  .links-container {
+    font-size: 2em;
+  }
+
+  .links-container a:not(:first-child) {
+      margin-left: 0.7em;
+  }
+
+  .auth-content {
+    width: 100%;
+    margin-top: 0.5em;
+  }
+
+  .logged-in-as {
+    margin-top: 0.7em;
+    margin-bottom: 0.7em;
+  }
+
+  .main-nav button:not(:first-child){
+    margin-left: 0.3em;
+  }
 }

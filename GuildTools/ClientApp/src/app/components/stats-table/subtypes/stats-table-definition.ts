@@ -15,6 +15,7 @@ export class StatsTableDefinition {
     };
   }
 
+  Title: string;
   NameDisplayer: (g: StatsTablePlayer) => string;
   Sorter: (g1: StatsTablePlayer, g2: StatsTablePlayer) => number;
   SortCriteria: (g: StatsTablePlayer) => number;

@@ -4,7 +4,8 @@ export class RoutePaths {
   public static Register = 'register';
   public static Login = 'login';
   public static GuildStats = 'guildstats';
-  public static ProfileStats = 'profilestats';
+  public static ProfileStats = 'guildprofilestats';
+  public static RaiderIoProfileStats = 'raiderioprofilestats';
   public static RaiderIoStats = 'raideriostats';
   public static AltTracker = 'alttracker';
   public static NewProfile = 'newprofile';

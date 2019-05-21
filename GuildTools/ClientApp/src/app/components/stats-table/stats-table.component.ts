@@ -14,7 +14,6 @@ export class StatsTableComponent implements OnInit {
 
   @Input() tableDefinition: StatsTableDefinition;
   @Input() players: StatsTablePlayer[];
-  @Input() title: string;
   @Input() showIncrementSize = 10;
   @Input() showGuild = false;
 
@@ -30,6 +29,10 @@ export class StatsTableComponent implements OnInit {
       .filter(this.tableDefinition.Filter)
       .sort(this.tableDefinition.Sorter)
       .slice(0, this.playersShown);
+  }
+
+  public get title(): string {
+    return this.tableDefinition.Title;
   }
 
   public showMore(): void {
@@ -67,8 +70,9 @@ export class StatsTableComponent implements OnInit {
     return url;
   }
 
-  public getGuildArmoryLink(region: string, realm: string, guild: string): string {
-    const url = `http://${region}.battle.net/wow/en/guild/${BlizzardService.FormatRealm(realm)}/${guild}/`;
+  public getGuildArmoryLink(player: StatsTablePlayer): string {
+    const url = `http://${player.regionName}.battle.net/wow/en/guild/${BlizzardService.FormatRealm(player.realmName)}/`
+      + `${BlizzardService.FormatGuild(player.guildName)}/`;
     return url;
   }
 

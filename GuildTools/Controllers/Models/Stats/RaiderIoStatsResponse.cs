@@ -4,13 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace GuildTools.Controllers.Models
+namespace GuildTools.Controllers.Models.Stats
 {
-    public class GuildStatsResponse
+    public class RaiderIoStatsResponse
     {
         public bool IsCompleted { get; set; }
         public int? PositionInQueue { get; set; }
         public double CompletionProgress { get; set; }
-        public IEnumerable<GuildMemberStats> Values { get; set; }
+        public IEnumerable<RaiderIoStats> Values { get; set; }
     }
 }

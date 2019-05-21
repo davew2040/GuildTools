@@ -36,8 +36,8 @@ import {
     PromoteAltToMain,
     CreateNewGuildProfile,
     StoredPlayer,
-    GuildStatsResponse,
-    IGuildStatsResponse,
+    BlizzardGuildStatsResponse,
+    IBlizzardGuildStatsResponse,
     RequestStatsCompleteNotification,
     RaiderIoStatsResponse,
     IRaiderIoStatsResponse,
@@ -45,8 +45,10 @@ import {
     IFriendGuild,
     AddFriendGuild,
     DeleteFriendGuild,
-    AggregatedProfileGuildStatsResponse,
-    IAggregatedProfileGuildStatsResponse} from './ServiceTypes/service-types';
+    AggregatedProfileBlizzardStatsResponse,
+    IAggregatedProfileBlizzardStatsResponse,
+    AggregatedProfileRaiderIoStatsResponse,
+    IAggregatedProfileRaiderIoStatsResponse} from './ServiceTypes/service-types';
 import { BlizzardRegionDefinition } from '../data/blizzard-realms';
 import { NotificationRequestType } from 'app/data/notification-request-type';
 
@@ -107,19 +109,19 @@ export class DataService {
       }));
   }
 
-  public getGuildMemberStats(region: string, guild: string, realm: string): Observable<GuildStatsResponse> {
-    return this.http.get(this.baseUrl + `api/data/getGuildMemberStats?region=${region}&guild=${guild}&realm=${realm}`)
+  public getBlizzardGuildMemberStats(region: string, guild: string, realm: string): Observable<BlizzardGuildStatsResponse> {
+    return this.http.get(this.baseUrl + `api/data/getBlizzardGuildMemberStats?region=${region}&guild=${guild}&realm=${realm}`)
       .pipe(
         map(response  => {
-          return new GuildStatsResponse(response as IGuildStatsResponse);
+          return new BlizzardGuildStatsResponse(response as IBlizzardGuildStatsResponse);
         }));
   }
 
-  public getProfileStats(profileId: number): Observable<AggregatedProfileGuildStatsResponse> {
-    return this.http.get(this.baseUrl + `api/data/getGuildProfileStats?profileId=${profileId}`)
+  public getBlizzardProfileStats(profileId: number): Observable<AggregatedProfileBlizzardStatsResponse> {
+    return this.http.get(this.baseUrl + `api/data/getBlizzardGuildProfileStats?profileId=${profileId}`)
       .pipe(
         map(response  => {
-          return new AggregatedProfileGuildStatsResponse(response as IAggregatedProfileGuildStatsResponse);
+          return new AggregatedProfileBlizzardStatsResponse(response as IAggregatedProfileBlizzardStatsResponse);
         }));
   }
 
@@ -128,6 +130,14 @@ export class DataService {
       .pipe(
         map(response  => {
           return new RaiderIoStatsResponse(response as IRaiderIoStatsResponse);
+        }));
+  }
+
+  public getRaiderIoProfileStats(profileId: number): Observable<AggregatedProfileRaiderIoStatsResponse> {
+    return this.http.get(this.baseUrl + `api/data/getRaiderIoProfileStats?profileId=${profileId}`)
+      .pipe(
+        map(response  => {
+          return new AggregatedProfileRaiderIoStatsResponse(response as IAggregatedProfileRaiderIoStatsResponse);
         }));
   }
 

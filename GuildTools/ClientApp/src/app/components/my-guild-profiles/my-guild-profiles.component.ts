@@ -86,6 +86,10 @@ export class MyGuildProfilesComponent implements OnInit {
     targetDiv.classList.add('hidden');
   }
 
+  public getDeleteCellClasses(): Array<string> {
+    return ['hidden'];
+  }
+
   public deleteProfile(profile: GuildProfileSlim) {
     this.busyService.setBusy();
 

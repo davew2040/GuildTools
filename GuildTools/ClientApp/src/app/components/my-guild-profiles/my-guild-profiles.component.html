@@ -1,54 +1,65 @@
-    <div fxLayout="column">
-      <div fxLayout="column" fxLayoutAlign="start center" >
-        <div *ngIf="!authService.isAuthenticated" class="must-be-logged-in">
-            <div class='unauthenticated-title'>Welcome to the Alt Tracker!</div>
-            <div class='unauthenticated-text'>You can use the Alt Tracker to group together a player's main and alternate characters! You can <a (click)="addProfile()">create a public profile</a> to
-            experiment with the functionality, or <a (click)="navigateToLogin()">log in</a> to create a private profile, which allows you to
-            control permissions and access.</div>
-        </div>
 
-    <div *ngIf="authService.isAuthenticated" fxLayout="column" class="list-holder">
-        <h2>My Guild Profiles</h2>
+    <div class="container">
+      <div fxLayout="column">
+        <div fxLayout="column" fxLayoutAlign="start center" >
+          <div *ngIf="!authService.isAuthenticated" class="must-be-logged-in">
+              <div class='unauthenticated-title'>Welcome to the Alt Tracker!</div>
+              <div class='unauthenticated-text'>You can use the Alt Tracker to group together a player's main and alternate characters! You can <a (click)="addProfile()">create a public profile</a> to
+              experiment with the functionality, or <a (click)="navigateToLogin()">log in</a> to create a private profile, which allows you to
+              control permissions and access.</div>
+          </div>
 
-        <div fxLayout="column" fxLayoutAlign="start stretch">
-            <div *ngIf="myGuildProfiles.length === 0">You have no guild profiles!</div>
-            <!--
-            <div *ngIf="myGuildProfiles.length > 0" fxFlex>
-                <mat-list *ngFor="let profile of myGuildProfiles">
-                    <mat-list-item><a href="" (click)="navigateToProfile(profile.id)">{{ profile.profileName }} </a></mat-list-item>
-                </mat-list>
-            </div> -->
+      <div *ngIf="authService.isAuthenticated" fxLayout="column" class="list-holder">
+          <h2>My Guild Profiles</h2>
 
-            <mat-table [dataSource]="tableDataSource" *ngIf="myGuildProfiles.length > 0" class="profile-table standard-mat-table">
-                <ng-container matColumnDef="profileName">
-                    <mat-header-cell class="profilename-header-cell" mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
-                    <mat-cell class="profilename-main-cell"  mat-cell *matCellDef="let profile">
-                        <a href="" (click)="navigateToProfile(profile.id)">{{ profile.profileName }} </a>
-                    </mat-cell>
-                </ng-container>
-                <ng-container matColumnDef="guildName">
-                    <mat-header-cell class="guild-header-cell" mat-header-cell *matHeaderCellDef> Guild </mat-header-cell>
-                    <mat-cell class="guild-main-cell" mat-cell *matCellDef="let profile">
-                        <a [href]="getGuildUrl(profile.id)">{{profile.primaryGuildName}}  </a>
-                    </mat-cell>
-                </ng-container>
-                <ng-container matColumnDef="realmName">
-                    <mat-header-cell class="realm-header-cell" mat-header-cell *matHeaderCellDef> Realm </mat-header-cell>
-                    <mat-cell class="realm-main-cell" mat-cell *matCellDef="let profile"> {{profile.realmName}}</mat-cell>
-                </ng-container>
-                <ng-container matColumnDef="delete">
-                    <mat-header-cell class="delete-header-cell" mat-header-cell *matHeaderCellDef> </mat-header-cell>
-                    <mat-cell class="delete-main-cell" mat-cell *matCellDef="let profile">
-                      <a class='delete-profile-a hidden' (click)="deleteProfile(profile)">Delete</a>
-                    </mat-cell>
-                </ng-container>
+          <div fxLayout="column" fxLayoutAlign="start stretch">
+              <div *ngIf="myGuildProfiles.length === 0">You have no guild profiles!</div>
+              <!--
+              <div *ngIf="myGuildProfiles.length > 0" fxFlex>
+                  <mat-list *ngFor="let profile of myGuildProfiles">
+                      <mat-list-item><a href="" (click)="navigateToProfile(profile.id)">{{ profile.profileName }} </a></mat-list-item>
+                  </mat-list>
+              </div> -->
 
-                <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-                <mat-row *matRowDef="let profile; columns: displayedColumns;" (mouseenter)="onMouseEnter($event)" (mouseleave)="onMouseLeave($event)"></mat-row>
-            </mat-table>
-        </div>
+            <table class="standard-table profile-table" *ngIf="myGuildProfiles.length > 0">
+                <colgroup>
+                  <col class="col-profile-name"/>
+                  <col class="col-guild-name"/>
+                  <col class="col-realm-name"/>
+                  <col class="col-delete"/>
+                </colgroup>
+                <thead>
+                  <th scope="col">
+                    Name
+                  </th>
+                  <th scope="col">
+                    Guild
+                  </th>
+                  <th scope="col">
+                    Realm
+                  </th>
+                  <th scope="col">
+                    Delete
+                  </th>
+                </thead>
+                <tr *ngFor="let profile of myGuildProfiles" class="profile-table-row">
+                  <td data-label="Profile Name">
+                    <a href="" (click)="navigateToProfile(profile.id)">{{ profile.profileName }} </a>
+                  </td>
+                  <td data-label="Guild">
+                    <a [href]="getGuildUrl(profile.id)">{{profile.primaryGuildName}}  </a>
+                  </td>
+                  <td data-label="Realm Name">{{ profile.realmName }}</td>
+                  <td class="cell-delete">
+                    <a class='delete-profile-a' (click)="deleteProfile(profile)">Delete</a>
+                  </td>
+                </tr>
+              </table>
+          </div>
 
-        <div fxFlex fxLayout="row" fxLayoutAlign="end">
-          <button style="width: 150px; margin-top: 25px" mat-raised-button type="button" color="primary" (click)="addProfile()">Add New Profile</button>
-        </div>
-    </div>
+          <div fxFlex fxLayout="row" fxLayoutAlign="end">
+            <button style="width: 150px; margin-top: 25px" mat-raised-button type="button" color="primary" (click)="addProfile()">Add New Profile</button>
+          </div>
+      </div>
+
+  </div>

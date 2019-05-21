@@ -8,12 +8,14 @@ namespace GuildTools.Cache
 {
     public class DbMemCachedResource<T>
     {
-        protected DatabaseCacheWithMemoryCache<T> cache;
+        private TimeSpan expiresAfter;
+        protected DatabaseCacheWithMemoryCache cache;
         protected IKeyedResourceManager resourceManager;
 
-        public DbMemCachedResource(TimeSpan memoryDuration, TimeSpan dbDuration, IDatabaseCache databaseCache, IMemoryCache memoryCache, IKeyedResourceManager resourceManager)
+        public DbMemCachedResource(TimeSpan expiresAfter, IDatabaseCache databaseCache, IMemoryCache memoryCache, IKeyedResourceManager resourceManager)
         {
-            this.cache = new DatabaseCacheWithMemoryCache<T>(memoryDuration, dbDuration, databaseCache, memoryCache);
+            this.expiresAfter = expiresAfter;
+            this.cache = new DatabaseCacheWithMemoryCache(expiresAfter, databaseCache, memoryCache);
             this.resourceManager = resourceManager;
         }
 
@@ -24,7 +26,7 @@ namespace GuildTools.Cache
 
             try
             {
-                var foundValue = await this.cache.TryGetValueAsync(key);
+                var foundValue = await this.cache.TryGetValueAsync<T>(key);
 
                 if (foundValue.Found)
                 {
@@ -33,7 +35,7 @@ namespace GuildTools.Cache
 
                 var newValue = await dataRetriever();
 
-                await this.cache.InsertValueAsync(key, newValue);
+                await this.cache.InsertValueAsync(key, newValue, this.expiresAfter);
 
                 return newValue;
             }

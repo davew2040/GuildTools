@@ -3,16 +3,16 @@
         {{ title }}
     </div>
 
-  <table class="statsTableInnerTable">
+  <table class="stats-table-inner-table">
     <tr [ngClass]="mapClassToColor(player) + ' data-row'" *ngFor="let player of getDisplayedPlayers">
-      <td><a [href]="getPlayerArmoryLink(player)">{{ player.name }}</a></td>
-      <td *ngIf="showGuild">{{ player.guildName }}</td>
-      <td class="value-column">{{ getValue(player) }}</td>
+      <td class="player-name"><a [href]="getPlayerArmoryLink(player)">{{ player.name }}</a></td>
+      <td class="player-guild" *ngIf="showGuild"><a [href]="getGuildArmoryLink(player)">{{ player.guildName }}</a></td>
+      <td class="player-value">{{ getValue(player) }}</td>
     </tr>
   </table>
 
   <div fxLayout="row" class="show-more-less" fxLayoutAlign="start">
-    <a *ngIf="canShowLess" (click)="showLess()" class="show-less">Show Less</a>
-    <a *ngIf="canShowMore" (click)="showMore()" class="show-more">Show More</a>
+    <a *ngIf="canShowLess" (click)="showLess()" class="show-less">Less</a>
+    <a *ngIf="canShowMore" (click)="showMore()" class="show-more">More</a>
   </div>
 </div>

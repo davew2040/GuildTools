@@ -80,5 +80,17 @@ namespace GuildTools.Cache
 
             await context.SaveChangesAsync();
         }
+
+        public async Task RemoveAsync(string key)
+        {
+            var result = await context.BigValueCache.FirstOrDefaultAsync(x => x.Id == key);
+
+            if (result != null)
+            {
+                this.context.BigValueCache.Remove(result);
+            }
+
+            await this.context.SaveChangesAsync();
+        }
     }
 }

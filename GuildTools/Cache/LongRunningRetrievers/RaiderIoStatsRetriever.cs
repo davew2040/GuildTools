@@ -21,7 +21,7 @@ namespace GuildTools.Cache.LongRunningRetrievers
 {
     public class RaiderIoStatsRetriever : IRaiderIoStatsRetriever
     {
-        private readonly LongRunningCache<IEnumerable<RaiderIoStats>> cache;
+        private readonly LongRunningCache<IEnumerable<RaiderIoStats>> longRunningCache;
         private readonly IBackgroundTaskQueue taskQueue;
         private readonly ILocalRaiderIoService raiderIoService;
         private readonly IMailSender mailSender;
@@ -29,14 +29,15 @@ namespace GuildTools.Cache.LongRunningRetrievers
         private readonly IMailGenerator mailGenerator;
 
         public RaiderIoStatsRetriever(
-            IMemoryCache memoryCache, 
+            ICache memoryCache,
+            IDatabaseCache databaseCache,
             IBackgroundTaskQueue taskQueue, 
             ILocalRaiderIoService raiderIoService, 
             IMailSender mailSender, 
             ICommonValuesProvider commonValues,
             IMailGenerator mailGenerator)
         {
-            this.cache = new LongRunningCache<IEnumerable<RaiderIoStats>>(memoryCache, TimeSpan.FromDays(3), TimeSpan.FromDays(1));
+            this.longRunningCache = new LongRunningCache<IEnumerable<RaiderIoStats>>(memoryCache, databaseCache, TimeSpan.FromDays(3), TimeSpan.FromDays(1));
             this.taskQueue = taskQueue;
             this.raiderIoService = raiderIoService;
             this.mailSender = mailSender;
@@ -44,12 +45,12 @@ namespace GuildTools.Cache.LongRunningRetrievers
             this.mailGenerator = mailGenerator;
         }
 
-        public async Task<CacheEntry<IEnumerable<RaiderIoStats>>> GetCachedEntry(BlizzardRegion region, string realm, string guild, string baseUrl)
+        public async Task<CacheEntry<IEnumerable<RaiderIoStats>>> GetCachedEntry(BlizzardRegion region, string realm, string guild)
         {
             string key = this.GetKey(region, realm, guild);
-            return await this.cache.GetOrRefreshCachedValueAsync(
+            return await this.longRunningCache.GetOrRefreshCachedValueAsync(
                 key,
-                this.taskRunner(key, region, realm, guild, baseUrl),
+                this.taskRunner(key, region, realm, guild),
                 this.valueGetter(region, realm, guild));
         }
 
@@ -66,7 +67,7 @@ namespace GuildTools.Cache.LongRunningRetrievers
         }
 
         private Func<Func<CancellationToken, IServiceProvider, Task<IEnumerable<RaiderIoStats>>>, Task> taskRunner(
-            string key, BlizzardRegion region, string realm, string guild, string baseUrl)
+            string key, BlizzardRegion region, string realm, string guild)
         {
             return async (runner) =>
             {
@@ -77,17 +78,17 @@ namespace GuildTools.Cache.LongRunningRetrievers
                     {
                         await runner(token, serviceProvider);
 
-                        await this.SendStatsCompleteNotifications(serviceProvider, key, region, realm, guild, baseUrl);
+                        await this.SendStatsCompleteNotifications(serviceProvider, key, region, realm, guild);
                     },
-                    TaskFailed = () =>
+                    TaskFailed = async () =>
                     {
-                        this.cache.RemoveCacheItem(key);
+                        await this.longRunningCache.RemoveCacheItem(key);
                     }
                 });
             };
         }
 
-        private async Task SendStatsCompleteNotifications(IServiceProvider serviceProvider, string key, BlizzardRegion region, string realm, string guild, string baseUrl)
+        private async Task SendStatsCompleteNotifications(IServiceProvider serviceProvider, string key, BlizzardRegion region, string realm, string guild)
         {
             using (var serviceScope = serviceProvider.CreateScope())
             {

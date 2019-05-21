@@ -11,7 +11,7 @@ namespace GuildTools.Mocks
 {
     public class MockRaiderIoStatsRetriever : IRaiderIoStatsRetriever
     {
-        public async Task<CacheEntry<IEnumerable<RaiderIoStats>>> GetCachedEntry(BlizzardService.BlizzardRegion region, string realm, string guild, string baseUrl)
+        public async Task<CacheEntry<IEnumerable<RaiderIoStats>>> GetCachedEntry(BlizzardService.BlizzardRegion region, string realm, string guild)
         {
             List<RaiderIoStats> statsList = new List<RaiderIoStats>();
 
@@ -19,7 +19,7 @@ namespace GuildTools.Mocks
             {
                 Name = "Kromthael",
                 Class = 6,
-                Realm = "Burning Blade",
+                RealmName = "Burning Blade",
                 RaiderIoDps = 500,
                 RaiderIoTank = 1000,
                 RaiderIoHealer = 2000,
@@ -30,7 +30,7 @@ namespace GuildTools.Mocks
             {
                 Name = "Kromp",
                 Class = 4,
-                Realm = "Burning Blade",
+                RealmName = "Burning Blade",
                 RaiderIoDps = 2000,
                 RaiderIoTank = 1500,
                 RaiderIoHealer = 0,
@@ -41,7 +41,7 @@ namespace GuildTools.Mocks
             {
                 Name = "Kromzul",
                 Class = 2,
-                Realm = "Burning Blade",
+                RealmName = "Burning Blade",
                 RaiderIoDps = 1500,
                 RaiderIoTank = 2000,
                 RaiderIoHealer = 0,

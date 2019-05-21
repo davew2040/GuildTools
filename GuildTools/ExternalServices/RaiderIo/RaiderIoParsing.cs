@@ -27,7 +27,7 @@ namespace GuildTools.ExternalServices.Raiderio.JsonParsing
             var newPlayer = new RaiderIoStats();
 
             newPlayer.Name = jObject["name"].ToString();
-            newPlayer.Realm = jObject["realm"].ToString();
+            newPlayer.RealmName = jObject["realm"].ToString();
             newPlayer.Class = BlizzardUtilities.GetBlizzardClassFromString(jObject["class"].ToString());
 
             var scoresToken = jObject.SelectToken("mythic_plus_scores");

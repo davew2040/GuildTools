@@ -7,6 +7,8 @@ import { RaiderIoStats } from 'app/services/ServiceTypes/service-types';
 import { BlizzardService } from 'app/blizzard-services/blizzard-services';
 import { DataService } from 'app/services/data-services';
 import { NotificationRequestType } from 'app/data/notification-request-type';
+import { RaiderIoStatsTableDefinition } from '../stats-table/subtypes/raider-io-stats-table-definition';
+import { RaiderIoStatsPlayer } from '../stats-table/subtypes/raider-io-stats-player';
 
 
 enum GuildStatsStatus {
@@ -35,7 +37,7 @@ export class RaiderIoStatsComponent implements OnInit {
   prettyRealm: string;
   guildExists = false;
   dataReady = false;
-  statsTables: StatsTable[];
+  tableDefinitions = new Array<RaiderIoStatsTableDefinition>();
 
   public notificationEmailAddress = '';
   public emailDisabled = false;
@@ -53,6 +55,8 @@ export class RaiderIoStatsComponent implements OnInit {
     private errorService: ErrorReportingService) { }
 
   ngOnInit() {
+    this.tableDefinitions = this.getStatsTableDefinitions();
+
     this.route.params.subscribe(params => {
       this.realm = params['realm'];
       this.guild = params['guild'];
@@ -89,44 +93,71 @@ export class RaiderIoStatsComponent implements OnInit {
       });
   }
 
-  populateStatsTableDefinitions(): void {
-    this.statsTables = [];
+  public get getStatsTablePlayers(): Array<RaiderIoStatsPlayer> {
+    return this.guildMembers.map(x => new RaiderIoStatsPlayer(x));
+  }
 
-    const overallLevel = new StatsTable(this.guildMembers);
-    overallLevel.Title = 'Overall Score';
-    overallLevel.NameDisplayer = (m) => {
-      return m.raiderIoOverall.toString();
-    };
-    overallLevel.Filter = (m => m.raiderIoOverall > 0);
-    overallLevel.Sorter = (g1, g2) => g2.raiderIoOverall - g1.raiderIoOverall;
-    this.statsTables.push(overallLevel);
+  getStatsTableDefinitions(): Array<RaiderIoStatsTableDefinition> {
+    const statsTables = new Array<RaiderIoStatsTableDefinition>();
 
-    const dpsLevel = new StatsTable(this.guildMembers);
-    dpsLevel.Title = 'DPS Score';
-    dpsLevel.NameDisplayer = (m) => {
-      return m.raiderIoDps.toString();
-    };
-    dpsLevel.Filter = (m => m.raiderIoDps > 0);
-    dpsLevel.Sorter = (g1, g2) => g2.raiderIoDps - g1.raiderIoDps;
-    this.statsTables.push(dpsLevel);
+    statsTables.push(this.getOverallScoreDefinition());
+    statsTables.push(this.getDpsScoreDefinition());
+    statsTables.push(this.getTankScoreDefinition());
+    statsTables.push(this.getHealerScoreDefinition());
 
-    const tankLevel = new StatsTable(this.guildMembers);
-    tankLevel.Title = 'Tank Score';
-    tankLevel.NameDisplayer = (m) => {
-      return m.raiderIoTank.toString();
-    };
-    tankLevel.Filter = (m => m.raiderIoTank > 0);
-    tankLevel.Sorter = (g1, g2) => g2.raiderIoTank - g1.raiderIoTank;
-    this.statsTables.push(tankLevel);
+    return statsTables;
+  }
 
-    const healerLevel = new StatsTable(this.guildMembers);
-    healerLevel.Title = 'Healer Score';
-    healerLevel.NameDisplayer = (m) => {
-      return m.raiderIoHealer.toString();
+  getOverallScoreDefinition(): RaiderIoStatsTableDefinition {
+    const definition = new RaiderIoStatsTableDefinition();
+    definition.Title = 'Overall Score';
+    definition.ValueGetter = (p) => {
+      return (p as RaiderIoStatsPlayer).player.raiderIoOverall;
     };
-    healerLevel.Filter = (m => m.raiderIoHealer > 0);
-    healerLevel.Sorter = (g1, g2) => g2.raiderIoHealer - g1.raiderIoHealer;
-    this.statsTables.push(healerLevel);
+    definition.Filter = (p) => {
+      const casted = p as RaiderIoStatsPlayer;
+      return casted.player.raiderIoOverall > 0;
+    }
+    return definition;
+  }
+
+  getDpsScoreDefinition(): RaiderIoStatsTableDefinition {
+    const definition = new RaiderIoStatsTableDefinition();
+    definition.Title = 'DPS Score';
+    definition.ValueGetter = (p) => {
+      return (p as RaiderIoStatsPlayer).player.raiderIoDps;
+    };
+    definition.Filter = (p) => {
+      const casted = p as RaiderIoStatsPlayer;
+      return casted.player.raiderIoDps > 0;
+    }
+    return definition;
+  }
+
+  getTankScoreDefinition(): RaiderIoStatsTableDefinition {
+    const definition = new RaiderIoStatsTableDefinition();
+    definition.Title = 'Tank Score';
+    definition.ValueGetter = (p) => {
+      return (p as RaiderIoStatsPlayer).player.raiderIoTank;
+    };
+    definition.Filter = (p) => {
+      const casted = p as RaiderIoStatsPlayer;
+      return casted.player.raiderIoTank > 0;
+    }
+    return definition;
+  }
+
+  getHealerScoreDefinition(): RaiderIoStatsTableDefinition {
+    const definition = new RaiderIoStatsTableDefinition();
+    definition.Title = 'Healer';
+    definition.ValueGetter = (p) => {
+      return (p as RaiderIoStatsPlayer).player.raiderIoHealer;
+    };
+    definition.Filter = (p) => {
+      const casted = p as RaiderIoStatsPlayer;
+      return casted.player.raiderIoHealer > 0;
+    }
+    return definition;
   }
 
   loadGuildStats(region: string, realm: string, guild: string, showBusy: boolean) {
@@ -141,7 +172,6 @@ export class RaiderIoStatsComponent implements OnInit {
         }
         if (success.isCompleted) {
           this.guildMembers = success.values;
-          this.populateStatsTableDefinitions();
           this.pageStatus = GuildStatsStatus.Ready;
         }
         else {
@@ -209,12 +239,6 @@ export class RaiderIoStatsComponent implements OnInit {
     return this.pageStatus === GuildStatsStatus.Ready;
   }
 
-  getPlayerArmoryLink(player: RaiderIoStats): string {
-    let url = `https://worldofwarcraft.com/${this.getPlayerRegionUrlSegment(this.region)}`
-      + `character/${this.region.toLowerCase()}/${BlizzardService.FormatRealm(player.realm)}/${player.name}`;
-    return url;
-  }
-
   getGuildArmoryLink(realm: string, guild: string): string {
     let url = `http://${this.region}.battle.net/wow/en/guild/${BlizzardService.FormatRealm(realm)}/${guild}/`;
     return url;
@@ -231,38 +255,5 @@ s
 
   mapClassToColor(classIndex: number): string {
     return 'background-' + this.wowService.getClassTag(classIndex);
-  }
-}
-
-class StatsTable {
-  constructor(private members: RaiderIoStats[]) {
-    this.RowsDisplayed = 10;
-    this.Sorter = (g1, g2) => {
-      if (g1 === g2) {
-        return 0;
-      }
-      else if (g2 > g1) {
-        return 1;
-      }
-      else {
-        return 0;
-      }
-    };
-    this.Filter = (g) => true;
-  }
-
-  RowsDisplayed: number;
-  Title: string;
-  NameDisplayer: (g: RaiderIoStats) => string;
-  Sorter: (g1: RaiderIoStats, g2: RaiderIoStats) => number;
-  Filter: (g: RaiderIoStats) => boolean;
-  SortedMembers(): RaiderIoStats[] {
-    return this.members
-      .filter(g => this.Filter(g))
-      .sort(this.Sorter)
-      .slice(0, this.RowsDisplayed);
-  };
-  ShowMore(additional: number): void {
-    this.RowsDisplayed += additional;
   }
 }

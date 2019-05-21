@@ -8,22 +8,19 @@ using System.Threading.Tasks;
 
 namespace GuildTools.Cache
 {
-    public class DatabaseCacheWithMemoryCache<T> : Cache<T>
+    public class DatabaseCacheWithMemoryCache : ICache
     {
-        private TimeSpan memoryDuration;
-        private TimeSpan dbDuration;
+        private TimeSpan expiresAfter;
         private IMemoryCache memoryCache;
         private IDatabaseCache dbCache;
 
-        public DatabaseCacheWithMemoryCache(TimeSpan memoryDuration, TimeSpan dbDuration, IDatabaseCache databaseCache, IMemoryCache memoryCache)
+        public DatabaseCacheWithMemoryCache(TimeSpan expiresAfter, IDatabaseCache databaseCache, IMemoryCache memoryCache)
         {
-            this.memoryDuration = memoryDuration;
-            this.dbDuration = dbDuration;
             this.memoryCache = memoryCache;
             this.dbCache = databaseCache;
         }
 
-        public override async Task<CacheResult<T>> TryGetValueAsync(string key)
+        public async Task<CacheResult<T>> TryGetValueAsync<T>(string key)
         {
             T tryValue;
 
@@ -40,7 +37,7 @@ namespace GuildTools.Cache
 
             if (dbResult.Found)
             {
-                this.SetMemoryCacheEntry(key, tryValue);
+                this.SetMemoryCacheEntry(key, tryValue, this.expiresAfter);
                 return dbResult;
             }
 
@@ -50,17 +47,23 @@ namespace GuildTools.Cache
             };
         }
 
-        public override async Task InsertValueAsync(string key, T newValue)
+        public async Task InsertValueAsync<T>(string key, T newValue, TimeSpan expiresAfter)
         {
-            this.SetMemoryCacheEntry(key, newValue);
+            this.SetMemoryCacheEntry(key, newValue, expiresAfter);
 
-            await this.dbCache.InsertValueAsync(key, newValue, this.dbDuration);
+            await this.dbCache.InsertValueAsync(key, newValue, expiresAfter);
         }
 
-        public void SetMemoryCacheEntry(string key, T newValue)
+        public async Task RemoveAsync(string key)
+        {
+            this.memoryCache.Remove(key);
+            await this.dbCache.RemoveAsync(key);
+        }
+
+        private void SetMemoryCacheEntry<T>(string key, T newValue, TimeSpan expiresAfter)
         {
             var options = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(DateTime.Now + this.memoryDuration);
+                .SetAbsoluteExpiration(DateTime.Now + expiresAfter);
 
             this.memoryCache.Set(key, newValue, options);
         }

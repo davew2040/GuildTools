@@ -13,7 +13,7 @@ namespace GuildTools.Cache.LongRunningRetrievers.Interfaces
 {
     public interface IRaiderIoStatsRetriever
     {
-        Task<CacheEntry<IEnumerable<RaiderIoStats>>> GetCachedEntry(BlizzardRegion region, string realm, string guild, string baseUrl);
+        Task<CacheEntry<IEnumerable<RaiderIoStats>>> GetCachedEntry(BlizzardRegion region, string realm, string guild);
         string GetKey(BlizzardRegion region, string realm, string guild);
         int? GetPositionInQueue(string key);
     }

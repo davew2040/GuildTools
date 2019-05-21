@@ -42,8 +42,6 @@ namespace GuildTools.Services
 
             int totalCount = members.Count();
 
-            List<GuildMemberStats> validMembers = new List<GuildMemberStats>();
-
             int count = 0;
 
             var taskList = new List<Task<GuildMemberStats>>();

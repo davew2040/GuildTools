@@ -273,13 +273,13 @@ export interface ILoginResponse {
     authenticationDetails?: { [key: string] : any; } | undefined;
 }
 
-export class GuildStatsResponse implements IGuildStatsResponse {
+export class BlizzardGuildStatsResponse implements IBlizzardGuildStatsResponse {
     isCompleted?: boolean | undefined;
     positionInQueue?: number | undefined;
     completionProgress?: number | undefined;
     values?: GuildMemberStats[] | undefined;
 
-    constructor(data?: IGuildStatsResponse) {
+    constructor(data?: IBlizzardGuildStatsResponse) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -301,9 +301,9 @@ export class GuildStatsResponse implements IGuildStatsResponse {
         }
     }
 
-    static fromJS(data: any): GuildStatsResponse {
+    static fromJS(data: any): BlizzardGuildStatsResponse {
         data = typeof data === 'object' ? data : {};
-        let result = new GuildStatsResponse();
+        let result = new BlizzardGuildStatsResponse();
         result.init(data);
         return result;
     }
@@ -322,7 +322,7 @@ export class GuildStatsResponse implements IGuildStatsResponse {
     }
 }
 
-export interface IGuildStatsResponse {
+export interface IBlizzardGuildStatsResponse {
     isCompleted?: boolean | undefined;
     positionInQueue?: number | undefined;
     completionProgress?: number | undefined;
@@ -429,12 +429,13 @@ export interface IGuildMemberStats {
     azeriteLevel?: number | undefined;
 }
 
-export class AggregatedProfileGuildStatsResponse implements IAggregatedProfileGuildStatsResponse {
+export class AggregatedProfileBlizzardStatsResponse implements IAggregatedProfileBlizzardStatsResponse {
     isCompleted?: boolean | undefined;
-    individualGuildResponses?: IndividualAggregatedStatsItem[] | undefined;
+    individualGuildResponses?: AggregatedProfileBlizzardStatsItem[] | undefined;
     values?: GuildMemberStats[] | undefined;
+    profile?: FullGuildProfile | undefined;
 
-    constructor(data?: IAggregatedProfileGuildStatsResponse) {
+    constructor(data?: IAggregatedProfileBlizzardStatsResponse) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -449,19 +450,20 @@ export class AggregatedProfileGuildStatsResponse implements IAggregatedProfileGu
             if (data["individualGuildResponses"] && data["individualGuildResponses"].constructor === Array) {
                 this.individualGuildResponses = [] as any;
                 for (let item of data["individualGuildResponses"])
-                    this.individualGuildResponses!.push(IndividualAggregatedStatsItem.fromJS(item));
+                    this.individualGuildResponses!.push(AggregatedProfileBlizzardStatsItem.fromJS(item));
             }
             if (data["values"] && data["values"].constructor === Array) {
                 this.values = [] as any;
                 for (let item of data["values"])
                     this.values!.push(GuildMemberStats.fromJS(item));
             }
+            this.profile = data["profile"] ? FullGuildProfile.fromJS(data["profile"]) : <any>undefined;
         }
     }
 
-    static fromJS(data: any): AggregatedProfileGuildStatsResponse {
+    static fromJS(data: any): AggregatedProfileBlizzardStatsResponse {
         data = typeof data === 'object' ? data : {};
-        let result = new AggregatedProfileGuildStatsResponse();
+        let result = new AggregatedProfileBlizzardStatsResponse();
         result.init(data);
         return result;
     }
@@ -479,23 +481,25 @@ export class AggregatedProfileGuildStatsResponse implements IAggregatedProfileGu
             for (let item of this.values)
                 data["values"].push(item.toJSON());
         }
+        data["profile"] = this.profile ? this.profile.toJSON() : <any>undefined;
         return data; 
     }
 }
 
-export interface IAggregatedProfileGuildStatsResponse {
+export interface IAggregatedProfileBlizzardStatsResponse {
     isCompleted?: boolean | undefined;
-    individualGuildResponses?: IndividualAggregatedStatsItem[] | undefined;
+    individualGuildResponses?: AggregatedProfileBlizzardStatsItem[] | undefined;
     values?: GuildMemberStats[] | undefined;
+    profile?: FullGuildProfile | undefined;
 }
 
-export class IndividualAggregatedStatsItem implements IIndividualAggregatedStatsItem {
-    individualStats?: GuildStatsResponse | undefined;
+export class AggregatedProfileBlizzardStatsItem implements IAggregatedProfileBlizzardStatsItem {
+    individualStats?: BlizzardGuildStatsResponse | undefined;
     guildName?: string | undefined;
     realmName?: string | undefined;
     regionName?: string | undefined;
 
-    constructor(data?: IIndividualAggregatedStatsItem) {
+    constructor(data?: IAggregatedProfileBlizzardStatsItem) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -506,16 +510,16 @@ export class IndividualAggregatedStatsItem implements IIndividualAggregatedStats
 
     init(data?: any) {
         if (data) {
-            this.individualStats = data["individualStats"] ? GuildStatsResponse.fromJS(data["individualStats"]) : <any>undefined;
+            this.individualStats = data["individualStats"] ? BlizzardGuildStatsResponse.fromJS(data["individualStats"]) : <any>undefined;
             this.guildName = data["guildName"];
             this.realmName = data["realmName"];
             this.regionName = data["regionName"];
         }
     }
 
-    static fromJS(data: any): IndividualAggregatedStatsItem {
+    static fromJS(data: any): AggregatedProfileBlizzardStatsItem {
         data = typeof data === 'object' ? data : {};
-        let result = new IndividualAggregatedStatsItem();
+        let result = new AggregatedProfileBlizzardStatsItem();
         result.init(data);
         return result;
     }
@@ -530,11 +534,591 @@ export class IndividualAggregatedStatsItem implements IIndividualAggregatedStats
     }
 }
 
-export interface IIndividualAggregatedStatsItem {
-    individualStats?: GuildStatsResponse | undefined;
+export interface IAggregatedProfileBlizzardStatsItem {
+    individualStats?: BlizzardGuildStatsResponse | undefined;
     guildName?: string | undefined;
     realmName?: string | undefined;
     regionName?: string | undefined;
+}
+
+export class FullGuildProfile implements IFullGuildProfile {
+    id?: number | undefined;
+    creator?: UserStub | undefined;
+    profileName?: string | undefined;
+    guildName?: string | undefined;
+    realm?: StoredRealm | undefined;
+    region?: string | undefined;
+    currentPermissionLevel?: number | undefined;
+    accessRequestCount?: number | undefined;
+    isPublic?: boolean | undefined;
+    players?: StoredPlayer[] | undefined;
+    mains?: PlayerMain[] | undefined;
+    playerPool?: StoredPlayer[] | undefined;
+    friendGuilds?: FriendGuild[] | undefined;
+
+    constructor(data?: IFullGuildProfile) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.creator = data["creator"] ? UserStub.fromJS(data["creator"]) : <any>undefined;
+            this.profileName = data["profileName"];
+            this.guildName = data["guildName"];
+            this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
+            this.region = data["region"];
+            this.currentPermissionLevel = data["currentPermissionLevel"];
+            this.accessRequestCount = data["accessRequestCount"];
+            this.isPublic = data["isPublic"];
+            if (data["players"] && data["players"].constructor === Array) {
+                this.players = [] as any;
+                for (let item of data["players"])
+                    this.players!.push(StoredPlayer.fromJS(item));
+            }
+            if (data["mains"] && data["mains"].constructor === Array) {
+                this.mains = [] as any;
+                for (let item of data["mains"])
+                    this.mains!.push(PlayerMain.fromJS(item));
+            }
+            if (data["playerPool"] && data["playerPool"].constructor === Array) {
+                this.playerPool = [] as any;
+                for (let item of data["playerPool"])
+                    this.playerPool!.push(StoredPlayer.fromJS(item));
+            }
+            if (data["friendGuilds"] && data["friendGuilds"].constructor === Array) {
+                this.friendGuilds = [] as any;
+                for (let item of data["friendGuilds"])
+                    this.friendGuilds!.push(FriendGuild.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): FullGuildProfile {
+        data = typeof data === 'object' ? data : {};
+        let result = new FullGuildProfile();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["creator"] = this.creator ? this.creator.toJSON() : <any>undefined;
+        data["profileName"] = this.profileName;
+        data["guildName"] = this.guildName;
+        data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
+        data["region"] = this.region;
+        data["currentPermissionLevel"] = this.currentPermissionLevel;
+        data["accessRequestCount"] = this.accessRequestCount;
+        data["isPublic"] = this.isPublic;
+        if (this.players && this.players.constructor === Array) {
+            data["players"] = [];
+            for (let item of this.players)
+                data["players"].push(item.toJSON());
+        }
+        if (this.mains && this.mains.constructor === Array) {
+            data["mains"] = [];
+            for (let item of this.mains)
+                data["mains"].push(item.toJSON());
+        }
+        if (this.playerPool && this.playerPool.constructor === Array) {
+            data["playerPool"] = [];
+            for (let item of this.playerPool)
+                data["playerPool"].push(item.toJSON());
+        }
+        if (this.friendGuilds && this.friendGuilds.constructor === Array) {
+            data["friendGuilds"] = [];
+            for (let item of this.friendGuilds)
+                data["friendGuilds"].push(item.toJSON());
+        }
+        return data; 
+    }
+}
+
+export interface IFullGuildProfile {
+    id?: number | undefined;
+    creator?: UserStub | undefined;
+    profileName?: string | undefined;
+    guildName?: string | undefined;
+    realm?: StoredRealm | undefined;
+    region?: string | undefined;
+    currentPermissionLevel?: number | undefined;
+    accessRequestCount?: number | undefined;
+    isPublic?: boolean | undefined;
+    players?: StoredPlayer[] | undefined;
+    mains?: PlayerMain[] | undefined;
+    playerPool?: StoredPlayer[] | undefined;
+    friendGuilds?: FriendGuild[] | undefined;
+}
+
+export class UserStub implements IUserStub {
+    id?: string | undefined;
+    email?: string | undefined;
+    username?: string | undefined;
+
+    constructor(data?: IUserStub) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.email = data["email"];
+            this.username = data["username"];
+        }
+    }
+
+    static fromJS(data: any): UserStub {
+        data = typeof data === 'object' ? data : {};
+        let result = new UserStub();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["email"] = this.email;
+        data["username"] = this.username;
+        return data; 
+    }
+}
+
+export interface IUserStub {
+    id?: string | undefined;
+    email?: string | undefined;
+    username?: string | undefined;
+}
+
+export class StoredRealm implements IStoredRealm {
+    id?: number | undefined;
+    name?: string | undefined;
+    slug?: string | undefined;
+    regionId?: number | undefined;
+    region?: GameRegion | undefined;
+
+    constructor(data?: IStoredRealm) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.name = data["name"];
+            this.slug = data["slug"];
+            this.regionId = data["regionId"];
+            this.region = data["region"] ? GameRegion.fromJS(data["region"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): StoredRealm {
+        data = typeof data === 'object' ? data : {};
+        let result = new StoredRealm();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["name"] = this.name;
+        data["slug"] = this.slug;
+        data["regionId"] = this.regionId;
+        data["region"] = this.region ? this.region.toJSON() : <any>undefined;
+        return data; 
+    }
+}
+
+export interface IStoredRealm {
+    id?: number | undefined;
+    name?: string | undefined;
+    slug?: string | undefined;
+    regionId?: number | undefined;
+    region?: GameRegion | undefined;
+}
+
+export class StoredPlayer implements IStoredPlayer {
+    id?: number | undefined;
+    name?: string | undefined;
+    level?: number | undefined;
+    class?: number | undefined;
+    guildId?: number | undefined;
+    realmId?: number | undefined;
+    regionName?: string | undefined;
+    realm?: StoredRealm | undefined;
+    guild?: StoredGuild | undefined;
+
+    constructor(data?: IStoredPlayer) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.name = data["name"];
+            this.level = data["level"];
+            this.class = data["class"];
+            this.guildId = data["guildId"];
+            this.realmId = data["realmId"];
+            this.regionName = data["regionName"];
+            this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
+            this.guild = data["guild"] ? StoredGuild.fromJS(data["guild"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): StoredPlayer {
+        data = typeof data === 'object' ? data : {};
+        let result = new StoredPlayer();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["name"] = this.name;
+        data["level"] = this.level;
+        data["class"] = this.class;
+        data["guildId"] = this.guildId;
+        data["realmId"] = this.realmId;
+        data["regionName"] = this.regionName;
+        data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
+        data["guild"] = this.guild ? this.guild.toJSON() : <any>undefined;
+        return data; 
+    }
+}
+
+export interface IStoredPlayer {
+    id?: number | undefined;
+    name?: string | undefined;
+    level?: number | undefined;
+    class?: number | undefined;
+    guildId?: number | undefined;
+    realmId?: number | undefined;
+    regionName?: string | undefined;
+    realm?: StoredRealm | undefined;
+    guild?: StoredGuild | undefined;
+}
+
+export class PlayerMain implements IPlayerMain {
+    id?: number | undefined;
+    notes?: string | undefined;
+    officerNotes?: string | undefined;
+    player?: StoredPlayer | undefined;
+    alts?: PlayerAlt[] | undefined;
+
+    constructor(data?: IPlayerMain) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.notes = data["notes"];
+            this.officerNotes = data["officerNotes"];
+            this.player = data["player"] ? StoredPlayer.fromJS(data["player"]) : <any>undefined;
+            if (data["alts"] && data["alts"].constructor === Array) {
+                this.alts = [] as any;
+                for (let item of data["alts"])
+                    this.alts!.push(PlayerAlt.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): PlayerMain {
+        data = typeof data === 'object' ? data : {};
+        let result = new PlayerMain();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["notes"] = this.notes;
+        data["officerNotes"] = this.officerNotes;
+        data["player"] = this.player ? this.player.toJSON() : <any>undefined;
+        if (this.alts && this.alts.constructor === Array) {
+            data["alts"] = [];
+            for (let item of this.alts)
+                data["alts"].push(item.toJSON());
+        }
+        return data; 
+    }
+}
+
+export interface IPlayerMain {
+    id?: number | undefined;
+    notes?: string | undefined;
+    officerNotes?: string | undefined;
+    player?: StoredPlayer | undefined;
+    alts?: PlayerAlt[] | undefined;
+}
+
+export class FriendGuild implements IFriendGuild {
+    id?: number | undefined;
+    guild?: StoredGuild | undefined;
+
+    constructor(data?: IFriendGuild) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.guild = data["guild"] ? StoredGuild.fromJS(data["guild"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): FriendGuild {
+        data = typeof data === 'object' ? data : {};
+        let result = new FriendGuild();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["guild"] = this.guild ? this.guild.toJSON() : <any>undefined;
+        return data; 
+    }
+}
+
+export interface IFriendGuild {
+    id?: number | undefined;
+    guild?: StoredGuild | undefined;
+}
+
+export class GameRegion implements IGameRegion {
+    id?: number | undefined;
+    regionName?: string | undefined;
+
+    constructor(data?: IGameRegion) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.regionName = data["regionName"];
+        }
+    }
+
+    static fromJS(data: any): GameRegion {
+        data = typeof data === 'object' ? data : {};
+        let result = new GameRegion();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["regionName"] = this.regionName;
+        return data; 
+    }
+}
+
+export interface IGameRegion {
+    id?: number | undefined;
+    regionName?: string | undefined;
+}
+
+export class StoredGuild implements IStoredGuild {
+    id?: number | undefined;
+    name?: string | undefined;
+    realmId?: number | undefined;
+    abbreviation?: string | undefined;
+    realm?: StoredRealm | undefined;
+    players?: BlizzardPlayer[] | undefined;
+
+    constructor(data?: IStoredGuild) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.name = data["name"];
+            this.realmId = data["realmId"];
+            this.abbreviation = data["abbreviation"];
+            this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
+            if (data["players"] && data["players"].constructor === Array) {
+                this.players = [] as any;
+                for (let item of data["players"])
+                    this.players!.push(BlizzardPlayer.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): StoredGuild {
+        data = typeof data === 'object' ? data : {};
+        let result = new StoredGuild();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["name"] = this.name;
+        data["realmId"] = this.realmId;
+        data["abbreviation"] = this.abbreviation;
+        data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
+        if (this.players && this.players.constructor === Array) {
+            data["players"] = [];
+            for (let item of this.players)
+                data["players"].push(item.toJSON());
+        }
+        return data; 
+    }
+}
+
+export interface IStoredGuild {
+    id?: number | undefined;
+    name?: string | undefined;
+    realmId?: number | undefined;
+    abbreviation?: string | undefined;
+    realm?: StoredRealm | undefined;
+    players?: BlizzardPlayer[] | undefined;
+}
+
+export class PlayerAlt implements IPlayerAlt {
+    id?: number | undefined;
+    player?: StoredPlayer | undefined;
+
+    constructor(data?: IPlayerAlt) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.player = data["player"] ? StoredPlayer.fromJS(data["player"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): PlayerAlt {
+        data = typeof data === 'object' ? data : {};
+        let result = new PlayerAlt();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["player"] = this.player ? this.player.toJSON() : <any>undefined;
+        return data; 
+    }
+}
+
+export interface IPlayerAlt {
+    id?: number | undefined;
+    player?: StoredPlayer | undefined;
+}
+
+export class BlizzardPlayer implements IBlizzardPlayer {
+    playerName?: string | undefined;
+    playerRealmName?: string | undefined;
+    class?: number | undefined;
+    level?: number | undefined;
+    guildName?: string | undefined;
+    guildRealm?: string | undefined;
+
+    constructor(data?: IBlizzardPlayer) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.playerName = data["playerName"];
+            this.playerRealmName = data["playerRealmName"];
+            this.class = data["class"];
+            this.level = data["level"];
+            this.guildName = data["guildName"];
+            this.guildRealm = data["guildRealm"];
+        }
+    }
+
+    static fromJS(data: any): BlizzardPlayer {
+        data = typeof data === 'object' ? data : {};
+        let result = new BlizzardPlayer();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["playerName"] = this.playerName;
+        data["playerRealmName"] = this.playerRealmName;
+        data["class"] = this.class;
+        data["level"] = this.level;
+        data["guildName"] = this.guildName;
+        data["guildRealm"] = this.guildRealm;
+        return data; 
+    }
+}
+
+export interface IBlizzardPlayer {
+    playerName?: string | undefined;
+    playerRealmName?: string | undefined;
+    class?: number | undefined;
+    level?: number | undefined;
+    guildName?: string | undefined;
+    guildRealm?: string | undefined;
 }
 
 export class RaiderIoStatsResponse implements IRaiderIoStatsResponse {
@@ -595,7 +1179,9 @@ export interface IRaiderIoStatsResponse {
 
 export class RaiderIoStats implements IRaiderIoStats {
     name?: string | undefined;
-    realm?: string | undefined;
+    realmName?: string | undefined;
+    regionName?: string | undefined;
+    guildName?: string | undefined;
     class?: number | undefined;
     raiderIoOverall?: number | undefined;
     raiderIoDps?: number | undefined;
@@ -614,7 +1200,9 @@ export class RaiderIoStats implements IRaiderIoStats {
     init(data?: any) {
         if (data) {
             this.name = data["name"];
-            this.realm = data["realm"];
+            this.realmName = data["realmName"];
+            this.regionName = data["regionName"];
+            this.guildName = data["guildName"];
             this.class = data["class"];
             this.raiderIoOverall = data["raiderIoOverall"];
             this.raiderIoDps = data["raiderIoDps"];
@@ -633,7 +1221,9 @@ export class RaiderIoStats implements IRaiderIoStats {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["name"] = this.name;
-        data["realm"] = this.realm;
+        data["realmName"] = this.realmName;
+        data["regionName"] = this.regionName;
+        data["guildName"] = this.guildName;
         data["class"] = this.class;
         data["raiderIoOverall"] = this.raiderIoOverall;
         data["raiderIoDps"] = this.raiderIoDps;
@@ -645,12 +1235,198 @@ export class RaiderIoStats implements IRaiderIoStats {
 
 export interface IRaiderIoStats {
     name?: string | undefined;
-    realm?: string | undefined;
+    realmName?: string | undefined;
+    regionName?: string | undefined;
+    guildName?: string | undefined;
     class?: number | undefined;
     raiderIoOverall?: number | undefined;
     raiderIoDps?: number | undefined;
     raiderIoTank?: number | undefined;
     raiderIoHealer?: number | undefined;
+}
+
+export class TestHolderClassOfInnerClass implements ITestHolderClassOfInnerClass {
+    innerClass?: InnerClass | undefined;
+
+    constructor(data?: ITestHolderClassOfInnerClass) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.innerClass = data["innerClass"] ? InnerClass.fromJS(data["innerClass"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): TestHolderClassOfInnerClass {
+        data = typeof data === 'object' ? data : {};
+        let result = new TestHolderClassOfInnerClass();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["innerClass"] = this.innerClass ? this.innerClass.toJSON() : <any>undefined;
+        return data; 
+    }
+}
+
+export interface ITestHolderClassOfInnerClass {
+    innerClass?: InnerClass | undefined;
+}
+
+export class InnerClass implements IInnerClass {
+    testItem?: number | undefined;
+
+    constructor(data?: IInnerClass) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.testItem = data["testItem"];
+        }
+    }
+
+    static fromJS(data: any): InnerClass {
+        data = typeof data === 'object' ? data : {};
+        let result = new InnerClass();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["testItem"] = this.testItem;
+        return data; 
+    }
+}
+
+export interface IInnerClass {
+    testItem?: number | undefined;
+}
+
+export class AggregatedProfileRaiderIoStatsResponse implements IAggregatedProfileRaiderIoStatsResponse {
+    isCompleted?: boolean | undefined;
+    individualGuildResponses?: AggregatedProfileRaiderIoStatsItem[] | undefined;
+    values?: RaiderIoStats[] | undefined;
+    profile?: FullGuildProfile | undefined;
+
+    constructor(data?: IAggregatedProfileRaiderIoStatsResponse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.isCompleted = data["isCompleted"];
+            if (data["individualGuildResponses"] && data["individualGuildResponses"].constructor === Array) {
+                this.individualGuildResponses = [] as any;
+                for (let item of data["individualGuildResponses"])
+                    this.individualGuildResponses!.push(AggregatedProfileRaiderIoStatsItem.fromJS(item));
+            }
+            if (data["values"] && data["values"].constructor === Array) {
+                this.values = [] as any;
+                for (let item of data["values"])
+                    this.values!.push(RaiderIoStats.fromJS(item));
+            }
+            this.profile = data["profile"] ? FullGuildProfile.fromJS(data["profile"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): AggregatedProfileRaiderIoStatsResponse {
+        data = typeof data === 'object' ? data : {};
+        let result = new AggregatedProfileRaiderIoStatsResponse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["isCompleted"] = this.isCompleted;
+        if (this.individualGuildResponses && this.individualGuildResponses.constructor === Array) {
+            data["individualGuildResponses"] = [];
+            for (let item of this.individualGuildResponses)
+                data["individualGuildResponses"].push(item.toJSON());
+        }
+        if (this.values && this.values.constructor === Array) {
+            data["values"] = [];
+            for (let item of this.values)
+                data["values"].push(item.toJSON());
+        }
+        data["profile"] = this.profile ? this.profile.toJSON() : <any>undefined;
+        return data; 
+    }
+}
+
+export interface IAggregatedProfileRaiderIoStatsResponse {
+    isCompleted?: boolean | undefined;
+    individualGuildResponses?: AggregatedProfileRaiderIoStatsItem[] | undefined;
+    values?: RaiderIoStats[] | undefined;
+    profile?: FullGuildProfile | undefined;
+}
+
+export class AggregatedProfileRaiderIoStatsItem implements IAggregatedProfileRaiderIoStatsItem {
+    individualStats?: RaiderIoStatsResponse | undefined;
+    guildName?: string | undefined;
+    realmName?: string | undefined;
+    regionName?: string | undefined;
+
+    constructor(data?: IAggregatedProfileRaiderIoStatsItem) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.individualStats = data["individualStats"] ? RaiderIoStatsResponse.fromJS(data["individualStats"]) : <any>undefined;
+            this.guildName = data["guildName"];
+            this.realmName = data["realmName"];
+            this.regionName = data["regionName"];
+        }
+    }
+
+    static fromJS(data: any): AggregatedProfileRaiderIoStatsItem {
+        data = typeof data === 'object' ? data : {};
+        let result = new AggregatedProfileRaiderIoStatsItem();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["individualStats"] = this.individualStats ? this.individualStats.toJSON() : <any>undefined;
+        data["guildName"] = this.guildName;
+        data["realmName"] = this.realmName;
+        data["regionName"] = this.regionName;
+        return data; 
+    }
+}
+
+export interface IAggregatedProfileRaiderIoStatsItem {
+    individualStats?: RaiderIoStatsResponse | undefined;
+    guildName?: string | undefined;
+    realmName?: string | undefined;
+    regionName?: string | undefined;
 }
 
 export class RequestStatsCompleteNotification implements IRequestStatsCompleteNotification {
@@ -789,62 +1565,6 @@ export interface IPlayerFound {
     playerDetails?: BlizzardPlayer | undefined;
 }
 
-export class BlizzardPlayer implements IBlizzardPlayer {
-    playerName?: string | undefined;
-    playerRealmName?: string | undefined;
-    class?: number | undefined;
-    level?: number | undefined;
-    guildName?: string | undefined;
-    guildRealm?: string | undefined;
-
-    constructor(data?: IBlizzardPlayer) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.playerName = data["playerName"];
-            this.playerRealmName = data["playerRealmName"];
-            this.class = data["class"];
-            this.level = data["level"];
-            this.guildName = data["guildName"];
-            this.guildRealm = data["guildRealm"];
-        }
-    }
-
-    static fromJS(data: any): BlizzardPlayer {
-        data = typeof data === 'object' ? data : {};
-        let result = new BlizzardPlayer();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["playerName"] = this.playerName;
-        data["playerRealmName"] = this.playerRealmName;
-        data["class"] = this.class;
-        data["level"] = this.level;
-        data["guildName"] = this.guildName;
-        data["guildRealm"] = this.guildRealm;
-        return data; 
-    }
-}
-
-export interface IBlizzardPlayer {
-    playerName?: string | undefined;
-    playerRealmName?: string | undefined;
-    class?: number | undefined;
-    level?: number | undefined;
-    guildName?: string | undefined;
-    guildRealm?: string | undefined;
-}
-
 export class CreateNewGuildProfile implements ICreateNewGuildProfile {
     profileName?: string | undefined;
     guildName?: string | undefined;
@@ -935,330 +1655,6 @@ export class AddMainToProfile implements IAddMainToProfile {
 export interface IAddMainToProfile {
     profileId?: number | undefined;
     playerId?: number | undefined;
-}
-
-export class PlayerMain implements IPlayerMain {
-    id?: number | undefined;
-    notes?: string | undefined;
-    officerNotes?: string | undefined;
-    player?: StoredPlayer | undefined;
-    alts?: PlayerAlt[] | undefined;
-
-    constructor(data?: IPlayerMain) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.notes = data["notes"];
-            this.officerNotes = data["officerNotes"];
-            this.player = data["player"] ? StoredPlayer.fromJS(data["player"]) : <any>undefined;
-            if (data["alts"] && data["alts"].constructor === Array) {
-                this.alts = [] as any;
-                for (let item of data["alts"])
-                    this.alts!.push(PlayerAlt.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): PlayerMain {
-        data = typeof data === 'object' ? data : {};
-        let result = new PlayerMain();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["notes"] = this.notes;
-        data["officerNotes"] = this.officerNotes;
-        data["player"] = this.player ? this.player.toJSON() : <any>undefined;
-        if (this.alts && this.alts.constructor === Array) {
-            data["alts"] = [];
-            for (let item of this.alts)
-                data["alts"].push(item.toJSON());
-        }
-        return data; 
-    }
-}
-
-export interface IPlayerMain {
-    id?: number | undefined;
-    notes?: string | undefined;
-    officerNotes?: string | undefined;
-    player?: StoredPlayer | undefined;
-    alts?: PlayerAlt[] | undefined;
-}
-
-export class StoredPlayer implements IStoredPlayer {
-    id?: number | undefined;
-    name?: string | undefined;
-    level?: number | undefined;
-    class?: number | undefined;
-    guildId?: number | undefined;
-    realmId?: number | undefined;
-    regionName?: string | undefined;
-    realm?: StoredRealm | undefined;
-    guild?: StoredGuild | undefined;
-
-    constructor(data?: IStoredPlayer) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.name = data["name"];
-            this.level = data["level"];
-            this.class = data["class"];
-            this.guildId = data["guildId"];
-            this.realmId = data["realmId"];
-            this.regionName = data["regionName"];
-            this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
-            this.guild = data["guild"] ? StoredGuild.fromJS(data["guild"]) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): StoredPlayer {
-        data = typeof data === 'object' ? data : {};
-        let result = new StoredPlayer();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["name"] = this.name;
-        data["level"] = this.level;
-        data["class"] = this.class;
-        data["guildId"] = this.guildId;
-        data["realmId"] = this.realmId;
-        data["regionName"] = this.regionName;
-        data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
-        data["guild"] = this.guild ? this.guild.toJSON() : <any>undefined;
-        return data; 
-    }
-}
-
-export interface IStoredPlayer {
-    id?: number | undefined;
-    name?: string | undefined;
-    level?: number | undefined;
-    class?: number | undefined;
-    guildId?: number | undefined;
-    realmId?: number | undefined;
-    regionName?: string | undefined;
-    realm?: StoredRealm | undefined;
-    guild?: StoredGuild | undefined;
-}
-
-export class PlayerAlt implements IPlayerAlt {
-    id?: number | undefined;
-    player?: StoredPlayer | undefined;
-
-    constructor(data?: IPlayerAlt) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.player = data["player"] ? StoredPlayer.fromJS(data["player"]) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): PlayerAlt {
-        data = typeof data === 'object' ? data : {};
-        let result = new PlayerAlt();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["player"] = this.player ? this.player.toJSON() : <any>undefined;
-        return data; 
-    }
-}
-
-export interface IPlayerAlt {
-    id?: number | undefined;
-    player?: StoredPlayer | undefined;
-}
-
-export class StoredRealm implements IStoredRealm {
-    id?: number | undefined;
-    name?: string | undefined;
-    slug?: string | undefined;
-    regionId?: number | undefined;
-    region?: GameRegion | undefined;
-
-    constructor(data?: IStoredRealm) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.name = data["name"];
-            this.slug = data["slug"];
-            this.regionId = data["regionId"];
-            this.region = data["region"] ? GameRegion.fromJS(data["region"]) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): StoredRealm {
-        data = typeof data === 'object' ? data : {};
-        let result = new StoredRealm();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["name"] = this.name;
-        data["slug"] = this.slug;
-        data["regionId"] = this.regionId;
-        data["region"] = this.region ? this.region.toJSON() : <any>undefined;
-        return data; 
-    }
-}
-
-export interface IStoredRealm {
-    id?: number | undefined;
-    name?: string | undefined;
-    slug?: string | undefined;
-    regionId?: number | undefined;
-    region?: GameRegion | undefined;
-}
-
-export class StoredGuild implements IStoredGuild {
-    id?: number | undefined;
-    name?: string | undefined;
-    realmId?: number | undefined;
-    abbreviation?: string | undefined;
-    realm?: StoredRealm | undefined;
-    players?: BlizzardPlayer[] | undefined;
-
-    constructor(data?: IStoredGuild) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.name = data["name"];
-            this.realmId = data["realmId"];
-            this.abbreviation = data["abbreviation"];
-            this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
-            if (data["players"] && data["players"].constructor === Array) {
-                this.players = [] as any;
-                for (let item of data["players"])
-                    this.players!.push(BlizzardPlayer.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): StoredGuild {
-        data = typeof data === 'object' ? data : {};
-        let result = new StoredGuild();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["name"] = this.name;
-        data["realmId"] = this.realmId;
-        data["abbreviation"] = this.abbreviation;
-        data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
-        if (this.players && this.players.constructor === Array) {
-            data["players"] = [];
-            for (let item of this.players)
-                data["players"].push(item.toJSON());
-        }
-        return data; 
-    }
-}
-
-export interface IStoredGuild {
-    id?: number | undefined;
-    name?: string | undefined;
-    realmId?: number | undefined;
-    abbreviation?: string | undefined;
-    realm?: StoredRealm | undefined;
-    players?: BlizzardPlayer[] | undefined;
-}
-
-export class GameRegion implements IGameRegion {
-    id?: number | undefined;
-    regionName?: string | undefined;
-
-    constructor(data?: IGameRegion) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.regionName = data["regionName"];
-        }
-    }
-
-    static fromJS(data: any): GameRegion {
-        data = typeof data === 'object' ? data : {};
-        let result = new GameRegion();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["regionName"] = this.regionName;
-        return data; 
-    }
-}
-
-export interface IGameRegion {
-    id?: number | undefined;
-    regionName?: string | undefined;
 }
 
 export class AddAltToMain implements IAddAltToMain {
@@ -1487,206 +1883,6 @@ export interface IGuildProfileSlim {
     regionName?: string | undefined;
     primaryGuildName?: string | undefined;
     isPublic?: boolean | undefined;
-}
-
-export class UserStub implements IUserStub {
-    id?: string | undefined;
-    email?: string | undefined;
-    username?: string | undefined;
-
-    constructor(data?: IUserStub) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.email = data["email"];
-            this.username = data["username"];
-        }
-    }
-
-    static fromJS(data: any): UserStub {
-        data = typeof data === 'object' ? data : {};
-        let result = new UserStub();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["email"] = this.email;
-        data["username"] = this.username;
-        return data; 
-    }
-}
-
-export interface IUserStub {
-    id?: string | undefined;
-    email?: string | undefined;
-    username?: string | undefined;
-}
-
-export class FullGuildProfile implements IFullGuildProfile {
-    id?: number | undefined;
-    creator?: UserStub | undefined;
-    profileName?: string | undefined;
-    guildName?: string | undefined;
-    realm?: StoredRealm | undefined;
-    region?: string | undefined;
-    currentPermissionLevel?: number | undefined;
-    accessRequestCount?: number | undefined;
-    isPublic?: boolean | undefined;
-    players?: StoredPlayer[] | undefined;
-    mains?: PlayerMain[] | undefined;
-    playerPool?: StoredPlayer[] | undefined;
-    friendGuilds?: FriendGuild[] | undefined;
-
-    constructor(data?: IFullGuildProfile) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.creator = data["creator"] ? UserStub.fromJS(data["creator"]) : <any>undefined;
-            this.profileName = data["profileName"];
-            this.guildName = data["guildName"];
-            this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
-            this.region = data["region"];
-            this.currentPermissionLevel = data["currentPermissionLevel"];
-            this.accessRequestCount = data["accessRequestCount"];
-            this.isPublic = data["isPublic"];
-            if (data["players"] && data["players"].constructor === Array) {
-                this.players = [] as any;
-                for (let item of data["players"])
-                    this.players!.push(StoredPlayer.fromJS(item));
-            }
-            if (data["mains"] && data["mains"].constructor === Array) {
-                this.mains = [] as any;
-                for (let item of data["mains"])
-                    this.mains!.push(PlayerMain.fromJS(item));
-            }
-            if (data["playerPool"] && data["playerPool"].constructor === Array) {
-                this.playerPool = [] as any;
-                for (let item of data["playerPool"])
-                    this.playerPool!.push(StoredPlayer.fromJS(item));
-            }
-            if (data["friendGuilds"] && data["friendGuilds"].constructor === Array) {
-                this.friendGuilds = [] as any;
-                for (let item of data["friendGuilds"])
-                    this.friendGuilds!.push(FriendGuild.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): FullGuildProfile {
-        data = typeof data === 'object' ? data : {};
-        let result = new FullGuildProfile();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["creator"] = this.creator ? this.creator.toJSON() : <any>undefined;
-        data["profileName"] = this.profileName;
-        data["guildName"] = this.guildName;
-        data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
-        data["region"] = this.region;
-        data["currentPermissionLevel"] = this.currentPermissionLevel;
-        data["accessRequestCount"] = this.accessRequestCount;
-        data["isPublic"] = this.isPublic;
-        if (this.players && this.players.constructor === Array) {
-            data["players"] = [];
-            for (let item of this.players)
-                data["players"].push(item.toJSON());
-        }
-        if (this.mains && this.mains.constructor === Array) {
-            data["mains"] = [];
-            for (let item of this.mains)
-                data["mains"].push(item.toJSON());
-        }
-        if (this.playerPool && this.playerPool.constructor === Array) {
-            data["playerPool"] = [];
-            for (let item of this.playerPool)
-                data["playerPool"].push(item.toJSON());
-        }
-        if (this.friendGuilds && this.friendGuilds.constructor === Array) {
-            data["friendGuilds"] = [];
-            for (let item of this.friendGuilds)
-                data["friendGuilds"].push(item.toJSON());
-        }
-        return data; 
-    }
-}
-
-export interface IFullGuildProfile {
-    id?: number | undefined;
-    creator?: UserStub | undefined;
-    profileName?: string | undefined;
-    guildName?: string | undefined;
-    realm?: StoredRealm | undefined;
-    region?: string | undefined;
-    currentPermissionLevel?: number | undefined;
-    accessRequestCount?: number | undefined;
-    isPublic?: boolean | undefined;
-    players?: StoredPlayer[] | undefined;
-    mains?: PlayerMain[] | undefined;
-    playerPool?: StoredPlayer[] | undefined;
-    friendGuilds?: FriendGuild[] | undefined;
-}
-
-export class FriendGuild implements IFriendGuild {
-    id?: number | undefined;
-    guild?: StoredGuild | undefined;
-
-    constructor(data?: IFriendGuild) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.guild = data["guild"] ? StoredGuild.fromJS(data["guild"]) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): FriendGuild {
-        data = typeof data === 'object' ? data : {};
-        let result = new FriendGuild();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["guild"] = this.guild ? this.guild.toJSON() : <any>undefined;
-        return data; 
-    }
-}
-
-export interface IFriendGuild {
-    id?: number | undefined;
-    guild?: StoredGuild | undefined;
 }
 
 export class PendingAccessRequest implements IPendingAccessRequest {

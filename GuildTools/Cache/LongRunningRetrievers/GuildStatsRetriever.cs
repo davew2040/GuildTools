@@ -14,26 +14,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using GuildTools.Cache;
 using static GuildTools.ExternalServices.Blizzard.BlizzardService;
 
 namespace GuildTools.Cache.LongRunningRetrievers
 {
     public class GuildStatsRetriever : IGuildStatsRetriever
     {
-        private readonly LongRunningCache<IEnumerable<GuildMemberStats>> cache;
+        private readonly LongRunningCache<IEnumerable<GuildMemberStats>> longRunningCache;
         private readonly IBackgroundTaskQueue taskQueue;
         private readonly IMailSender mailSender;
         private readonly ICommonValuesProvider commonValues;
         private readonly IMailGenerator mailGenerator;
 
         public GuildStatsRetriever(
-            IMemoryCache memoryCache, 
-            IBackgroundTaskQueue taskQueue, 
-            IMailSender mailSender, 
+            ICache memoryCache,
+            IDatabaseCache databaseCache,
+            IBackgroundTaskQueue taskQueue,
+            IMailSender mailSender,
             ICommonValuesProvider commonValues,
             IMailGenerator mailGenerator)
         {
-            this.cache = new LongRunningCache<IEnumerable<GuildMemberStats>>(memoryCache, TimeSpan.FromDays(3), TimeSpan.FromDays(1));
+            this.longRunningCache = new LongRunningCache<IEnumerable<GuildMemberStats>>(memoryCache, databaseCache, TimeSpan.FromDays(3), TimeSpan.FromDays(1));
             this.taskQueue = taskQueue;
             this.mailSender = mailSender;
             this.commonValues = commonValues;
@@ -44,7 +46,7 @@ namespace GuildTools.Cache.LongRunningRetrievers
         {
             string key = this.GetKey(region, realm, guild);
 
-            return await this.cache.GetOrRefreshCachedValueAsync(
+            return await this.longRunningCache.GetOrRefreshCachedValueAsync(
                 key,
                 this.taskRunner(key, region, realm, guild),
                 this.valueGetter(region, realm, guild));
@@ -78,9 +80,9 @@ namespace GuildTools.Cache.LongRunningRetrievers
 
                         await this.SendStatsCompleteNotifications(serviceProvider, key, region, realm, guild);
                     },
-                    TaskFailed = () =>
+                    TaskFailed = async () =>
                     {
-                        this.cache.RemoveCacheItem(key);
+                        await this.longRunningCache.RemoveCacheItem(key);
                     }
                 });
             };

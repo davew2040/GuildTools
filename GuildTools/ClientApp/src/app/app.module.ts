@@ -14,12 +14,11 @@ import { CallbackComponent } from './callback/callback.component';
 import { UserSettingsComponent } from './user-settings/user-settings.component';
 import { RegisterUserComponent } from './components/account/register-user/register-user.component';
 import { LoginComponent } from './components/account/login/login.component';
-import { GuildStatsComponent } from './guild-stats/guild-stats.component';
+import { GuildStatsComponent } from './components/guild-stats/guild-stats.component';
 import { BlizzardService } from './blizzard-services/blizzard-services';
 import { DataService } from './services/data-services';
-import { GuildStatsLauncherComponent } from './guild-stats-launcher/guild-stats-launcher.component';
+import { GuildStatsLauncherComponent } from './components/guild-stats-launcher/guild-stats-launcher.component';
 import { MyGuildProfilesComponent } from './components/my-guild-profiles/my-guild-profiles.component';
-import { GuildProfileComponent } from './guild-profile/guild-profile.component';
 import { BusyService } from './shared-services/busy-service';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { ResetPasswordWithTokenComponent } from './reset-password-token/reset-password-token.component';
@@ -49,8 +48,10 @@ import { PlayerNotesComponentComponent } from './components/player-notes-compone
 import { ConfirmationDialogComponent } from './dialogs/confirmation-dialog.component/confirmation-dialog.component';
 import { ShareLinkDialogComponent } from './dialogs/share-link-dialog.component/share-link-dialog.component';
 import { RaiderIoStatsComponent } from './components/raider-io-stats/raider-io-stats.component';
-import { GuildProfileStatsComponent } from './guild-profile-stats/guild-profile-stats.component';
+import { GuildProfileStatsComponent } from './components/guild-profile-stats/guild-profile-stats.component';
 import { StatsTableComponent } from './components/stats-table/stats-table.component';
+import { RaiderIoProfileStatsComponent } from './components/raider-io-profile-stats/raider-io-profile-stats.component';
+import { UtilitiesService } from './services/utilities-service';
 
 @NgModule({
   declarations: [
@@ -64,9 +65,9 @@ import { StatsTableComponent } from './components/stats-table/stats-table.compon
     ResetPasswordWithTokenComponent,
     GuildStatsComponent,
     GuildProfileStatsComponent,
+    RaiderIoProfileStatsComponent,
     RaiderIoStatsComponent,
     GuildStatsLauncherComponent,
-    GuildProfileComponent,
     MyGuildProfilesComponent,
     FindGuildComponent,
     FindGuildDialogComponent,
@@ -108,7 +109,8 @@ import { StatsTableComponent } from './components/stats-table/stats-table.compon
     ErrorReportingService,
     BusyService,
     NotificationService,
-    StoredValuesService],
+    StoredValuesService,
+    UtilitiesService],
   bootstrap: [AppComponent],
   entryComponents: [FindGuildDialogComponent, FindPlayerDialogComponent, ConfirmationDialogComponent, ShareLinkDialogComponent]
 })

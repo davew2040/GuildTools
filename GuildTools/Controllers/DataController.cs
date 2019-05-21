@@ -35,6 +35,7 @@ using GuildTools.Utilities;
 using GuildTools.Cache.LongRunningRetrievers.Interfaces;
 using AutoMapper;
 using GuildTools.ExternalServices.Blizzard.Utilities;
+using GuildTools.Controllers.Models.Stats;
 
 namespace GuildTools.Controllers
 {
@@ -118,17 +119,17 @@ namespace GuildTools.Controllers
             });
         }
 
-        [HttpGet("getGuildMemberStats")]
-        public async Task<GuildStatsResponse> GetGuildMemberStats(string region, string guild, string realm)
+        [HttpGet("getBlizzardGuildMemberStats")]
+        public async Task<BlizzardGuildStatsResponse> GetBlizzardGuildMemberStats(string region, string guild, string realm)
         {
             guild = BlizzardService.FormatGuildName(guild);
             realm = BlizzardService.FormatRealmName(realm);
             BlizzardRegion regionEnum = BlizzardService.GetRegionFromString(region);
 
-            return await this.GetGuildMemberStatsResponse(regionEnum, realm, guild);
+            return await this.GetBlizzardGuildMemberStatsResponse(regionEnum, realm, guild);
         }
 
-        private async Task<GuildStatsResponse> GetGuildMemberStatsResponse(BlizzardRegion regionEnum, string realm, string guild)
+        private async Task<BlizzardGuildStatsResponse> GetBlizzardGuildMemberStatsResponse(BlizzardRegion regionEnum, string realm, string guild)
         {
             var guildData = await this.guildStatsRetriever.GetCachedEntry(regionEnum, realm, guild);
 
@@ -136,7 +137,7 @@ namespace GuildTools.Controllers
             {
                 var positionInQueue = this.guildStatsRetriever.GetPositionInQueue(regionEnum, realm, guild);
 
-                return new GuildStatsResponse()
+                return new BlizzardGuildStatsResponse()
                 {
                     IsCompleted = false,
                     PositionInQueue = positionInQueue,
@@ -145,7 +146,7 @@ namespace GuildTools.Controllers
             }
             else
             {
-                return new GuildStatsResponse()
+                return new BlizzardGuildStatsResponse()
                 {
                     IsCompleted = true,
                     Values = guildData.Value
@@ -153,19 +154,19 @@ namespace GuildTools.Controllers
             }
         }
 
-        [HttpGet("getGuildProfileStats")]
-        public async Task<AggregatedProfileGuildStatsResponse> GetGuildProfileStats(int profileId)
+        [HttpGet("getBlizzardGuildProfileStats")]
+        public async Task<AggregatedProfileBlizzardStatsResponse> GetBlizzardGuildProfileStats(int profileId)
         {
             var profile = await this.dataRepo.GetGuildProfile_GuildAndFriendGuildsAsync(profileId);
 
-            var friendGuildCachedEntries = new List<IndividualAggregatedStatsItem>();
+            var friendGuildCachedEntries = new List<AggregatedProfileBlizzardStatsItem>();
 
-            var profileGuildCachedEntry = await this.GetGuildMemberStatsResponse(
+            var profileGuildCachedEntry = await this.GetBlizzardGuildMemberStatsResponse(
                 BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegionEnum)profile.CreatorGuild.Realm.RegionId),
                 profile.CreatorGuild.Realm.Name,
                 profile.CreatorGuild.Name);
 
-            friendGuildCachedEntries.Add(new IndividualAggregatedStatsItem()
+            friendGuildCachedEntries.Add(new AggregatedProfileBlizzardStatsItem()
             {
                 GuildName = profile.CreatorGuild.Name,
                 RealmName = profile.CreatorGuild.Realm.Name,
@@ -175,12 +176,12 @@ namespace GuildTools.Controllers
 
             foreach (var friendGuild in profile.FriendGuilds)
             {
-                var entry = await this.GetGuildMemberStatsResponse(
+                var entry = await this.GetBlizzardGuildMemberStatsResponse(
                     BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegionEnum)friendGuild.Guild.Realm.RegionId),
                     friendGuild.Guild.Realm.Name,
                     friendGuild.Guild.Name);
 
-                friendGuildCachedEntries.Add(new IndividualAggregatedStatsItem()
+                friendGuildCachedEntries.Add(new AggregatedProfileBlizzardStatsItem()
                 {
                     GuildName = friendGuild.Guild.Name,
                     RealmName = friendGuild.Guild.Realm.Name,
@@ -191,17 +192,20 @@ namespace GuildTools.Controllers
 
             if (friendGuildCachedEntries.Any(x => !x.IndividualStats.IsCompleted))
             {
-                return new AggregatedProfileGuildStatsResponse()
+                return new AggregatedProfileBlizzardStatsResponse()
                 {
                     IsCompleted = false,
                     IndividualGuildResponses = friendGuildCachedEntries
                 };
             }
 
-            return new AggregatedProfileGuildStatsResponse()
+            var guildProfile = await this.GetFullGuildProfile(profileId);
+
+            return new AggregatedProfileBlizzardStatsResponse()
             {
                 IsCompleted = true,
-                Values = friendGuildCachedEntries.SelectMany(x => x.IndividualStats.Values)
+                Values = friendGuildCachedEntries.SelectMany(x => x.IndividualStats.Values),
+                Profile = guildProfile
             };
         }
 
@@ -212,12 +216,16 @@ namespace GuildTools.Controllers
             realm = BlizzardService.FormatRealmName(realm);
             BlizzardRegion regionEnum = BlizzardService.GetRegionFromString(region);
 
-            var guildData = await this.raiderIoStatsRetriever.GetCachedEntry(regionEnum, realm, guild, this.GetBaseUrl());
+            return await this.GetRaiderIoResponse(regionEnum, realm, guild);
+        }
+
+        private async Task<RaiderIoStatsResponse> GetRaiderIoResponse(BlizzardRegion regionEnum, string realm, string guild)
+        {
+            var guildData = await this.raiderIoStatsRetriever.GetCachedEntry(regionEnum, realm, guild);
 
             if (guildData.State == CachedValueState.Updating)
             {
-                string key = this.raiderIoStatsRetriever.GetKey(regionEnum, realm, guild);
-                var positionInQueue = this.raiderIoStatsRetriever.GetPositionInQueue(key);
+                var positionInQueue = this.guildStatsRetriever.GetPositionInQueue(regionEnum, realm, guild);
 
                 return new RaiderIoStatsResponse()
                 {
@@ -234,6 +242,61 @@ namespace GuildTools.Controllers
                     Values = guildData.Value
                 };
             }
+        }
+
+        [HttpGet("getRaiderIoProfileStats")]
+        public async Task<AggregatedProfileRaiderIoStatsResponse> GetRaiderIoProfileStats(int profileId)
+        {
+            var profile = await this.dataRepo.GetGuildProfile_GuildAndFriendGuildsAsync(profileId);
+
+            var friendGuildCachedEntries = new List<AggregatedProfileRaiderIoStatsItem>();
+
+            var profileGuildCachedEntry = await this.GetRaiderIoResponse(
+                BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegionEnum)profile.CreatorGuild.Realm.RegionId),
+                profile.CreatorGuild.Realm.Name,
+                profile.CreatorGuild.Name);
+
+            friendGuildCachedEntries.Add(new AggregatedProfileRaiderIoStatsItem()
+            {
+                GuildName = profile.CreatorGuild.Name,
+                RealmName = profile.CreatorGuild.Realm.Name,
+                RegionName = profile.CreatorGuild.Realm.Region.RegionName,
+                IndividualStats = profileGuildCachedEntry
+            });
+
+            foreach (var friendGuild in profile.FriendGuilds)
+            {
+                var entry = await this.GetRaiderIoResponse(
+                    BlizzardUtilities.GetBlizzardRegionFromEfRegion((GameRegionEnum)friendGuild.Guild.Realm.RegionId),
+                    friendGuild.Guild.Realm.Name,
+                    friendGuild.Guild.Name);
+
+                friendGuildCachedEntries.Add(new AggregatedProfileRaiderIoStatsItem()
+                {
+                    GuildName = friendGuild.Guild.Name,
+                    RealmName = friendGuild.Guild.Realm.Name,
+                    RegionName = friendGuild.Guild.Realm.Region.RegionName,
+                    IndividualStats = entry
+                });
+            }
+
+            if (friendGuildCachedEntries.Any(x => !x.IndividualStats.IsCompleted))
+            {
+                return new AggregatedProfileRaiderIoStatsResponse()
+                {
+                    IsCompleted = false,
+                    IndividualGuildResponses = friendGuildCachedEntries
+                };
+            }
+
+            var guildProfile = await this.GetFullGuildProfile(profileId);
+
+            return new AggregatedProfileRaiderIoStatsResponse()
+            {
+                IsCompleted = true,
+                Values = friendGuildCachedEntries.SelectMany(x => x.IndividualStats.Values),
+                Profile = guildProfile
+            };
         }
 
         [HttpPost("requestStatsCompleteNotification")]

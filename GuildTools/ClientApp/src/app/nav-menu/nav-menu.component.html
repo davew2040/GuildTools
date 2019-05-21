@@ -1,34 +1,59 @@
-<div class="main-nav" fxLayout="row" fxLayoutAlign="space-between" fxFill>
-    <div>
-        <h1 class="page-title">Guild Tools</h1>
-        <div class="links-container" fxLayout="row" fxLayout="start">
-            <a [routerLink]="['./alttracker']">Alt Tracker</a>
-            <a [routerLink]="['./guildstats']">Stats</a>
-        </div>
+<div class="main-nav" fxLayout="row wrap" fxLayoutAlign="space-between">
+  <div class="title-and-links">
+    <h1 class="page-title">Guild Tools</h1>
+    <div class="links-container" fxLayout="row" fxLayoutAlign.gt-xs="start" fxLayoutAlign.xs="center">
+      <a [routerLink]="['./alttracker']">Alt Tracker</a>
+      <a [routerLink]="['./guildstats']">Stats</a>
     </div>
-    <div class="auth-content" fxLayout="column" fxLayoutAlign="start">
-        <div *ngIf="!auth.isAuthenticated">
-            <div fxLayout="row" fxLayoutAlign="end">
-                <button id="btnLogin" mat-button-raised class="btn btn-primary" (click)="navigateToLogin()" type="button">
-                  Log In
-                </button>
+  </div>
+  <div class="auth-content" fxLayout="column" fxLayoutAlign="start" fxLayoutAlign.xs="start stretch">
+    <div *ngIf="!auth.isAuthenticated">
+      <div fxLayout="row" fxLayoutAlign.gt-xs="end" fxLayoutAlign.xs="center">
+        <button
+          id="btnLogin"
+          mat-button-raised
+          class="btn btn-primary"
+          (click)="navigateToLogin()"
+          type="button"
+        >
+          Log In
+        </button>
 
-                <button id="btnRegister" class="btn btn-primary" (click)="navigateToRegister()" type="button">
-        Register
-      </button>
-            </div>
-        </div>
-      <div *ngIf="auth.isAuthenticated">
-            <div fxLayout="row" fxLayoutAlign="end">
-                <button id="btnLogout" mat-button-raised class="btn btn-primary" (click)="logout()" type="button">
+        <button
+          id="btnRegister"
+          class="btn btn-primary"
+          (click)="navigateToRegister()"
+          type="button"
+        >
+          Register
+        </button>
+      </div>
+    </div>
+    <div *ngIf="auth.isAuthenticated">
+      <div fxLayout="row" fxLayoutAlign.gt-xs="end" fxLayoutAlign.xs="center">
+        <button
+          id="btnLogout"
+          mat-button-raised
+          class="btn btn-primary"
+          (click)="logout()"
+          type="button"
+        >
           Log Out
         </button>
 
-                <button id="btnUserAccount" mat-button-raised class="btn btn-primary" (click)="navigateToUserSettings()" type="button">
+        <button
+          id="btnUserAccount"
+          mat-button-raised
+          class="btn btn-primary"
+          (click)="navigateToUserSettings()"
+          type="button"
+        >
           User Settings
         </button>
-            </div>
-            <div class="logged-in-as" fxLayout="row" fxLayoutAlign="end">Logged in as: {{ auth.username }}</div>
-        </div>
+      </div>
+      <div class="logged-in-as" fxLayout="row" fxLayoutAlign.gt-xs="end" fxLayoutAlign.xs="center">
+        Logged in as: {{ auth.username }}
+      </div>
     </div>
+  </div>
 </div>

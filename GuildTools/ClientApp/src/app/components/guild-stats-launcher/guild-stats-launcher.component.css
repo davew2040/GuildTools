@@ -1,0 +1,36 @@
+
+.stats-section {
+  background-color: rgb(245, 245, 245);
+}
+
+.stats-by-guild {
+  margin-top: 3em;
+}
+
+.stats-by-profile {
+  margin-top: 6em;
+}
+
+.btn-profile-stats {
+  margin-right: 50px;
+  margin-bottom: 2em;
+}
+
+@media only screen and (max-width: 600px)
+{
+  .stats-section {
+    width: 100%;
+  }
+}
+
+@media only screen and (min-width: 600px)
+{
+  .launcher-container {
+    margin-top: 150px;
+    width: 500px;
+  }
+
+  .stats-section {
+    width: 600px;
+  }
+}

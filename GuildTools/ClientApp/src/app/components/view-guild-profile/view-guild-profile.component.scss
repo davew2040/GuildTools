@@ -158,6 +158,7 @@ h2 {
 
 .level-header {
   font-weight: bold;
+  margin-left: auto;
   justify-content: flex-end;
   padding-right: 10px;
   flex: 0 0 60px;
@@ -165,6 +166,7 @@ h2 {
 
 .level-cell {
   justify-content: flex-end;
+  margin-left: auto;
   padding-right: 10px;
   flex: 0 0 60px;
   font-size: 11px;

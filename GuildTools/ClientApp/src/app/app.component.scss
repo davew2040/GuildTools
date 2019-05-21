@@ -1,14 +1,23 @@
 @import '../scss/variables.scss';
-.body-content {
+
+@media only screen and (min-width: 600px)
+{
+  .body-content {
     margin-top: 15px;
     padding-left: 50px;
     padding-right: 50px;
     margin-bottom: 25px;
+  }
+}
 
+@media only screen and (max-width: 600px)
+{
+  .body-content {
+  }
 }
 
 .busy-cover {
-  position:fixed;
+  position: fixed;
   padding:0;
   margin:0;
 
@@ -40,7 +49,7 @@
 }
 
 #content-wrap {
-  padding-bottom: 2.5rem;
+  padding-bottom: 40px;
 }
 
 .footer {

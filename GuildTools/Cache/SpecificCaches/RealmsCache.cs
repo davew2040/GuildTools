@@ -24,7 +24,7 @@ namespace GuildTools.Cache.SpecificCaches
 
         public RealmsCache(IBlizzardService blizzardService, IMemoryCache memoryCache, IDatabaseCache dbCache, IKeyedResourceManager resourceManager)
         {
-            this.cache = new DbMemCachedResource<IEnumerable<Realm>>(TimeSpan.FromHours(1.0), TimeSpan.FromDays(1.0), dbCache, memoryCache, resourceManager);
+            this.cache = new DbMemCachedResource<IEnumerable<Realm>>(TimeSpan.FromDays(1.0), dbCache, memoryCache, resourceManager);
             this.blizzardService = blizzardService;
         }
 

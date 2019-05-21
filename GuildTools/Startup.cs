@@ -121,7 +121,7 @@ namespace GuildTools
             IBackgroundTaskQueue raiderIoTaskQueue = new BackgroundTaskQueue();
 
             ICallThrottler blizzardThrottler = new ConcurrencyLimitedCallThrottler(20);
-            ICallThrottler raiderIoThrottler = new PerRequestCallThrottler(TimeSpan.FromSeconds(1));
+            ICallThrottler raiderIoThrottler = new PerRequestCallThrottler(TimeSpan.FromMilliseconds(100));
 
             HttpClient raiderIoClient = new HttpClient();
             raiderIoClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -129,8 +129,9 @@ namespace GuildTools
 
             services.AddTransient<IHostedService>((serviceProvider) => { return new QueuedHostedService(blizzardTaskQueue, serviceProvider); });
             services.AddTransient<IHostedService>((serviceProvider) => { return new QueuedHostedService(raiderIoTaskQueue, serviceProvider); });
-            services.AddScoped<IKeyedResourceManager, KeyedResourceManager>();
+            services.AddSingleton<MemoryCacheWrapper>();
             services.AddScoped<IDatabaseCache, DatabaseCache>();
+            services.AddScoped<IKeyedResourceManager, KeyedResourceManager>();
             services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddScoped<IGuildStatsCache, GuildStatsCache>();
             services.AddScoped<IDataRepository, DataRepository>();
@@ -139,6 +140,14 @@ namespace GuildTools
             services.AddScoped<IPlayerStoreByValue, PlayerStoreByValue>();
             services.AddScoped<IGuildStoreByName, GuildStoreByName>();
             services.AddScoped<ILocalRaiderIoService, LocalRaiderIoService>();
+            services.AddScoped<DatabaseCacheWithMemoryCache>(
+                (serviceProvider) =>
+                {
+                    return new DatabaseCacheWithMemoryCache(
+                        TimeSpan.FromDays(1),
+                        serviceProvider.GetService<IDatabaseCache>(),
+                        serviceProvider.GetService<IMemoryCache>());
+                });
 
             services.AddScoped<IBlizzardService>((serviceProvider) =>
             {
@@ -153,7 +162,8 @@ namespace GuildTools
                 (serviceProvider) => 
                 {
                     return new GuildStatsRetriever(
-                        serviceProvider.GetService<IMemoryCache>(),
+                        serviceProvider.GetService<MemoryCacheWrapper>(),
+                        serviceProvider.GetService<IDatabaseCache>(),
                         blizzardTaskQueue,
                         serviceProvider.GetService<IMailSender>(),
                         serviceProvider.GetService<ICommonValuesProvider>(),
@@ -163,7 +173,8 @@ namespace GuildTools
                 (serviceProvider) =>
                 {
                     return new RaiderIoStatsRetriever(
-                        serviceProvider.GetService<IMemoryCache>(),
+                        serviceProvider.GetService<MemoryCacheWrapper>(),
+                        serviceProvider.GetService<IDatabaseCache>(),
                         raiderIoTaskQueue,
                         serviceProvider.GetService<ILocalRaiderIoService>(),
                         serviceProvider.GetService<IMailSender>(),

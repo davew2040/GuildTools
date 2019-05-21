@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,14 +26,16 @@ namespace GuildTools.Cache
 
     public class LongRunningCache<T>
     {
-        private IMemoryCache cache;
+        private ICache updatingCache;
+        private IDatabaseCache longTermCache;
         private TimeSpan expiresAfter;
         private TimeSpan? refreshAfter;
         private SemaphoreSlim semaphore = new SemaphoreSlim(1);
 
-        public LongRunningCache(IMemoryCache cache, TimeSpan expiresAfter, TimeSpan? refreshAfter = null)
+        public LongRunningCache(ICache updatingCache, IDatabaseCache longTermCache, TimeSpan expiresAfter, TimeSpan? refreshAfter = null)
         {
-            this.cache = cache;
+            this.updatingCache = updatingCache;
+            this.longTermCache = longTermCache;
 
             if (expiresAfter < refreshAfter)
             {
@@ -54,8 +57,12 @@ namespace GuildTools.Cache
             {
                 CacheEntry<T> cachedValue = null;
 
-                if (this.cache.TryGetValue(key, out cachedValue))
+                var cacheResult = await this.updatingCache.TryGetValueAsync<CacheEntry<T>>(key);
+
+                if (cacheResult.Found)
                 {
+                    cachedValue = cacheResult.Result;
+
                     if (this.refreshAfter.HasValue)
                     {
                         if (DateTime.Now > cachedValue.CreatedOn + this.refreshAfter.Value
@@ -63,9 +70,14 @@ namespace GuildTools.Cache
                         {
                             await taskRunner(async (token, serviceProvider) =>
                             {
-                                var result = await valueRetriever(serviceProvider, new Progress<double>());
-                                this.InsertData(key, result);
-                                return result;
+                                using (var serviceScope = serviceProvider.CreateScope())
+                                {
+                                    var cache = serviceScope.ServiceProvider.GetService<ICache>();
+
+                                    var result = await valueRetriever(serviceProvider, new Progress<double>());
+                                    await this.InsertData(cache, key, result);
+                                    return result;
+                                }
                             });
 
                             var updatedCacheEntry = new CacheEntry<T>()
@@ -75,7 +87,7 @@ namespace GuildTools.Cache
                                 State = CachedValueState.FoundButUpdating
                             };
 
-                            this.cache.Set(key, updatedCacheEntry, this.expiresAfter);
+                            await this.updatingCache.InsertValueAsync(key, updatedCacheEntry, this.expiresAfter);
 
                             return updatedCacheEntry;
                         }
@@ -85,28 +97,49 @@ namespace GuildTools.Cache
                 }
                 else
                 {
-                    var newCacheEntry = new CacheEntry<T>()
+                    var databaseResult = await this.longTermCache.TryGetValueAsync<T>(key);
+                    if (databaseResult.Found)
+                    {
+                        var newMemoryCacheEntry = new CacheEntry<T>()
+                        {
+                            CreatedOn = DateTime.Now,
+                            State = CachedValueState.FoundAndNotUpdating,
+                            CompletionProgress = 1.0,
+                            Value = databaseResult.Result
+                        };
+
+                        await this.updatingCache.InsertValueAsync(key, newMemoryCacheEntry, expiresAfter);
+                        return newMemoryCacheEntry;
+                    }
+
+                    var newUpdatingEntry = new CacheEntry<T>()
                     {
                         CreatedOn = DateTime.Now,
                         State = CachedValueState.Updating
                     };
 
                     Progress<double> progress = new Progress<double>();
-                    progress.ProgressChanged += (sender, e) =>
+                    progress.ProgressChanged += async (sender, e) =>
                     {
-                        this.cache.Get<CacheEntry<T>>(key).CompletionProgress = e;
+                        var memoryEntry = await this.updatingCache.TryGetValueAsync<CacheEntry<T>>(key);
+                        memoryEntry.Result.CompletionProgress = e;
                     };
 
                     await taskRunner(async (token, serviceProvider) =>
                     {
-                        var result = await valueRetriever(serviceProvider, progress);
-                        this.InsertData(key, result);
-                        return result;
+                        using (var serviceScope = serviceProvider.CreateScope())
+                        {
+                            var cache = serviceScope.ServiceProvider.GetService<IDatabaseCache>();
+
+                            var result = await valueRetriever(serviceProvider, progress);
+                            await this.InsertData(cache, key, result);
+                            return result;
+                        }
                     });
 
-                    this.cache.Set(key, newCacheEntry, this.expiresAfter);
+                    await this.updatingCache.InsertValueAsync(key, newUpdatingEntry, this.expiresAfter);
 
-                    return newCacheEntry;
+                    return newUpdatingEntry;
                 }
             }
             finally
@@ -115,17 +148,20 @@ namespace GuildTools.Cache
             }
         }
 
-        public void RemoveCacheItem(string key)
+        public async Task RemoveCacheItem(string key)
         {
-            this.cache.Remove(key);
+            await this.updatingCache.RemoveAsync(key);
+            await this.longTermCache.RemoveAsync(key);
         }
 
-        private void InsertData(string key, T newData)
+        private async Task InsertData(ICache longTermCache, string key, T newData)
         {
-            semaphore.WaitAsync();
+            await semaphore.WaitAsync();
 
             try
             {
+                await longTermCache.InsertValueAsync(key, newData, this.expiresAfter);
+
                 var updatedCacheEntry = new CacheEntry<T>()
                 {
                     CreatedOn = DateTime.Now,
@@ -133,7 +169,7 @@ namespace GuildTools.Cache
                     Value = newData
                 };
 
-                this.cache.Set(key, updatedCacheEntry, this.expiresAfter);
+                await this.updatingCache.InsertValueAsync(key, updatedCacheEntry, this.expiresAfter);
             }
             finally
             {

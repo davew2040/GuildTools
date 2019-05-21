@@ -4,12 +4,24 @@
     color: #555555;
 }
 
-.new-guild-profile-container {
+@media only screen and (min-width: 600px)
+{
+  .new-guild-profile-container {
     width: 600px;
+  }
+
+  .form-contents {
+    width: 400px;
+  }
 }
 
-.form-contents {
-  width: 400px;
+@media only screen and (max-width: 600px)
+{
+  .new-guild-profile-container {
+  }
+
+  .form-contents {
+  }
 }
 
 #is-public-checkbox {

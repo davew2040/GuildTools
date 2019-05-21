@@ -25,7 +25,7 @@ namespace GuildTools.Cache.SpecificCaches
 
         public PlayerCache(IGuildService guildService, IMemoryCache memoryCache, IDatabaseCache dbCache, IKeyedResourceManager resourceManager)
         {
-            this.cache = new DbMemCachedResource<BlizzardPlayer>(TimeSpan.FromDays(1.0), TimeSpan.FromDays(1.0), dbCache, memoryCache, resourceManager);
+            this.cache = new DbMemCachedResource<BlizzardPlayer>(TimeSpan.FromDays(1.0), dbCache, memoryCache, resourceManager);
             this.guildService = guildService;
         }
 

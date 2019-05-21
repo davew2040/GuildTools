@@ -1,4 +1,3 @@
-
 .stats-container{
     display: flex;
     flex-flow: row wrap;
@@ -8,23 +7,6 @@
 
   .stats-column {
     align-content: center;
-  }
-
-  .statsTable td
-  {
-    padding: 3px;
-    font-family: Helvetica, Arial, sans-serif;
-    font-size: 11pt;
-  }
-
-  .statsTable {
-    margin: 0 auto;
-    width: 225px;
-    margin-left: 15px;
-    margin-right: 15px;
-    margin-top:10px;
-    margin-bottom: 45px;
-    border-collapse: collapse;
   }
 
   .statsTable, tr {
@@ -58,26 +40,31 @@
     height: 30px;
   }
 
-  .statsTableContainer {
-    width: 500px;
-  }
-
-  .statsTableContainer .statsTableInnerTable {
+  .statsTableContainer .stats-table-inner-table {
     width: 100%;
   }
 
-  .statsTableInnerTable {
+  .stats-table-inner-table {
     margin: 0;
   }
 
-  .statsTableInnerTable td {
+  .stats-table-inner-table td {
     padding-left: 0.5em;
     padding-right: 0.5em;
     padding-top: 0.2em;
     padding-bottom: 0.2em;
+    font-family: Helvetica, Arial, sans-serif;
   }
 
-  .value-column{
+  .player-name {
+    text-align: left;
+  }
+
+  .player-guild {
+    text-align: center;
+  }
+
+  .player-value {
     text-align: right;
   }
 
@@ -88,8 +75,14 @@
     cursor: pointer;
   }
 
-  .show-more-less a:hover{
-    color: rgb(173, 173, 173);
+  .show-more-less a:hover {
+    color: rgb(255, 255, 255);
+  }
+
+  .show-more-less a,
+  .show-more-less a:visited,
+  .show-more-less a:active {
+    color: rgb(196, 196, 196);
   }
 
   .show-less {

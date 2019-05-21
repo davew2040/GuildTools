@@ -36,39 +36,45 @@ namespace GuildTools.Services
             var members = GuildMemberParsing.GetSlimPlayersFromGuildPlayerList(guildDataJson).ToList();
 
             int totalCount = members.Count();
-
-            var validMembers = new List<RaiderIoStats>();
-
             int count = 0;
+
+            var taskList = new List<Task<RaiderIoStats>>();
 
             foreach (var member in members)
             {
-                try
+                taskList.Add(Task.Run(async () =>
                 {
-                    progress.Report((double)count++ / totalCount);
-
-                    if (member.Level < FilterPlayersUnderLevel)
+                    try
                     {
-                        continue;
-                    }
+                        var result = await this.GetRaiderIoStatsAsync(member, region);
 
-                    var stats = await this.GetRaiderIoStats(member, region);
-                    
-                    if (stats != null)
-                    { 
-                        validMembers.Add(stats);
+                        if (result != null)
+                        {
+                            result.RegionName = BlizzardService.GetRegionString(region);
+                            result.GuildName = guild;
+                        }
+
+                        return result;
                     }
-                }
-                catch (Exception e)
-                {
-                    //Swallow any errors
-                }
+                    catch (Exception e)
+                    {
+                        return null;
+                    }
+                    finally
+                    {
+                        progress.Report((double)count++ / totalCount);
+                    }
+                }));
             }
 
-            return validMembers;
+            await Task.WhenAll(taskList);
+
+            var allRaiderIoStats = taskList.Select(x => x.Result).Where(x => x != null);
+
+            return allRaiderIoStats;
         }
 
-        private async Task<RaiderIoStats> GetRaiderIoStats(GuildMemberStats member, BlizzardRegion region)
+        private async Task<RaiderIoStats> GetRaiderIoStatsAsync(GuildMemberStats member, BlizzardRegion region)
         {
             var raiderIoJson = await this.raiderIoService.GetMythicPlusDungeonData(region, member.Name, member.RealmName);
 
