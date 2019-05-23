@@ -24,7 +24,7 @@
         is complete, we can send an email to you:
       </div>
 
-      <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="25px">
+      <div fxLayout.gt-xs="row" fxLayout.xs="column" fxLayoutAlign="center" fxLayoutGap="25px">
         <mat-form-field id="notification-address">
             <input matInput type="text" placeholder="Email:" [(ngModel)]="notificationEmailAddress">
         </mat-form-field>

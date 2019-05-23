@@ -1,8 +1,8 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
 import { ResetPasswordWithTokenModel } from './reset-password-token.model';
-import { AuthService } from '../auth/auth.service';
-import { AccountService } from '../services/account-service';
+import { AuthService } from '../../../auth/auth.service';
+import { AccountService } from '../../../services/account-service';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
 import { BusyService } from 'app/shared-services/busy-service';
 

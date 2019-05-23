@@ -1,119 +1,128 @@
+<div class="container">
+  <div class="inner-container" fxLayout="column" fxLayoutAlign="start start" fxFill>
+    <h2>
+      Manage Permissions
+    </h2>
+    <a class="go-back" (click)="navigateToProfile()">Back to Profile</a>
+    <mat-divider fxFill></mat-divider>
 
-<div class="container" fxLayout="column" fxLayoutGap="10px">
-  <h2>
-    Manage Permissions
-  </h2>
-  <a class="go-back" (click)="navigateToProfile()">Back to Profile</a>
-  <mat-divider></mat-divider>
+    <h3>Access Requests</h3>
 
-  <h3>Access Requests</h3>
+    <div *ngIf="pendingAccessRequests.length === 0" class="no-access-requests no-items">
+      There are no pending accessing requests.
+    </div>
 
-  <div *ngIf="pendingAccessRequests.length === 0" class="no-access-requests">
-    There are no pending accessing requests.
-  </div>
-  <mat-table *ngIf="pendingAccessRequests.length > 0" [dataSource]="accessRequestsTableDataSource" class="access-requests-table standard-mat-table">
-      <ng-container matColumnDef="name">
-          <mat-header-cell class="request-col-header-name" mat-header-cell *matHeaderCellDef> Username </mat-header-cell>
-          <mat-cell class="request-col-cell-name"  mat-cell *matCellDef="let request">
-              {{ request.user.username }}
-          </mat-cell>
-      </ng-container>
-      <ng-container matColumnDef="email">
-          <mat-header-cell class="request-col-header-email" mat-header-cell *matHeaderCellDef> Email </mat-header-cell>
-          <mat-cell class="request-col-cell-email" mat-cell *matCellDef="let request">
-             {{ request.user.email }}
-          </mat-cell>
-      </ng-container>
-      <ng-container matColumnDef="createdOn">
-          <mat-header-cell class="request-col-header-createdon" mat-header-cell *matHeaderCellDef> Requested Date </mat-header-cell>
-          <mat-cell class="request-col-cell-createdon" mat-cell *matCellDef="let request">
-             {{ getFormattedDate(request.createdOn) }}
-          </mat-cell>
-      </ng-container>
-      <ng-container matColumnDef="approve">
-          <mat-header-cell class="request-col-header-approve" mat-header-cell *matHeaderCellDef> </mat-header-cell>
-          <mat-cell class="request-col-header-approve" mat-cell *matCellDef="let request">
-            <a class='show-hide-column hidden' (click)="approveRequest(request)">Approve</a>
-          </mat-cell>
-      </ng-container>
-
-      <mat-header-row *matHeaderRowDef="accessRequestsPermissionsColumns"></mat-header-row>
-      <mat-row *matRowDef="let request; columns: accessRequestsPermissionsColumns;" (mouseenter)="onMouseEnter($event)" (mouseleave)="onMouseLeave($event)"></mat-row>
-  </mat-table>
-
-  <h3>Permissions:</h3>
-
-  <mat-table [dataSource]="profilePermissionsTableDataSource" class="permissions-table standard-mat-table">
-      <ng-container matColumnDef="name">
-          <mat-header-cell class="permissions-header-name" mat-header-cell *matHeaderCellDef> User </mat-header-cell>
-          <mat-cell class="permissions-cell-name"  mat-cell *matCellDef="let permission">
-              {{ getUserDescription(permission.permission) }}
-          </mat-cell>
-      </ng-container>
-
-      <ng-container matColumnDef="permission">
-          <mat-header-cell class="permissions-header-level" mat-header-cell *matHeaderCellDef> Permission </mat-header-cell>
-          <mat-cell class="permissions-cell-level" mat-cell *matCellDef="let permission">
-              <mat-select [(value)]="permission.permission.permissionLevel">
-                <mat-option *ngFor="let option of availablePermissions" [value]="option.level">
-                  {{option.label}}
-                </mat-option>
-              </mat-select>
-          </mat-cell>
-      </ng-container>
-
-      <ng-container matColumnDef="remove">
-          <mat-header-cell class="permissions-header-remove" mat-header-cell *matHeaderCellDef> Remove </mat-header-cell>
-          <mat-cell class="permissions-cell-remove" mat-cell *matCellDef="let permission">
-            <mat-checkbox [checked]="permission.markForDelete" (change)="changeMarkForDelete($event, permission)"></mat-checkbox>
-          </mat-cell>
-      </ng-container>
-
-      <mat-header-row *matHeaderRowDef="profilePermissionsColumns"></mat-header-row>
-      <mat-row *matRowDef="let permission; columns: profilePermissionsColumns;"></mat-row>
-  </mat-table>
-
-  <div fxLayout="row" fxLayoutAlign="end">
-    <button mat-raised-button class="btn-save-permissions" (click)="savePermissions()">Save Permissions</button>
-  </div>
-
-  <h3>Friend Guilds:</h3>
-
-  <div *ngIf="friendGuilds.length === 0" class="no-items">
-    You have no friend guilds configured.
-  </div>
-  <div *ngIf="friendGuilds.length > 0" fxFill>
-    <table class="friend-guilds standard-table">
+    <table class="access-requests-table standard-table" *ngIf="pendingAccessRequests.length > 0">
       <colgroup>
-        <col class="friend-guild-name"/>
-        <col class="friend-guild-realm"/>
-        <col class="friend-guild-abbrev"/>
-        <col class="friend-guild-delete"/>
+        <col class="request-col-header-name"/>
+        <col class="request-col-header-email"/>
+        <col class="request-col-header-createdon"/>
+        <col class="request-col-header-approve"/>
       </colgroup>
       <thead>
         <th>
-          Guild
+          Username
         </th>
         <th>
-          Realm
+          Email
         </th>
         <th>
-          Abbreviation
+          Requested Date
         </th>
         <th>
-          Delete
+          Approval
         </th>
       </thead>
-      <tr *ngFor="let friendGuild of friendGuilds" (mouseenter)="onMouseEnter($event)" (mouseleave)="onMouseLeave($event)">
-        <td>{{ friendGuild.guild.name }}</td>
-        <td>{{ getFormattedRealm(friendGuild.guild) }}</td>
-        <td>{{ friendGuild.guild.abbreviation }}</td>
-        <td><a class="hidden show-hide-column" (click)="deleteFriendGuild(friendGuild)">Delete</a></td>
+      <tr *ngFor="let request of pendingAccessRequests">
+        <td data-label="Username" class="request-col-cell-name">{{ request.user.username }}</td>
+        <td data-label="Email" class="request-col-cell-email"> {{ request.user.email }}</td>
+        <td data-label="Requested Data" class="request-col-cell-createdon">{{ getFormattedDate(request.createdOn) }}</td>
+        <td class="request-col-header-approve">
+            <a class='show-hide-column' (click)="approveRequest(request)">Approve</a>
+        </td>
       </tr>
     </table>
-  </div>
 
-  <div fxLayout="row" fxLayoutAlign="end">
-    <button mat-raised-button class="btn-add-friend-guild" (click)="addFriendGuild()">Add Friend Guild</button>
+    <h3>Permissions:</h3>
+
+    <table class="access-requests-table standard-table" *ngIf="profilePermissionsByUser.length > 0">
+        <colgroup>
+          <col class="permissions-col-name"/>
+          <col class="permissions-col-level"/>
+          <col class="permissions-col-remove"/>
+        </colgroup>
+        <thead>
+          <th>
+            User
+          </th>
+          <th>
+            Permission
+          </th>
+          <th class="permission-th-remove">
+            Remove
+          </th>
+        </thead>
+        <tr *ngFor="let permission of profilePermissionsByUser">
+          <td data-label="User" class="permissions-cell-name">
+            {{ getUserDescription(permission.permission) }}
+          </td>
+          <td data-label="Permission" class="permissions-cell-level">
+            <mat-select [(value)]="permission.permission.permissionLevel">
+              <mat-option *ngFor="let option of availablePermissions" [value]="option.level">
+                {{option.label}}
+              </mat-option>
+            </mat-select>
+          </td>
+          <td data-label="Remove" class="permissions-cell-remove">
+            <div fxLayout="row" fxLayoutAlign="center">
+              <mat-checkbox [checked]="permission.markForDelete" (change)="changeMarkForDelete($event, permission)"></mat-checkbox>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+    <div fxLayout="row" fxLayoutAlign="end" fxFill>
+      <button mat-raised-button class="btn-save-permissions" (click)="savePermissions()">Save Permissions</button>
+    </div>
+
+    <h3>Friend Guilds:</h3>
+
+    <div *ngIf="friendGuilds.length === 0" class="no-items">
+      You have no friend guilds configured.
+    </div>
+    <div *ngIf="friendGuilds.length > 0" fxFill>
+      <table class="friend-guilds standard-table">
+        <colgroup>
+          <col class="friend-guild-name"/>
+          <col class="friend-guild-realm"/>
+          <col class="friend-guild-abbrev"/>
+          <col class="friend-guild-delete"/>
+        </colgroup>
+        <thead>
+          <th>
+            Guild
+          </th>
+          <th>
+            Realm
+          </th>
+          <th>
+            Abbreviation
+          </th>
+          <th>
+            Delete
+          </th>
+        </thead>
+        <tr *ngFor="let friendGuild of friendGuilds" (mouseenter)="onMouseEnter($event)" (mouseleave)="onMouseLeave($event)">
+          <td>{{ friendGuild.guild.name }}</td>
+          <td>{{ getFormattedRealm(friendGuild.guild) }}</td>
+          <td>{{ friendGuild.guild.abbreviation }}</td>
+          <td><a class="hidden show-hide-column" (click)="deleteFriendGuild(friendGuild)">Delete</a></td>
+        </tr>
+      </table>
+    </div>
+
+    <div fxLayout="row" fxLayoutAlign="end" fxFill>
+      <button mat-raised-button class="btn-add-friend-guild" (click)="addFriendGuild()">Add Friend Guild</button>
+    </div>
   </div>
 </div>

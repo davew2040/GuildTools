@@ -1,0 +1,63 @@
+<div class="container">
+  <div class="settings-container" fxLayout="column" fxLayoutAlign="start center">
+    <div fxLayout="row" fxLayoutAlign="start" fxFill>
+        <h2>User Settings</h2>
+    </div>
+
+    <mat-divider fxFill></mat-divider>
+
+    <div class="settings-fields-holder" style="margin-top: 8px;">
+      <form (ngSubmit)="updateDetails()" fxLayout="column" [formGroup]="settingsForm">
+
+      <mat-form-field style="margin-top: 8px;">
+          <input matInput type="text" placeholder="Email Address:" [formControlName]="emailControlName">
+        </mat-form-field>
+
+        <mat-form-field style="margin-top: 8px;">
+            <input matInput type="text" placeholder="Username" [formControlName]="usernameControlName">
+        </mat-form-field>
+
+        <div *ngIf="settingsErrors.length !== 0" class="alert alert-danger">
+          <div *ngFor="let error of settingsErrors">{{error}}</div>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="end" style="margin-top: 25px">
+          <button mat-raised-button color="primary" type="submit" class="btn btn-success" style="width: 200px">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="settings-container" fxLayout="column" fxLayoutAlign="start center" style="margin-top: 45px">
+      <div fxLayout="row" fxLayoutAlign="start" fxFill>
+          <h2>Change Password</h2>
+      </div>
+
+      <mat-divider fxFill></mat-divider>
+
+      <div class="settings-fields-holder" style="margin-top: 8px;">
+        <form (ngSubmit)="changePassword()" fxLayout="column" [formGroup]="passwordForm">
+
+        <mat-form-field style="margin-top: 8px;">
+            <input matInput type="password" placeholder="Old Password:" [formControlName]="oldPasswordControlName">
+          </mat-form-field>
+
+          <mat-form-field style="margin-top: 8px;">
+              <input matInput type="password" placeholder="New Password" [formControlName]="newPasswordControlName">
+          </mat-form-field>
+
+          <mat-form-field style="margin-top: 8px;">
+              <input matInput type="password" placeholder="Retype New Password" [formControlName]="retypeNewPasswordControlName">
+          </mat-form-field>
+
+          <div *ngIf="passwordErrors.length !== 0" class="alert alert-danger">
+            <div *ngFor="let error of passwordErrors">{{error}}</div>
+          </div>
+
+          <div fxLayout="row" fxLayoutAlign="end" style="margin-top: 25px">
+            <button mat-raised-button color="primary" type="submit" class="btn btn-success" style="width: 200px">Change Password</button>
+          </div>
+        </form>
+      </div>
+    </div>
+</div>

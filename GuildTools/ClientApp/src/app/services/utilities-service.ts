@@ -2,26 +2,26 @@ import { _MatListOptionMixinBase } from '@angular/material';
 
 class IsMobileService {
   public Android(): boolean {
-    return navigator.userAgent.match(/Android/i).length > 0;
+    return navigator.userAgent.match(/Android/i) !== null;
   }
 
   public BlackBerry(): boolean {
-    return navigator.userAgent.match(/BlackBerry/i).length > 0;
+    return navigator.userAgent.match(/BlackBerry/i) !== null;
   }
 
   public iOS(): boolean {
-    return navigator.userAgent.match(/iPhone|iPad|iPod/i).length > 0;
+    return navigator.userAgent.match(/iPhone|iPad|iPod/i) !== null;
   }
 
   public Opera(): boolean {
-    return navigator.userAgent.match(/Opera Mini/i).length > 0;
+    return navigator.userAgent.match(/Opera Mini/i) !== null;
   }
 
   public Windows(): boolean {
-    return navigator.userAgent.match(/IEMobile/i).length > 0 || navigator.userAgent.match(/WPDesktop/i).length > 0;
+    return navigator.userAgent.match(/IEMobile/i) !== null || navigator.userAgent.match(/WPDesktop/i) !== null;
   }
 
-  public Any(): boolean {
+  public AnyMobile(): boolean {
     return (this.Android() || this.BlackBerry() || this.iOS() || this.Opera() || this.Windows());
   }
 }

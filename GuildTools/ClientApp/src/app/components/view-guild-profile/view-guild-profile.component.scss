@@ -11,17 +11,25 @@ h2 {
     font-weight: bold;
 }
 
+.content-container {
+  width: 100%;
+  max-width: 750px;
+}
+
+.main-container {
+  width: 100%;
+}
+
 .operations-container {
-  width: 1000px;
+  width: 100%;
 }
 
 .secondary-container {
-    width: 1000px;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
-    padding: 10px 10px;
-    background: #f7f7f7;
-    height: 800px;
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  padding: 10px 10px;
+  background: $light-background;
 }
 
 .drag-box {
@@ -37,45 +45,39 @@ h2 {
   font-size: 24px;
 }
 
-.main-list {}
-
-.player-main-panel mat-panel-title {
-  width: 200px;
-}
-
 .mains-container {
   overflow-y: auto;
 }
 
-.player-main-panel mat-expansion-panel-header {
-
+.player-main-panel mat-panel-description {
+  user-select: none;
 }
 
 ::ng-deep .player-main-panel:hover {
 }
 
 ::ng-deep .player-main-panel:nth-child(odd) mat-expansion-panel-header {
-  background: #d2d9ec;
+  background: $row-alternate-odd;
 }
 
 ::ng-deep .player-main-panel:nth-child(even) mat-expansion-panel-header {
-  background: #e0e2e7;
+  background: $row-alternate-even;
 }
 
 ::ng-deep .player-main-panel:nth-child(odd) mat-expansion-panel-header:focus {
-  background: #d2d9ec !important;
+  background: $row-alternate-odd !important;
 }
 
 ::ng-deep .player-main-panel:nth-child(even) mat-expansion-panel-header:focus {
-  background: #e0e2e7 !important;
+  background: $row-alternate-even !important;
 }
 
 ::ng-deep .player-main-panel:nth-child(odd) mat-expansion-panel-header:hover {
-  background: #d2d9ec !important;
+  background: $row-alternate-odd !important;
 }
 
 ::ng-deep .player-main-panel:nth-child(even) mat-expansion-panel-header:hover {
-  background: #e0e2e7 !important;
+  background: $row-alternate-even !important;
 }
 
 ::ng-deep mat-expansion-panel.dragover-class > mat-expansion-panel-header {
@@ -120,6 +122,7 @@ h2 {
     margin-bottom: 5px;
     margin-left: 2px;
     margin-right: 2px;
+    max-width: 200px;
 }
 
 .player-row {
@@ -173,4 +176,63 @@ h2 {
 }
 
 .my-draggable {
+}
+
+@media only screen and (min-width: 600px)
+{
+  .secondary-container {
+    height: 700px;
+  }
+
+  .main-list {
+    width: 100%;
+  }
+
+  .mains-list-title {
+    display: none;
+  }
+
+  .players-container {
+    flex: 0 0 200px;
+  }
+
+  .players-container-title {
+    display: none;
+  }
+
+  .player-main-panel mat-expansion-panel-header {
+    font-size: 1em;
+  }
+
+  .player-main-panel mat-panel-title {
+    width: 5em;
+  }
+}
+
+@media only screen and (max-width: 600px)
+{
+  .drag-box {
+    display: none;
+  }
+
+  .main-list {
+    order: 2;
+    height: 350px;
+  }
+
+  .players-container {
+    order: 1;
+  }
+
+  .player-table {
+    height: 250px;
+  }
+
+  .player-main-panel mat-expansion-panel-header {
+    font-size: 0.9em;
+  }
+
+  .player-main-panel mat-panel-title {
+    width: 8em;
+  }
 }

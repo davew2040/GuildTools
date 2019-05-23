@@ -8,10 +8,10 @@
       <tr
         *ngFor="let alt of playerMain.alts"
         [ngClass]="getRowClass(alt)"
-        (mouseenter)="onMouseEnter($event)"
-        (mouseleave)="onMouseLeave($event)"
-        [contextMenu]="contextMenu"
+        [contextMenu]="altsContextMenu"
         [contextMenuSubject]="alt"
+        long-touch
+        (onLongTouch)="openMobileMenu_Alt(alt)"
       >
         <td class="player-name-col">
           {{ alt.player.name }}
@@ -19,16 +19,16 @@
         <td class="player-desc-col">
           {{ getAltDescription(alt) }}
         </td>
-        <td class="player-actions-col" *ngIf="isAdmin">
+        <td class="player-actions-col" *ngIf="isAdmin && !isMobile">
           <div
-            class="hidden"
+            class="player-actions-items"
             fxLayout="row"
             fxLayoutAlign="end"
             fxLayoutGap="5px"
           >
             <a (click)="removeAlt(playerMain, alt)">Delete</a>
             <div>|</div>
-            <a>Promote</a>
+            <a (click)="promoteToMain(alt)">Promote</a>
           </div>
         </td>
       </tr>
@@ -66,23 +66,10 @@
     </div>
 </div>
 
-<context-menu>
-  <ng-template contextMenuItem (execute)="promoteToMain($event.item)">
-    Promote to Main
-  </ng-template>
-  <ng-template contextMenuItem (execute)="removeAlt(playerMain, $event.item)">
-    Delete
-  </ng-template>
-
-  <ng-template contextMenuItem divider="true"></ng-template>
-
-  <ng-template contextMenuItem (execute)="viewBlizzardProfile($event.item)">
-    View Blizzard Profile
-  </ng-template>
-  <ng-template contextMenuItem (execute)="viewRaiderIo($event.item)">
-      View Raider.IO
-    </ng-template>
-  <ng-template contextMenuItem (execute)="viewWowProgress($event.item)">
-    View WoW Progress
+<context-menu #altsContextMenu>
+  <ng-template *ngFor="let action of contextMenuActions" let-item contextMenuItem
+    [visible]="action.visible" [enabled]="action.enabled" [divider]="action.divider"
+    (execute)="action.click($event.item)">
+    {{ action.html(item) }}
   </ng-template>
 </context-menu>

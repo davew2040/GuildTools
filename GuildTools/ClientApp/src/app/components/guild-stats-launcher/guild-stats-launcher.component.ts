@@ -14,7 +14,7 @@ import { integerValidator } from 'app/forms/custom-validators/integer-validator'
 @Component({
   selector: 'app-guild-stats-launcher',
   templateUrl: './guild-stats-launcher.component.html',
-  styleUrls: ['./guild-stats-launcher.component.css']
+  styleUrls: ['./guild-stats-launcher.component.scss']
 })
 export class GuildStatsLauncherComponent implements OnInit {
 

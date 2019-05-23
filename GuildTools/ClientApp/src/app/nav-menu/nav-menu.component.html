@@ -1,9 +1,9 @@
 <div class="main-nav" fxLayout="row wrap" fxLayoutAlign="space-between">
   <div class="title-and-links">
     <h1 class="page-title">Guild Tools</h1>
-    <div class="links-container" fxLayout="row" fxLayoutAlign.gt-xs="start" fxLayoutAlign.xs="center">
-      <a [routerLink]="['./alttracker']">Alt Tracker</a>
-      <a [routerLink]="['./guildstats']">Stats</a>
+    <div class="links-container" fxLayout="row" fxLayoutAlign.gt-xs="start center" fxLayoutAlign.xs="center center">
+      <div class="link-element" id="link-alt-tracker" #linkAltTracker [ngClass]="getNavButtonClass(linkAltTracker)" (click)="navigateToAltTracker()">Alt Tracker</div>
+      <div class="link-element" id="link-stats" #linkStats [ngClass]="getNavButtonClass(linkStats)" (click)="navigateToStats()">Stats</div>
     </div>
   </div>
   <div class="auth-content" fxLayout="column" fxLayoutAlign="start" fxLayoutAlign.xs="start stretch">
@@ -11,8 +11,8 @@
       <div fxLayout="row" fxLayoutAlign.gt-xs="end" fxLayoutAlign.xs="center">
         <button
           id="btnLogin"
-          mat-button-raised
-          class="btn btn-primary"
+          mat-flat-button
+          color="primary"
           (click)="navigateToLogin()"
           type="button"
         >
@@ -21,7 +21,8 @@
 
         <button
           id="btnRegister"
-          class="btn btn-primary"
+          mat-flat-button
+          color="primary"
           (click)="navigateToRegister()"
           type="button"
         >
@@ -33,8 +34,8 @@
       <div fxLayout="row" fxLayoutAlign.gt-xs="end" fxLayoutAlign.xs="center">
         <button
           id="btnLogout"
-          mat-button-raised
-          class="btn btn-primary"
+          mat-flat-button
+          color="primary"
           (click)="logout()"
           type="button"
         >
@@ -43,8 +44,8 @@
 
         <button
           id="btnUserAccount"
-          mat-button-raised
-          class="btn btn-primary"
+          mat-flat-button
+          color="primary"
           (click)="navigateToUserSettings()"
           type="button"
         >

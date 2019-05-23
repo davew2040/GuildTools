@@ -1,0 +1,26 @@
+<mat-card class="root-card">
+  <mat-card-title class='header'>Add to Main</mat-card-title>
+
+  <mat-divider></mat-divider>
+
+  <div fxLayout="column" fxLayoutAlign="start center">
+    <form>
+      <mat-form-field>
+        <input matInput placeholder="Filter" (keyup)="playersFilterChanged($event)" autocomplete="off">
+      </mat-form-field>
+    </form>
+
+    <div class='items-table-holder'>
+      <table class="items-table">
+        <tr *ngFor="let item of filteredPlayers" (click)="selectPlayer(item)" [ngClass]="getRowClasses(item)">
+          <td class="cell-player-name">{{ item.player.name }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="buttons" fxLayout="row" fxLayoutAlign="end" fxFill>
+      <button mat-raised-button [disabled]="!selectedPlayer" (click)="okay()">Okay</button>
+      <button mat-raised-button (click)="cancel()">Cancel</button>
+    </div>
+  </div>
+</mat-card>

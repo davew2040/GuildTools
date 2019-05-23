@@ -1,3 +1,4 @@
+@import '../../../scss/variables.scss';
 
 .stats-section {
   background-color: rgb(245, 245, 245);
@@ -14,6 +15,10 @@
 .btn-profile-stats {
   margin-right: 50px;
   margin-bottom: 2em;
+}
+
+mat-card {
+  background-color: $light-background !important;
 }
 
 @media only screen and (max-width: 600px)

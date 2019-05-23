@@ -2,7 +2,6 @@
   margin-top: 60px;
   text-align: center;
   font-size: 30px;
-  width: 700px;
 }
 
 .unauthenticated-title {
@@ -45,6 +44,10 @@ a:hover {
 
 @media only screen and (min-width: 600px)
 {
+  .must-be-logged-in {
+    width: 700px;
+  }
+
   .profile-table {
     margin-top: 5px;
     margin-left: 10px;

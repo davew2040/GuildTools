@@ -1,46 +1,48 @@
-<div class="container" fxLayout="column" fxLayoutAlign="start center">
-  <div fxLayout="row" fxLayoutAlign="start" fxFill>
-      <h1>Register</h1>
-  </div>
+<div class="container">
+  <div class="registration-container" fxLayout="column" fxLayoutAlign="start center">
+    <div fxLayout="row" fxLayoutAlign="start" fxFill>
+        <h1>Register</h1>
+    </div>
 
-  <mat-divider fxFill></mat-divider>
+    <mat-divider fxFill></mat-divider>
 
-  <div class="registration-holder">
-    <form (ngSubmit)="onSubmit()" [formGroup]="registrationForm" fxLayout="column">
+    <div class="registration-fields-holder">
+      <form (ngSubmit)="onSubmit()" [formGroup]="registrationForm" fxLayout="column">
 
-      <mat-form-field style="margin-top: 8px;">
-        <input matInput type="text" placeholder="Email Address:" [formControlName]="emailControlName">
-      </mat-form-field>
-
-      <mat-form-field style="margin-top: 8px;">
-          <input matInput type="text" placeholder="Username" [formControlName]="usernameControlName">
-      </mat-form-field>
-
-      <mat-form-field style="margin-top: 8px;">
-          <input matInput type="password" autocomplete="off" placeholder="Password" [formControlName]="passwordControlName">
-      </mat-form-field>
-
-      <mat-form-field style="margin-top: 8px;">
-          <input matInput type="password" autocomplete="off" placeholder="Re-enter Password" [formControlName]="passwordRepeatControlName">
-      </mat-form-field>
-
-      <div fxLayout="row" fxLayoutAlign="start start" style="margin-top: 25px;">
-        <mat-form-field fxFlex>
-          <input matInput type="text" placeholder="Character" [formControlName]="playerNameControlName">
+        <mat-form-field style="margin-top: 8px;">
+          <input matInput type="text" placeholder="Email Address:" [formControlName]="emailControlName">
         </mat-form-field>
-        <button mat-raised-button (click)="findCharacter()" style="margin-left: 55px; margin-top: 0px;">Find</button>
-      </div>
-      <div class='character-not-required-label'>
-        (character is not required)
-      </div>
 
-      <div *ngIf="this.errors.length !== 0" class="alert alert-danger">
-        <div *ngFor="let error of errors">{{error}}</div>
-      </div>
+        <mat-form-field style="margin-top: 8px;">
+            <input matInput type="text" placeholder="Username" [formControlName]="usernameControlName">
+        </mat-form-field>
 
-      <div fxLayout="row" fxLayoutAlign="end" style="margin-top: 25px">
-        <button mat-raised-button color="primary" type="submit" style="width: 200px">Register</button>
-      </div>
-    </form>
+        <mat-form-field style="margin-top: 8px;">
+            <input matInput type="password" autocomplete="off" placeholder="Password" [formControlName]="passwordControlName">
+        </mat-form-field>
+
+        <mat-form-field style="margin-top: 8px;">
+            <input matInput type="password" autocomplete="off" placeholder="Re-enter Password" [formControlName]="passwordRepeatControlName">
+        </mat-form-field>
+
+        <div fxLayout="row" fxLayoutAlign="start start" style="margin-top: 25px;">
+          <mat-form-field fxFlex>
+            <input matInput type="text" placeholder="Character" [formControlName]="playerNameControlName">
+          </mat-form-field>
+          <button mat-raised-button (click)="findCharacter()" style="margin-left: 55px; margin-top: 0px;">Find</button>
+        </div>
+        <div class='character-not-required-label'>
+          (character is not required)
+        </div>
+
+        <div *ngIf="this.errors.length !== 0" class="alert alert-danger">
+          <div *ngFor="let error of errors">{{error}}</div>
+        </div>
+
+        <div fxLayout="row" fxLayoutAlign="end" style="margin-top: 25px">
+          <button mat-raised-button color="primary" type="submit" style="width: 200px">Register</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>

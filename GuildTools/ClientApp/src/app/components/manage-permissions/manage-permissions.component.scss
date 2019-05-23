@@ -1,5 +1,4 @@
 .container {
-  width: 1000px;
   padding-bottom: 50px;
 }
 
@@ -26,64 +25,43 @@
 }
 
 .request-col-header-name {
-  width: 250px;
+  width: 30%;
 }
 
 .request-col-header-email {
-  width: 250px;
+  width: 30%;
 }
 
 .request-col-header-createdon {
-  width: 150px;
+  width: 30%;
 }
 
 .request-col-header-approve {
+  width: 10%;
+}
+
+
+.permissions-col-name {
+}
+
+.permissions-col-level {
   width: 150px;
 }
 
-.request-col-cell-name {
+.permissions-col-remove {
+  width: 100px;
 }
 
-.request-col-cell-email {
+.permission-th-remove {
+  text-align: center;
 }
 
-.request-col-cell-createdon {
-}
-
-.request-col-cell-approve {
-}
-
-
-
-.permissions-header-name {
-}
-
-.permissions-cell-name {
-}
-
-.permissions-header-level {
-  flex: 0 0 125px;
-  justify-content: center;
-}
-
-.permissions-cell-level {
-  flex: 0 0 125px;
-  justify-content: center;
-}
-
-.permissions-header-remove {
-  flex: 0 0 300px;
-  justify-content: center;
-}
-
-.permissions-cell-remove {
-  flex: 0 0 300px;
-  justify-content: center;
+.permissions-cell-level mat-select {
+  width: calc(100% - 20px);
 }
 
 .btn-save-permissions {
   margin-top: 25px;
-  margin-right: 100px;
 }
 
 ul.friend-guilds {
@@ -92,7 +70,6 @@ ul.friend-guilds {
 
 .btn-add-friend-guild {
   margin-top: 25px;
-  margin-right: 100px;
 }
 
 .friend-guilds {

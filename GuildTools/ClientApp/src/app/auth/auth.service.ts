@@ -2,13 +2,11 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { AccountService } from '../services/account-service';
 import { BusyService } from '../shared-services/busy-service';
-import { Observable, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ErrorReportingService } from 'app/shared-services/error-reporting-service';
-import { share } from 'rxjs/operators';
 import { LoginResponse } from 'app/services/ServiceTypes/service-types';
 import { StoredValuesService } from 'app/shared-services/stored-values';
 import { IUserDetails } from './user-details';
-import { JsonPipe } from '@angular/common';
 (window as any).global = window;
 
 export enum GuildProfilePermissionLevel {
@@ -19,7 +17,6 @@ export enum GuildProfilePermissionLevel {
 }
 
 class AuthKeys {
-  public static get AccessToken() { return 'access_token'; }
   public static get UserName() { return 'username'; }
   public static get ExpiresAt() { return 'expires_at'; }
   public static get ProfilePermissions() { return 'profile_permissions'; }
@@ -73,7 +70,7 @@ export class AuthService {
     // Set the time that the access token will expire at
     const expiresAt = JSON.stringify((decoded.exp * 1000) + new Date().getTime());
 
-    localStorage.setItem(AuthKeys.AccessToken, accessToken);
+    localStorage.setItem(StoredValuesService.AccessTokenKey, accessToken);
     localStorage.setItem(AuthKeys.ExpiresAt, expiresAt);
 
     const userName = authResult.authenticationDetails['email'];
@@ -89,11 +86,11 @@ export class AuthService {
     userDetails.guildName = authResult.guildName,
     userDetails.guildRealm = authResult.guildRealm;
 
-    localStorage.setItem(AuthKeys.UserDetails, JSON.stringify(userDetails));
+    this.valuesService.userDetails = userDetails;
   }
 
   public getAccessToken(): string {
-    return localStorage.getItem(AuthKeys.AccessToken);
+    return localStorage.getItem(StoredValuesService.AccessTokenKey);
   }
 
   public get username(): string {
@@ -111,26 +108,11 @@ export class AuthService {
     return new Date().getTime() < expiresAt;
   }
 
-  public get userDetails(): IUserDetails {
-    if (!this.isAuthenticated) {
-      return null;
-    }
-
-    const detailsJson = localStorage.getItem(AuthKeys.UserDetails);
-
-    if (!detailsJson) {
-      return null;
-    }
-
-    const details = JSON.parse(detailsJson) as IUserDetails;
-
-    return details;
-  }
-
   private clearLocalStorage(): void {
-    localStorage.removeItem(AuthKeys.AccessToken);
+    localStorage.removeItem(StoredValuesService.AccessTokenKey);
     localStorage.removeItem(AuthKeys.ExpiresAt);
     localStorage.removeItem(AuthKeys.ProfilePermissions);
+    this.valuesService.userDetails = null;
   }
 
   private decodeTokenExpiration(token: string): any {

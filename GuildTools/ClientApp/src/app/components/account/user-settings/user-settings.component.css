@@ -1,0 +1,15 @@
+
+.settings-fields-holder {
+  max-width: 400px;
+  width: 100%;
+}
+
+.settings-container {
+  max-width: 600px;
+  width: 100%;
+}
+
+@media only screen and (min-width: 600px)
+{
+
+}

@@ -20,6 +20,7 @@ using GuildTools.Services.Mail;
 using JWT;
 using JWT.Algorithms;
 using JWT.Serializers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -128,7 +129,8 @@ namespace GuildTools.Controllers
                     throw new UserReportableError("This email address is already registered.", (int)HttpStatusCode.BadRequest);
                 }
 
-                throw new UserReportableError("An error occurred while attempting to create this account.", (int)HttpStatusCode.InternalServerError);
+                throw new UserReportableError("Errors occurred while attempting to create this account: " 
+                    + this.GetNumberedList(result.Errors.Select(x => x.Description)), (int)HttpStatusCode.InternalServerError);
             }
         }
 
@@ -230,14 +232,24 @@ namespace GuildTools.Controllers
                     }
                 }
 
-                throw new Exception("Encountered errors: " + string.Join(", ", errorDescriptions));
+                throw new UserReportableError("Encountered errors while attempting to log in: " 
+                    + this.GetNumberedList(errorDescriptions), (int)HttpStatusCode.BadRequest);
             }
 
-            var user = await this.userManager.FindByEmailAsync(credentials.Email);
+            UserWithData user;
+
+            if (credentials.Email.Contains("@"))
+            {
+                user = await this.userManager.FindByEmailAsync(credentials.Email);
+            }
+            else
+            {
+                user = await this.userManager.FindByNameAsync(credentials.Email);
+            }
 
             if (user == null)
             {
-                throw new UserReportableError($"Couldn't find user with email '{credentials.Email}'.", (int)HttpStatusCode.BadRequest);
+                throw new UserReportableError($"Couldn't find user with email/login '{credentials.Email}'.", (int)HttpStatusCode.BadRequest);
             }
 
             if (!user.EmailConfirmed)
@@ -265,6 +277,87 @@ namespace GuildTools.Controllers
             }
 
             throw new UserReportableError("Unable to sign in.", (int)HttpStatusCode.Unauthorized);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("changePassword")]
+        public async Task ChangePassword([FromBody] ChangePassword password)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errorDescriptions = new List<string>();
+
+                foreach (var modelState in ModelState.Values)
+                {
+                    foreach (ModelError error in modelState.Errors)
+                    {
+                        errorDescriptions.Add(error.ErrorMessage);
+                    }
+                }
+
+                throw new UserReportableError("Encountered errors while attempting to change password: "
+                    + this.GetNumberedList(errorDescriptions), (int)HttpStatusCode.BadRequest);
+            }
+
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            var checkPassword = await this.userManager.CheckPasswordAsync(user, password.OldPassword);
+
+            if (!checkPassword)
+            {
+                throw new UserReportableError("Existing password was incorrect.", (int)HttpStatusCode.BadRequest);
+            }
+
+            var result = await this.userManager.ChangePasswordAsync(user, password.OldPassword, password.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                throw new UserReportableError("Encountered errors while changing password: " + 
+                    this.GetNumberedList(result.Errors.Select(x => x.Description)), (int)HttpStatusCode.InternalServerError);
+            }
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("updateUserDetails")]
+        public async Task UpdateUserDetails([FromBody] UpdateUserDetails newDetails)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errorDescriptions = new List<string>();
+
+                foreach (var modelState in ModelState.Values)
+                {
+                    foreach (ModelError error in modelState.Errors)
+                    {
+                        errorDescriptions.Add(error.ErrorMessage);
+                    }
+                }
+
+                throw new UserReportableError("Encountered errors while attempting to change user details: "
+                    + this.GetNumberedList(errorDescriptions), (int)HttpStatusCode.BadRequest);
+            }
+
+            var user = await this.userManager.GetUserAsync(HttpContext.User);
+
+            var identityErrors = new List<string>();
+
+            if (!string.IsNullOrEmpty(newDetails.Username))
+            {
+                user.UserName = newDetails.Username;
+                var result = await this.userManager.UpdateAsync(user);
+                if (!result.Succeeded)
+                {
+                    identityErrors.AddRange(result.Errors.Select(x => x.Description));
+                }
+            }
+
+            if (identityErrors.Any())
+            {
+                throw new UserReportableError("Encountered errors while attempting to change user details: "
+                    + this.GetNumberedList(identityErrors), (int)HttpStatusCode.InternalServerError);
+            }
         }
 
         private Dictionary<string, object> GetAuthenticationResponse(IdentityUser user)
@@ -309,6 +402,20 @@ namespace GuildTools.Controllers
         private JsonResult Error(string message)
         {
             return new JsonResult(message) { StatusCode = 400 };
+        }
+
+        private string GetNumberedList(IEnumerable<string> entries)
+        {
+            var buffer = new StringBuilder();
+
+            int counter = 1;
+
+            foreach (var entry in entries)
+            {
+                buffer.Append($"({counter++}) {entry} ");
+            }
+
+            return buffer.ToString();
         }
 
         private static double ConvertToUnixTimestamp(DateTime date)

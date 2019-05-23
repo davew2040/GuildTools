@@ -24,8 +24,6 @@ a:hover {
   border-collapse: separate;
   border-color: #d1d1d1;
   border-width: 1px;
-  margin-left: 10px;
-  margin-right: 10px;
   margin-top: 10px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -37,11 +35,15 @@ a:hover {
 }
 
 .player-name-col {
-  width: 250px;
+  width: 150px;
 }
 
 .player-desc-col {
-  width: 250px;
+  text-align: right;
+}
+
+.player-actions-col {
+  width: 120px;
 }
 
 .player-actions-col a {
@@ -61,4 +63,24 @@ a:hover {
   padding-top: 8px;
   padding-right: 5px;
   padding-bottom: 5px;
+}
+
+.alts-table td {
+  font-size: 0.9em;
+}
+
+.alts-table tr .player-actions-items {
+  display: none !important;
+}
+
+.alts-table tr:hover .player-actions-items {
+  display: flex !important;
+}
+
+@media only screen and (min-width: 600px)
+{
+  .alts-table {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
 }

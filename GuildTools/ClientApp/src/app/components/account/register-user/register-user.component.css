@@ -1,15 +1,18 @@
 
-
-.registration-holder {
-  width: 500px;
-}
-
-.container {
-  width: 600px;
-}
-
 .character-not-required-label {
   font-size: 10px;
   color: rgb(156, 156, 156);
   transform: translate(145px, -15px);
+}
+
+@media only screen and (min-width: 600px)
+{
+  .registration-fields-holder {
+    width: 500px;
+  }
+
+  .registration-container {
+    width: 600px;
+  }
+
 }

@@ -76,18 +76,18 @@ export class WowService {
 
   public static viewBlizzardProfile(player: StoredPlayer) {
     const url = `https://worldofwarcraft.com/en-us/character/`
-      + `${player.regionName.toLowerCase()}/${BlizzardService.FormatRealm(player.realm.slug)}/${player.name}`;
+      + `${player.realm.region.regionName.toLowerCase()}/${BlizzardService.FormatRealm(player.realm.slug)}/${player.name}`;
     window.open(url, '_blank');
   }
 
   public static viewRaiderIo(player: StoredPlayer) {
-    const url = `https://www.raider.io/characters/${player.regionName.toLowerCase()}`
+    const url = `https://www.raider.io/characters/${player.realm.region.regionName.toLowerCase()}`
       + `/${BlizzardService.FormatRealm(player.realm.slug)}/${player.name}`;
     window.open(url, '_blank');
   }
 
   public static viewWowProgress(player: StoredPlayer) {
-    const url = `https://wowprogress.com/character/${player.regionName.toLowerCase()}`
+    const url = `https://wowprogress.com/character/${player.realm.region.regionName.toLowerCase()}`
       + `/${BlizzardService.FormatRealm(player.realm.slug)}/${player.name}`;
     window.open(url, '_blank');
   }

@@ -42,7 +42,7 @@ export class FindGuildComponent implements OnInit {
       private dataService: DataService,
       private notificationService: NotificationService,
       private errorService: ErrorReportingService,
-      private authService: AuthService) {
+      private valuesService: StoredValuesService) {
     this.regions = BlizzardRealms.AllRealms;
   }
 
@@ -181,11 +181,11 @@ export class FindGuildComponent implements OnInit {
   }
 
   private setInitialRegion(): void {
-    const userDetails = this.authService.userDetails;
+    const userDetails = this.valuesService.userDetails;
 
     let regionName = localStorage.getItem(StoredValuesService.lastUsedRegionKey);
     if (!regionName && userDetails) {
-      regionName = this.authService.userDetails.playerRegion;
+      regionName = userDetails.playerRegion;
     }
 
     if (regionName) {
@@ -200,11 +200,11 @@ export class FindGuildComponent implements OnInit {
   }
 
   private populateFieldInitialValues(): void {
-    const userDetails = this.authService.userDetails;
+    const userDetails = this.valuesService.userDetails;
 
     let guildName = localStorage.getItem(StoredValuesService.lastUsedGuildKey);
     if (!guildName && userDetails) {
-      guildName = this.authService.userDetails.guildName;
+      guildName = userDetails.guildName;
     }
 
     if (guildName) {
@@ -213,7 +213,7 @@ export class FindGuildComponent implements OnInit {
 
     let realmName = localStorage.getItem(StoredValuesService.lastUsedRealmKey);
     if (!realmName && userDetails) {
-      realmName = this.authService.userDetails.playerRealm;
+      realmName =  userDetails.playerRealm;
     }
 
     if (realmName) {

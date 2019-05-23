@@ -198,7 +198,7 @@ namespace GuildTools.Services
                 return null;
             }
 
-            return RealmParsing.GetRSingleRealm(result);
+            return RealmParsing.GetSingleRealm(result);
         }
 
         public async Task<IEnumerable<BlizzardPlayer>> GetSlimGuildMembersDataAsync(BlizzardRegion region, string guild, string realm)

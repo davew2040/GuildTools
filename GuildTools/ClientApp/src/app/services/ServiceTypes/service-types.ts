@@ -273,6 +273,82 @@ export interface ILoginResponse {
     authenticationDetails?: { [key: string] : any; } | undefined;
 }
 
+export class ChangePassword implements IChangePassword {
+    oldPassword!: string;
+    newPassword!: string;
+
+    constructor(data?: IChangePassword) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.oldPassword = data["oldPassword"];
+            this.newPassword = data["newPassword"];
+        }
+    }
+
+    static fromJS(data: any): ChangePassword {
+        data = typeof data === 'object' ? data : {};
+        let result = new ChangePassword();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["oldPassword"] = this.oldPassword;
+        data["newPassword"] = this.newPassword;
+        return data; 
+    }
+}
+
+export interface IChangePassword {
+    oldPassword: string;
+    newPassword: string;
+}
+
+export class UpdateUserDetails implements IUpdateUserDetails {
+    username?: string | undefined;
+
+    constructor(data?: IUpdateUserDetails) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.username = data["username"];
+        }
+    }
+
+    static fromJS(data: any): UpdateUserDetails {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateUserDetails();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["username"] = this.username;
+        return data; 
+    }
+}
+
+export interface IUpdateUserDetails {
+    username?: string | undefined;
+}
+
 export class BlizzardGuildStatsResponse implements IBlizzardGuildStatsResponse {
     isCompleted?: boolean | undefined;
     positionInQueue?: number | undefined;
@@ -760,7 +836,6 @@ export class StoredPlayer implements IStoredPlayer {
     class?: number | undefined;
     guildId?: number | undefined;
     realmId?: number | undefined;
-    regionName?: string | undefined;
     realm?: StoredRealm | undefined;
     guild?: StoredGuild | undefined;
 
@@ -781,7 +856,6 @@ export class StoredPlayer implements IStoredPlayer {
             this.class = data["class"];
             this.guildId = data["guildId"];
             this.realmId = data["realmId"];
-            this.regionName = data["regionName"];
             this.realm = data["realm"] ? StoredRealm.fromJS(data["realm"]) : <any>undefined;
             this.guild = data["guild"] ? StoredGuild.fromJS(data["guild"]) : <any>undefined;
         }
@@ -802,7 +876,6 @@ export class StoredPlayer implements IStoredPlayer {
         data["class"] = this.class;
         data["guildId"] = this.guildId;
         data["realmId"] = this.realmId;
-        data["regionName"] = this.regionName;
         data["realm"] = this.realm ? this.realm.toJSON() : <any>undefined;
         data["guild"] = this.guild ? this.guild.toJSON() : <any>undefined;
         return data; 
@@ -816,7 +889,6 @@ export interface IStoredPlayer {
     class?: number | undefined;
     guildId?: number | undefined;
     realmId?: number | undefined;
-    regionName?: string | undefined;
     realm?: StoredRealm | undefined;
     guild?: StoredGuild | undefined;
 }
@@ -1243,78 +1315,6 @@ export interface IRaiderIoStats {
     raiderIoDps?: number | undefined;
     raiderIoTank?: number | undefined;
     raiderIoHealer?: number | undefined;
-}
-
-export class TestHolderClassOfInnerClass implements ITestHolderClassOfInnerClass {
-    innerClass?: InnerClass | undefined;
-
-    constructor(data?: ITestHolderClassOfInnerClass) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.innerClass = data["innerClass"] ? InnerClass.fromJS(data["innerClass"]) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): TestHolderClassOfInnerClass {
-        data = typeof data === 'object' ? data : {};
-        let result = new TestHolderClassOfInnerClass();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["innerClass"] = this.innerClass ? this.innerClass.toJSON() : <any>undefined;
-        return data; 
-    }
-}
-
-export interface ITestHolderClassOfInnerClass {
-    innerClass?: InnerClass | undefined;
-}
-
-export class InnerClass implements IInnerClass {
-    testItem?: number | undefined;
-
-    constructor(data?: IInnerClass) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.testItem = data["testItem"];
-        }
-    }
-
-    static fromJS(data: any): InnerClass {
-        data = typeof data === 'object' ? data : {};
-        let result = new InnerClass();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["testItem"] = this.testItem;
-        return data; 
-    }
-}
-
-export interface IInnerClass {
-    testItem?: number | undefined;
 }
 
 export class AggregatedProfileRaiderIoStatsResponse implements IAggregatedProfileRaiderIoStatsResponse {

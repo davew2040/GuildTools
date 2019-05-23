@@ -3,10 +3,13 @@
   text-align: center;
 }
 
-.login-holder {
-  width: 400px;
-}
+@media only screen and (min-width: 600px)
+{
+  .login-holder {
+    width: 400px;
+  }
 
-.container {
-  width: 600px;
+  .login-container {
+    width: 600px;
+  }
 }

@@ -1,0 +1,155 @@
+@import '../../scss/variables.scss';
+
+li .glyphicon {
+    margin-right: 10px;
+}
+
+/* Highlighting rules for nav menu items */
+
+li.link-active a,
+li.link-active a:hover,
+li.link-active a:focus {
+    background-color: #4189C7;
+    color: white;
+}
+
+.main-nav {
+    color: white;
+    width: 100%;
+    background: linear-gradient(-45deg, $first-nav-color 0%, $second-nav-color 25%, $first-nav-color 50%, $second-nav-color 75%, $first-nav-color 100%);
+}
+
+.main-nav .page-title {
+  color: white;
+}
+
+.links-container {
+  height: 2em;
+}
+
+.link-element {
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  padding-left: 25px;
+  padding-right: 25px;
+  background-image: linear-gradient(180deg, rgb(156, 0, 0), rgb(109, 0, 0));
+  border: 0px solid rgb(109, 0, 0);
+  border-radius: 30px;
+  user-select: none;
+  cursor: pointer;
+  transition: font-size 100ms ease, height 100ms ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 2em;
+}
+
+.link-element-selected {
+  background-image: linear-gradient(180deg, rgb(201, 0, 0), rgb(139, 0, 0));
+  font-size: 1.1em;
+  height: 2.2em;
+}
+
+@keyframes NarBarBgAnimation {
+  0%{background-position:0 0%}
+  100%{background-position:2000px 0}
+}
+
+@media only screen and (min-width: 600px)
+{
+  .main-nav {
+    background-size: 2000px 2000px;
+    animation:
+      NarBarBgAnimation 12s linear infinite;
+  }
+
+  .main-nav .page-title {
+    font-size: 5em;
+    font-family: Arial;
+    font-weight: 700;
+    margin-top: 0.5em;
+    padding-left: 15px;
+    text-shadow:
+      0 0 10px rgb(99, 0, 0),
+      0 0 20px red;
+  }
+
+  .links-container {
+      margin-left: 50px;
+      margin-top: 10px;
+      margin-bottom: 30px;
+      font-size: 1.5em;
+  }
+
+  .links-container .link-element:not(:first-child) {
+      margin-left: 25px;
+  }
+
+  .auth-content {
+    padding-top: 60px;
+    padding-bottom: 20px;
+    padding-right: 20px;
+    text-align: right;
+  }
+
+  .logged-in-as {
+    margin-top: 15px;
+  }
+
+  .auth-content button {
+    margin-left: 15px;
+  }
+}
+
+.links-container a {
+    color: white;
+}
+
+@keyframes NarBarBgAnimationSmall {
+  0%{background-position:0 0%}
+  100%{background-position:1500px 0}
+}
+
+@media only screen and (max-width: 600px)
+{
+  .main-nav {
+    background-size: 1500px 1500px;
+    animation:
+    NarBarBgAnimationSmall 18s linear infinite;
+  }
+
+  .title-and-links {
+    text-align: center;
+    width: 100%;
+  }
+
+  .main-nav .page-title {
+    font-size: 4em;
+    font-family: Arial;
+    font-weight: 700;
+    text-shadow:
+      0 0 10px rgb(99, 0, 0),
+      0 0 20px red;
+  }
+
+  .links-container {
+    font-size: 1em;
+  }
+
+  .links-container .link-element:not(:first-child) {
+      margin-left: 0.7em;
+  }
+
+  .auth-content {
+    width: 100%;
+    margin-top: 1.5em;
+    margin-bottom: 0.7em;
+  }
+
+  .logged-in-as {
+    margin-top: 0.7em;
+  }
+
+  .main-nav button:not(:first-child){
+    margin-left: 0.3em;
+  }
+}

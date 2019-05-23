@@ -1,12 +1,11 @@
 import { Routes } from '@angular/router';
-import { UserSettingsComponent } from './user-settings/user-settings.component';
 import { RegisterUserComponent } from './components/account/register-user/register-user.component';
 import { LoginComponent } from './components/account/login/login.component';
 import { GuildStatsComponent } from './components/guild-stats/guild-stats.component';
 import { GuildStatsLauncherComponent } from './components/guild-stats-launcher/guild-stats-launcher.component';
 import { MyGuildProfilesComponent } from './components/my-guild-profiles/my-guild-profiles.component';
-import { ResetPasswordComponent } from './reset-password/reset-password.component';
-import { ResetPasswordWithTokenComponent } from './reset-password-token/reset-password-token.component';
+import { ResetPasswordComponent } from './components/account/reset-password/reset-password.component';
+import { ResetPasswordWithTokenComponent } from './components/account/reset-password-token/reset-password-token.component';
 import { NewProfilePageComponent } from './components/new-profile-page/new-profile-page.component';
 import { RoutePaths } from './data/route-paths';
 import { ViewGuildProfileComponent } from './components/view-guild-profile/view-guild-profile.component';
@@ -16,6 +15,7 @@ import { LandingPageComponent } from './components/landing-page/landing-page.com
 import { RaiderIoStatsComponent } from './components/raider-io-stats/raider-io-stats.component';
 import { GuildProfileStatsComponent } from './components/guild-profile-stats/guild-profile-stats.component';
 import { RaiderIoProfileStatsComponent } from './components/raider-io-profile-stats/raider-io-profile-stats.component';
+import { UserSettingsComponent } from './components/account/user-settings/user-settings.component';
 
 export const ROUTES: Routes = [
   { path: '', component: LandingPageComponent },

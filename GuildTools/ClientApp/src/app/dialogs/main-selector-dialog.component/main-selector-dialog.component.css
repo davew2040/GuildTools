@@ -1,0 +1,67 @@
+.root-card {
+  width: 100%;
+  max-width: 350px;
+}
+
+.buttons {
+  margin-top: 15px;
+}
+
+.buttons button {
+  margin-left: 5px;
+}
+
+.items-table-holder {
+  width: 100%;
+  height: 200px;
+  overflow-y: auto;
+}
+
+.items-table {
+  border: solid 1px rgb(226, 226, 226);
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.items-table tr:nth-child(even) {
+  background: rgb(225, 226, 238);
+}
+
+.items-table tr:nth-child(odd) {
+  background: rgb(250, 250, 250);
+}
+
+.items-table tr {
+  border: solid 1px rgb(226, 226, 226);
+}
+
+.items-table th {
+  background-color: rgb(98, 98, 138);
+  color: white;
+  font-weight: 500;
+  font-family: Roboto,"Helvetica Neue",sans-serif;
+  font-size: 0.9em;
+}
+
+.items-table th,
+.items-table td {
+  line-height: 2;
+}
+
+.items-table th:nth-child(1),
+.items-table td:nth-child(1) {
+  padding-left: 0.5em;
+}
+
+.items-table th
+.items-table td {
+  padding-left: 0.5em;
+}
+
+.items-table tr.selected {
+  background-color: rgb(150, 175, 155);
+}
+
+.cell-player-name {
+  user-select: none;
+}

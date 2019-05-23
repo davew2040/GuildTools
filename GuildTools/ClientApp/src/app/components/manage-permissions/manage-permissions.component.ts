@@ -42,11 +42,9 @@ export class ManagePermissionsComponent implements OnInit {
 
   public pendingAccessRequests = new Array<PendingAccessRequest>();
   public accessRequestsTableDataSource = new MatTableDataSource<PendingAccessRequest>();
-  public accessRequestsPermissionsColumns: Array<string> = ['name', 'email',  'createdOn', 'approve'];
 
   public profilePermissionsByUser = new Array<PermissionByUserViewModel>();
   public profilePermissionsTableDataSource = new MatTableDataSource<PermissionByUserViewModel>();
-  public profilePermissionsColumns: Array<string> = ['name', 'permission', 'remove'];
 
   public orderedPermissions: Array<PermissionLabelPair>;
   public availablePermissions: Array<PermissionLabelPair>;

@@ -43,7 +43,7 @@ export class FindPlayerComponent implements OnInit {
       private dataService: DataService,
       private notificationService: NotificationService,
       private errorService: ErrorReportingService,
-      private authService: AuthService) {
+      private valuesService: StoredValuesService) {
     this.regions = BlizzardRealms.AllRealms;
   }
 
@@ -188,11 +188,11 @@ export class FindPlayerComponent implements OnInit {
   }
 
   private setInitialRegion(): void {
-    const userDetails = this.authService.userDetails;
+    const userDetails = this.valuesService.userDetails;
 
     let regionName = localStorage.getItem(StoredValuesService.lastUsedRegionKey);
     if (!regionName && userDetails) {
-      regionName = this.authService.userDetails.playerRegion;
+      regionName = userDetails.playerRegion;
     }
 
     if (regionName) {
@@ -207,11 +207,11 @@ export class FindPlayerComponent implements OnInit {
   }
 
   private populateFieldInitialValues(): void {
-    const userDetails = this.authService.userDetails;
+    const userDetails = this.valuesService.userDetails;
 
     let playerName = localStorage.getItem(StoredValuesService.lastUsedPlayerKey);
     if (!playerName && userDetails) {
-      playerName = this.authService.userDetails.playerName;
+      playerName = userDetails.playerName;
     }
 
     if (playerName) {
@@ -220,7 +220,7 @@ export class FindPlayerComponent implements OnInit {
 
     let realmName = localStorage.getItem(StoredValuesService.lastUsedRealmKey);
     if (!realmName && userDetails) {
-      realmName = this.authService.userDetails.playerRealm;
+      realmName = userDetails.playerRealm;
     }
 
     if (realmName) {

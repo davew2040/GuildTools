@@ -792,53 +792,15 @@ namespace GuildTools.Data
 
             using (var transaction = await this.context.Database.BeginTransactionAsync())
             {
-                var oldMainPlayer = oldMain.Player;
-                var oldAltPlayer = oldAlt.Player;
-                oldMain.Player = null;
-
-                await this.context.SaveChangesAsync();
-
-                var newMain = new EfModels.PlayerMain()
-                {
-                    Notes = oldMain.Notes,
-                    OfficerNotes = oldMain.OfficerNotes,
-                    ProfileId = profileId,
-                    PlayerId = oldAltPlayer.Id,
-                    Alts = new List<EfModels.PlayerAlt>()
-                };
-
-                this.context.PlayerMains.Add(newMain);
-
-                oldMain.Alts.Remove(oldAlt);
-
-                this.context.PlayerAlts.Remove(oldAlt);
-
-                var oldAlts = oldMain.Alts.ToList();
-
-                foreach(var alt in oldAlts)
-                {
-                    oldMain.Alts.Remove(alt);
-                    newMain.Alts.Add(alt);
-                    alt.PlayerMain = newMain;
-                }
-
-                await this.context.SaveChangesAsync();
-
-                var newAlt = new EfModels.PlayerAlt()
-                {
-                    PlayerId = oldMainPlayer.Id,
-                    ProfileId = profileId,
-                    PlayerMainId = newMain.Id
-                };
-
-                this.context.PlayerAlts.Add(newAlt);
-                this.context.PlayerMains.Remove(oldMain);
+                int originalAltPlayerId = oldAlt.PlayerId;
+                oldAlt.PlayerId = oldMain.PlayerId.Value;
+                oldMain.PlayerId = originalAltPlayerId;
 
                 await this.context.SaveChangesAsync();
 
                 transaction.Commit();
 
-                return newMain;
+                return oldMain;
             }
         }
 

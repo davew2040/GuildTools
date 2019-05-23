@@ -1,6 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import './scss/variables.scss';
+@import './scss/themes/guildtools-theme.scss';
+
 .loginRegisterBlock {
     text-align: right;
     padding-right: 10px;
@@ -58,11 +60,35 @@
 html,
 body {
     height: 100%;
+    font-size: 1em;
 }
 
 body {
     margin: 0;
     font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+a:link, a:visited {
+  color: $link-color;
+  text-decoration: underline;
+}
+
+a, a:link:active, a:visited:active {
+  color: $link-color;
+}
+
+h1, h2, h3, h4 {
+  color: rgb(49, 0, 0);
+}
+
+h2 {
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 1.6em;
+  font-weight: bold !important;
+}
+
+a:hover {
+  cursor: pointer;
 }
 
 .hidden {
@@ -73,14 +99,12 @@ body {
   display: flex;
 }
 
-h2 {
-  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-  font-size: 16px;
-  font-weight: bold !important;
-}
-
-a:hover {
-  cursor: pointer;
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px 10px 10px 10px;
 }
 
 .standard-mat-table .mat-header-cell {
@@ -88,41 +112,48 @@ a:hover {
 }
 
 mat-table.standard-mat-table .mat-header-row {
-  background-color: rgb(98, 98, 138) !important;
+  background-color: rgb(165, 38, 38) !important;
 }
 
 .mat-table.standard-mat-table {
-  border: 1px rgb(218, 218, 218) solid;
+  border: 1px solid $border-color;
 }
 
 mat-table.standard-mat-table mat-row:nth-child(even) {
-  background: rgb(225, 226, 238);
+  background: $row-alternate-even;
 }
 
 mat-table.standard-mat-table mat-row:nth-child(odd) {
-  background: rgb(250, 250, 250);
+  background: $row-alternate-odd;
 }
 
-
 .standard-table {
-  border: solid 1px rgb(226, 226, 226);
+  border: solid 1px $border-color;
   border-collapse: collapse;
   width: 100%;
 }
 
 .standard-table tr:nth-child(even) {
-  background: rgb(225, 226, 238);
+  background: $row-alternate-even;
 }
 
 .standard-table tr:nth-child(odd) {
-  background: rgb(250, 250, 250);
+  background: $row-alternate-odd;
+}
+
+.standard-table th {
+  background-color: rgb(44, 13, 10);
+  color: white;
+  font-weight: 500;
+  font-family: Roboto,"Helvetica Neue",sans-serif;
 }
 
 @media only screen and (min-width: 600px)
 {
   .container {
-    width: 1000px;
+    max-width: 1000px;
     margin-top: 15px;
+    width: 100%;
   }
 
   .standard-table tr {
@@ -130,10 +161,6 @@ mat-table.standard-mat-table mat-row:nth-child(odd) {
   }
 
   .standard-table th {
-    background-color: rgb(98, 98, 138);
-    color: white;
-    font-weight: 500;
-    font-family: Roboto,"Helvetica Neue",sans-serif;
     font-size: 0.9em;
   }
 
@@ -178,7 +205,7 @@ mat-table.standard-mat-table mat-row:nth-child(odd) {
   }
 
   .standard-table td, .standard-table th {
-    display: block;
+    display: block !important;
     float: left;
     width: 100%;
     box-sizing: border-box;

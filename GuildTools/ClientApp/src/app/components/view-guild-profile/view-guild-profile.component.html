@@ -1,113 +1,127 @@
 
-<div fxLayout="column" fxLayoutAlign="start center" class="container">
-  <div class="operations-container" fxLayout="row" fxLayoutAlign="end">
-      <div fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
-          <button mat-raised-button color="primary" (click)="shareProfile()">Share</button>
-          <button
-            *ngIf="showAdminToolbar"
-            mat-raised-button color="primary"
-            [matBadge]="getAccessRequestBadge"
-            matBadgeColor="warn"
-            [matTooltip]="getManagePermissionsTooltip"
-            (click)="navigateToAccessRequests()">Manage</button>
-      </div>
-
-      <div *ngIf="showVisitorToolbar" fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
-          <button mat-raised-button color="primary" (click)="requestAccess()">Request Access</button>
-      </div>
-</div>
-
-  <div fxLayout="row" fxLayoutAlign="center" class="main-container" style="margin-top: 15px">
-    <div fxLayout="row" fxLayoutAlign="space-between" class="secondary-container" fxLayoutGap="10px">
-        <div class="main-list" fxLayout="column" fxLayoutAlign="start stretch" fxLayoutGap="15px" fxFlex>
-            <div fxLayout="row" fxLayoutAlign="center">
-              <h2>{{ profile.profileName }}</h2>
-            </div>
-            <mat-divider></mat-divider>
-            <div fxLayout="row" fxLayoutAlign="center">
-              <mat-card
-                class="drag-box"
-                droppable
-                [dragOverClass]="'dragover-class'"
-                [dropScope]="dropScopes.DropMain"
-                (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
-            </div>
-
-            <div class="no-mains-message" *ngIf="orderedMains.length === 0" fxLayout="column" fxLayoutAlign="center">
-              No mains have been entered.
-            </div>
-
-            <mat-accordion *ngIf="orderedMains.length > 0" fxFlexAlign="stretch" class="mains-container">
-              <mat-expansion-panel
-                class="player-main-panel"
-                #playerPanel
-                *ngFor="let main of orderedMains"
-                droppable
-                [dragOverClass]="'dragover-class'"
-                [dropScope]="dropScopes.DropAlt"
-                [attr.data-main-id]="main.id"
-                (onDrop)="onAltDropped($event, main, playerPanel)">
-                  <mat-expansion-panel-header
-                    [contextMenu]="contextMenu"
-                    [contextMenuSubject]="main">
-                      <mat-panel-title>
-                        {{main.player.name}}
-                      </mat-panel-title>
-                      <mat-panel-description>
-                        {{ getPlayerDescription(main) }}
-                      </mat-panel-description>
-                    </mat-expansion-panel-header>
-
-                    <app-view-main
-                      [playerMain]="main"
-                      [isAdmin]="isAdmin"
-                      (altRemoved)="removeAlt($event)"
-                      (mainRemoved)="removeMain($event)"
-                      (altPromoted)="onAltPromoted($event)"
-                      (playerNotesChanged)="onPlayerNotesChanged($event)"
-                      (officerNotesChanged)="onOfficerNotesChanged($event)"></app-view-main>
-              </mat-expansion-panel>
-          </mat-accordion>
+<div class="container" *ngIf="profile">
+  <div fxLayout="row" fxLayoutAlign="center">
+    <h2>{{ profile.profileName }}</h2>
+  </div>
+  <div fxLayout="column" fxLayoutAlign="start stretch" class="content-container">
+    <div class="operations-container" fxLayout="row" fxLayoutAlign="end">
+        <div fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
+            <button mat-raised-button color="primary" (click)="shareProfile()">Share</button>
+            <button
+              *ngIf="showAdminToolbar"
+              mat-raised-button color="primary"
+              [matBadge]="getAccessRequestBadge"
+              matBadgeColor="warn"
+              [matTooltip]="getManagePermissionsTooltip"
+              (click)="navigateToAccessRequests()">Manage</button>
         </div>
-        <div fxFlex="200px" fxLayout="column" class="players-container" >
-            <input class="player-filter" type="text" matInput placeholder="Filter" (change)="playersFilterChanged($event)" (keyup)="playersFilterChanged($event)" autocomplete="off" />
 
-            <div class="player-table-container">
-              <mat-table *ngIf="profile" [dataSource]="filteredPlayers" class="player-table">
-                  <ng-container matColumnDef="playerName">
-                      <mat-header-cell mat-header-cell class="player-name-header" *matHeaderCellDef> Name </mat-header-cell>
-                      <mat-cell class="player-name-cell" mat-cell *matCellDef="let player">
-                        <div>{{ player.name }}</div>
-                      </mat-cell>
-                  </ng-container>
-
-                  <ng-container matColumnDef="playerGuild">
-                      <mat-header-cell mat-header-cell class="guildname-header" *matHeaderCellDef>Guild</mat-header-cell>
-                      <mat-cell class="guildname-cell" mat-cell *matCellDef="let player" style="user-select: none" >
-                          {{ getPlayerAbbreviation(player) }}
-                      </mat-cell>
-                  </ng-container>
-
-                  <ng-container matColumnDef="playerLevel">
-                      <mat-header-cell mat-header-cell class="level-header" *matHeaderCellDef>Level</mat-header-cell>
-                      <mat-cell class="level-cell" mat-cell *matCellDef="let player" style="user-select: none" >
-                          {{ player.level }}
-                      </mat-cell>
-                  </ng-container>
-
-                  <mat-header-row *matHeaderRowDef="playerColumns"></mat-header-row>
-                  <mat-row
-                    class="player-row"
-                    [ngClass]="getPlayerCssClass(player)"
-                    *matRowDef="let player; columns: playerColumns;"
-                    draggable
-                    [dragClass]="'my-draggable'"
-                    [dragScope]="[dropScopes.DropMain, dropScopes.DropAlt]"
-                    [dragData]="player">
-                  </mat-row>
-              </mat-table>
-            </div>
+        <div *ngIf="showVisitorToolbar" fxLayout="row" style="margin-top: 15px;" fxLayoutAlign="end" class="permissions-container" fxLayoutGap="10px">
+            <button mat-raised-button color="primary" (click)="requestAccess()">Request Access</button>
         </div>
+    </div>
+
+    <div fxLayout="row" fxLayoutAlign="center" class="main-container" style="margin-top: 15px">
+      <div fxLayout.gt-xs="row" fxLayout.xs="column" fxLayoutAlign="space-between" class="secondary-container" fxLayoutGap="10px">
+          <div class="main-list" fxLayout="column" fxLayoutAlign="start stretch" fxLayoutGap="15px">
+              <div class="mains-list-title">
+                <h3>Assigned Mains:</h3>
+              </div>
+
+              <div fxLayout="row" fxLayoutAlign="center">
+                <mat-card
+                  class="drag-box"
+                  droppable
+                  [dragOverClass]="'dragover-class'"
+                  [dropScope]="dropScopes.DropMain"
+                  (onDrop)="onUnassignedPlayerDropped($event)">Drag here to add a main character</mat-card>
+              </div>
+
+              <div class="no-mains-message" *ngIf="orderedMains.length === 0" fxLayout="column" fxLayoutAlign="center">
+                No mains have been entered.
+              </div>
+
+              <mat-accordion *ngIf="orderedMains.length > 0" fxFlexAlign="stretch" class="mains-container">
+                <mat-expansion-panel
+                  class="player-main-panel"
+                  #playerPanel
+                  *ngFor="let main of orderedMains"
+                  droppable
+                  [dragOverClass]="'dragover-class'"
+                  [dropScope]="dropScopes.DropAlt"
+                  [attr.data-main-id]="main.id"
+                  (onDrop)="onAltDropped($event, main)">
+                    <mat-expansion-panel-header
+                      [contextMenu]="contextMenu"
+                      [contextMenuSubject]="main"
+                      long-touch
+                      (onLongTouch)="openMobileMenu_Main($event, main)">
+                        <mat-panel-title>
+                          {{main.player.name}}
+                        </mat-panel-title>
+                        <mat-panel-description>
+                          {{ getPlayerDescription(main) }}
+                        </mat-panel-description>
+                      </mat-expansion-panel-header>
+
+                      <app-view-main
+                        [playerMain]="main"
+                        [isAdmin]="isAdmin"
+                        (altRemoved)="removeAlt($event)"
+                        (mainRemoved)="removeMain($event)"
+                        (altPromoted)="onAltPromoted($event)"
+                        (playerNotesChanged)="onPlayerNotesChanged($event)"
+                        (officerNotesChanged)="onOfficerNotesChanged($event)"></app-view-main>
+                </mat-expansion-panel>
+            </mat-accordion>
+          </div>
+
+         <div class="players-container" fxLayout="column">
+              <div class="players-container-title">
+                <h3>Available Players:</h3>
+              </div>
+
+              <input class="player-filter" type="text" matInput placeholder="Filter" (change)="playersFilterChanged($event)" (keyup)="playersFilterChanged($event)" autocomplete="off" />
+
+              <div class="player-table-container">
+                <mat-table *ngIf="profile" [dataSource]="filteredPlayers" class="player-table">
+                    <ng-container matColumnDef="playerName">
+                        <mat-header-cell mat-header-cell class="player-name-header" *matHeaderCellDef> Name </mat-header-cell>
+                        <mat-cell class="player-name-cell" mat-cell *matCellDef="let player">
+                          <div>{{ player.name }}</div>
+                        </mat-cell>
+                    </ng-container>
+
+                    <ng-container matColumnDef="playerGuild">
+                        <mat-header-cell mat-header-cell class="guildname-header" *matHeaderCellDef>Guild</mat-header-cell>
+                        <mat-cell class="guildname-cell" mat-cell *matCellDef="let player" style="user-select: none" >
+                            {{ getPlayerAbbreviation(player) }}
+                        </mat-cell>
+                    </ng-container>
+
+                    <ng-container matColumnDef="playerLevel">
+                        <mat-header-cell mat-header-cell class="level-header" *matHeaderCellDef>Level</mat-header-cell>
+                        <mat-cell class="level-cell" mat-cell *matCellDef="let player" style="user-select: none" >
+                            {{ player.level }}
+                        </mat-cell>
+                    </ng-container>
+
+                    <mat-header-row *matHeaderRowDef="playerColumns"></mat-header-row>
+                    <mat-row
+                      class="player-row"
+                      [ngClass]="getPlayerCssClass(player)"
+                      *matRowDef="let player; columns: playerColumns;"
+                      draggable
+                      [dragClass]="'my-draggable'"
+                      [dragScope]="[dropScopes.DropMain, dropScopes.DropAlt]"
+                      [dragData]="player"
+                      long-touch
+                      (onLongTouch)="openMobileMenu_UnassignedPlayer($event, player)">
+                    </mat-row>
+                </mat-table>
+              </div>
+          </div>
+      </div>
     </div>
   </div>
 </div>
@@ -123,10 +137,9 @@
     View Blizzard Profile
   </ng-template>
   <ng-template contextMenuItem (execute)="viewRaiderIo($event.item)">
-      View Raider.IO
-    </ng-template>
+    View Raider.IO
+  </ng-template>
   <ng-template contextMenuItem (execute)="viewWowProgress($event.item)">
     View WoW Progress
   </ng-template>
 </context-menu>
-

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { IUserDetails } from 'app/auth/user-details';
 
 @Injectable()
 export class StoredValuesService {
@@ -7,6 +8,8 @@ export class StoredValuesService {
   public static get lastUsedRegionKey() { return 'LastUsedRegion'; }
   public static get lastUsedPlayerKey() { return 'LastUsedPlayer'; }
   public static get lastUsedRealmKey() { return 'LastUsedRealm'; }
+  public static get userDetailsKey() { return 'UserDetails'; }
+  public static get AccessTokenKey() { return 'access_token'; }
 
   constructor() {
 
@@ -34,5 +37,26 @@ export class StoredValuesService {
 
   public set lastUsedPlayer(value: string) {
     localStorage.setItem(StoredValuesService.lastUsedPlayerKey, value);
+  }
+
+  public set userDetails(userDetails: IUserDetails) {
+    if (!userDetails) {
+      localStorage.removeItem(StoredValuesService.userDetailsKey);
+      return;
+    }
+
+    localStorage.setItem(StoredValuesService.userDetailsKey, JSON.stringify(userDetails));
+  }
+
+  public get userDetails(): IUserDetails {
+    const storedJson = localStorage.getItem(StoredValuesService.userDetailsKey);
+
+    if (!storedJson) {
+      return null;
+    }
+
+    const details = JSON.parse(storedJson) as IUserDetails;
+
+    return details;
   }
 }

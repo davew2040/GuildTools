@@ -1,8 +1,11 @@
-import { Component, OnInit, Input, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, ViewChild, Testability } from '@angular/core';
 import { PlayerMain, PlayerAlt } from 'app/services/ServiceTypes/service-types';
 import { WowService } from 'app/services/wow-service';
 import { DataService } from 'app/services/data-services';
 import { ContextMenuComponent } from 'ngx-contextmenu';
+import { UtilitiesService } from 'app/services/utilities-service';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
+import { Action, IMobileMenuAltComponentData, MobileMenuAltComponent } from './mobile-menu-alt/mobile-menu-alt.component';
 
 export interface RemoveMainEvent {
   main: PlayerMain;
@@ -48,7 +51,52 @@ export class ViewMainComponent implements OnInit {
 
   @ViewChild(ContextMenuComponent) public contextMenu: ContextMenuComponent;
 
-  constructor(private wowService: WowService, private dataService: DataService) { }
+  public contextMenuActions = [
+    {
+      html: (item) => `Promote to Main`,
+      click: (item) => this.promoteToMain(item),
+      visible: (item) => this.isAdmin,
+      enabled: (item) => true
+    },
+    {
+      html: (item) => `Delete`,
+      click: (item) => this.removeAlt(this.playerMain, item),
+      visible: (item) => this.isAdmin,
+      enabled: (item) => true
+    },
+    {
+      divider: true,
+      visible: (item) => this.isAdmin,
+      enabled: (item) => true
+    },
+    {
+      html: (item) => `View Blizzard Profile`,
+      click: (item) => {
+        console.log('viewing...');
+        this.viewBlizzardProfile(item);
+      },
+      visible: (item) => true,
+      enabled: (item) => true
+    },
+    {
+      html: (item) => `View Raider.IO`,
+      click: (item) => this.viewRaiderIo(item),
+      visible: (item) => true,
+      enabled: (item) => true
+    },
+    {
+      html: (item) => `View WoW Progress`,
+      click: (item) => this.viewWowProgress(item),
+      visible: (item) => true,
+      enabled: (item) => true
+    }
+  ];
+
+  constructor(
+    private wowService: WowService,
+    private dataService: DataService,
+    public utilitiesService: UtilitiesService,
+    private bottomSheet: MatBottomSheet) { }
 
   ngOnInit() {
   }
@@ -65,14 +113,31 @@ export class ViewMainComponent implements OnInit {
     return this.isShowingActions;
   }
 
-  public onMouseEnter(event: any): void {
-    const targetDiv = event.currentTarget.querySelector('.player-actions-col div');
-    targetDiv.classList.remove('hidden');
+  public openMobileMenu_Alt(alt: PlayerAlt) {
+    this.bottomSheet.open(MobileMenuAltComponent, {
+      data: {
+        callback: this.handleBottomSheetResult,
+        alt: alt
+      } as IMobileMenuAltComponentData
+    });
   }
 
-  public onMouseLeave(event: any): void {
-    const targetDiv = event.currentTarget.querySelector('.player-actions-col div');
-    targetDiv.classList.add('hidden');
+  private handleBottomSheetResult = (action: Action, player: PlayerAlt): void => {
+    if (action === Action.PromoteToMain) {
+      this.promoteToMain(player);
+    }
+    else if (action === Action.Remove) {
+      this.removeAlt(this.playerMain, player);
+    }
+    else if (action === Action.ViewBlizzardProfile) {
+      this.viewBlizzardProfile(player);
+    }
+    else if (action === Action.ViewRaiderIo) {
+      this.viewRaiderIo(player);
+    }
+    else if (action === Action.ViewWowProgress) {
+      this.viewWowProgress(player);
+    }
   }
 
   public removeAlt(main: PlayerMain, alt: PlayerAlt) {
@@ -127,5 +192,9 @@ export class ViewMainComponent implements OnInit {
       main: this.playerMain,
       newNotes: newNotes
     } as EditOfficerNotesEvent);
+  }
+
+  public get isMobile() {
+    return this.utilitiesService.mobileService.AnyMobile();
   }
 }

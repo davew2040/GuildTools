@@ -8,7 +8,7 @@ import { ContextMenuComponent } from 'ngx-contextmenu';
 import { Observable, Subject, combineLatest } from 'rxjs';
 import { startWith, map, filter } from 'rxjs/operators';
 import { DropEvent } from 'ng-drag-drop';
-import { MatExpansionPanel, MatDialog } from '@angular/material';
+import { MatExpansionPanel, MatDialog, MatBottomSheet } from '@angular/material';
 import {
   RemoveAltEvent,
   RemoveMainEvent,
@@ -22,6 +22,10 @@ import { NotificationService } from 'app/shared-services/notification-service';
 import { RoutePaths } from 'app/data/route-paths';
 import { ConfirmationDialogComponent } from 'app/dialogs/confirmation-dialog.component/confirmation-dialog.component';
 import { ShareLinkDialogData, ShareLinkDialogComponent } from 'app/dialogs/share-link-dialog.component/share-link-dialog.component';
+import { MobileMenuMainComponent, Action, IMobileMenuMainComponentData } from './mobile-menu-main/mobile-menu-main.component';
+import { MainSelectorDialogComponent } from 'app/dialogs/main-selector-dialog.component/main-selector-dialog.component';
+import { MobileMenuUnassignedPlayerComponent, IMobileMenuUnassignedPlayerData, UnassignedPlayerMobileMenuAction } from './mobile-menu-unassigned-player/mobile-menu-unassigned-player.component';
+import { UtilitiesService } from 'app/services/utilities-service';
 
 class DropScopes {
   public DropMain = 'DropMain';
@@ -61,8 +65,8 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
   public playerFlaggedForExpansion: number = null;
 
   @ViewChild(ContextMenuComponent) public contextMenu: ContextMenuComponent;
-  @ViewChildren('playerPanel',  { read: MatExpansionPanel  }) public playerPanelComponents: QueryList<MatExpansionPanel>;
-  @ViewChildren('playerPanel',  { read: ElementRef  }) public playerPanelElements: QueryList<ElementRef>;
+  @ViewChildren('playerPanel', { read: MatExpansionPanel  }) public playerPanelComponents: QueryList<MatExpansionPanel>;
+  @ViewChildren('playerPanel', { read: ElementRef  }) public playerPanelElements: QueryList<ElementRef>;
 
   constructor(
       private route: ActivatedRoute,
@@ -74,6 +78,8 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
       private notificationService: NotificationService,
       private dialog: MatDialog,
       private errorService: ErrorReportingService,
+      private bottomSheet: MatBottomSheet,
+      private utilitiesService: UtilitiesService,
       @Inject('BASE_URL') private baseUrl: string) {
 
     this.orderedMainsObs = this.mainsSubject.pipe(
@@ -216,9 +222,13 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
   public onUnassignedPlayerDropped($event: DropEvent) {
     const draggedPlayer = $event.dragData as BlizzardPlayer;
 
+    this.addNewMain(draggedPlayer);
+  }
+
+  public addNewMain(player: StoredPlayer) {
     this.busyService.setBusy();
 
-    this.dataService.addPlayerMainToProfile(draggedPlayer, this.profile)
+    this.dataService.addPlayerMainToProfile(player, this.profile)
       .subscribe(
         success => {
           this.busyService.unsetBusy();
@@ -232,12 +242,16 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
       );
   }
 
-  public onAltDropped($event: DropEvent, main: PlayerMain, component: MatExpansionPanel) {
+  public onAltDropped($event: DropEvent, main: PlayerMain) {
     const draggedPlayer = $event.dragData as BlizzardPlayer;
 
+    this.addAltToMain(draggedPlayer, main);
+  }
+
+  public addAltToMain(player: StoredPlayer, main: PlayerMain) {
     this.busyService.setBusy();
 
-    this.dataService.addAltToMain(draggedPlayer, main, this.profile)
+    this.dataService.addAltToMain(player, main, this.profile)
       .subscribe(
         success => {
           this.busyService.unsetBusy();
@@ -246,7 +260,7 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
           main.alts = this.sortAlts(main.alts);
           this.altsSubject.next(this.getAltsFromMains(this.mains));
 
-          component.expanded = true;
+          this.playerFlaggedForExpansion = main.id;
         },
         error => {
           this.busyService.unsetBusy();
@@ -394,7 +408,6 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
     });
   }
 
-
   public get playerColumns(): Array<string> {
     if (!this.profile) {
       return [];
@@ -418,6 +431,54 @@ export class ViewGuildProfileComponent implements OnInit, AfterViewChecked {
     }
 
     return player.guild.name.substr(0, Math.min(player.guild.name.length, 3)).toUpperCase();
+  }
+
+  public openMobileMenu_Main(event: MouseEvent, main: PlayerMain) {
+    event.preventDefault();
+
+    this.bottomSheet.open(MobileMenuMainComponent, {
+      data: {
+        callback: this.handleBottomSheetResult_Main,
+        main: main
+      } as IMobileMenuMainComponentData
+    });
+  }
+
+  private handleBottomSheetResult_Main = (action: Action, player: PlayerMain): void => {
+    if (action === Action.RemoveMain) {
+      this.removeMainWithConfirmation(player);
+    }
+    else if (action === Action.ViewBlizzardProfile) {
+      this.viewBlizzardProfile(player);
+    }
+    else if (action === Action.ViewRaiderIo) {
+      this.viewRaiderIo(player);
+    }
+    else if (action === Action.ViewWowProgress) {
+      this.viewWowProgress(player);
+    }
+  }
+
+  public openMobileMenu_UnassignedPlayer(event: MouseEvent, player: StoredPlayer) {
+    event.preventDefault();
+
+    this.bottomSheet.open(MobileMenuUnassignedPlayerComponent, {
+      data: {
+        callback: this.handleBottomSheetResult_UnassignedPlayer,
+        player: player,
+        allMains: this.mains
+      } as IMobileMenuUnassignedPlayerData
+    });
+  }
+
+  private handleBottomSheetResult_UnassignedPlayer =
+      (action: UnassignedPlayerMobileMenuAction, player: StoredPlayer, main: PlayerMain): void => {
+    if (action === UnassignedPlayerMobileMenuAction.AssignToMain) {
+      this.addAltToMain(player, main);
+    }
+    else if (action === UnassignedPlayerMobileMenuAction.AddAsMain) {
+      this.addNewMain(player);
+    }
   }
 
   private getPlayerFilterer(): Observable<Array<BlizzardPlayer>> {

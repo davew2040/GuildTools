@@ -1,5 +1,13 @@
 @import '../scss/variables.scss';
 
+
+.body-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
 @media only screen and (min-width: 600px)
 {
   .body-content {
@@ -37,7 +45,7 @@
   bottom: 50px;
   width: 150px;
   height: 150px;
-  background: #38396e;
+  background: $dark-background;
   border-radius: 15px;
   border-width: 0px;
   border-style: solid;
