@@ -1,6 +1,4 @@
-a:hover {
-  cursor: pointer;
-}
+@import '../../../scss/variables.scss';
 
 .delete-main-container {
   height: 20px;
@@ -20,15 +18,15 @@ a:hover {
 }
 
 .alts-table {
-  border-style: solid;
-  border-collapse: separate;
-  border-color: #d1d1d1;
-  border-width: 1px;
   margin-top: 10px;
   margin-bottom: 10px;
   overflow: hidden;
-    perspective: 1px;
 }
+
+.alts-table tr {
+  border: 1px solid $border-color;
+}
+
 
 .alts-table td {
   padding: 3px 6px;
