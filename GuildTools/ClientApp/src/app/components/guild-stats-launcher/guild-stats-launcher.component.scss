@@ -21,6 +21,11 @@ mat-card {
   background-color: $light-background !important;
 }
 
+.launcher-container {
+  margin-top: 150px;
+  width: 100%;
+}
+
 @media only screen and (max-width: 600px)
 {
   .stats-section {
@@ -32,7 +37,6 @@ mat-card {
 {
   .launcher-container {
     margin-top: 150px;
-    width: 500px;
   }
 
   .stats-section {
