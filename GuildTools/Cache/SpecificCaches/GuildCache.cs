@@ -31,13 +31,16 @@ namespace GuildTools.Cache.SpecificCaches
 
         public async Task<GuildSlim> GetGuild(GameRegionEnum region, string guildName, string realmName)
         {
-            return await this.cache.GetOrCacheAsync(async () =>
-            {
-                var result = await this.guildService.GetGuild(BlizzardUtilities.GetBlizzardRegionFromEfRegion(region), realmName, guildName);
+            var locatedGuild = await this.cache.GetOrCacheAsync(
+                async () =>
+                {
+                    var result = await this.guildService.GetGuild(BlizzardUtilities.GetBlizzardRegionFromEfRegion(region), realmName, guildName);
 
-                return result;
-            },
-            () => this.GetKey(region, guildName, realmName));
+                    return result;
+                },
+                () => this.GetKey(region, guildName, realmName));
+
+            return locatedGuild;
         }
 
         private string GetKey(GameRegionEnum region, string guildName, string realmName)

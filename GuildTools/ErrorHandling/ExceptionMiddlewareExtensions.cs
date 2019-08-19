@@ -26,7 +26,14 @@ namespace GuildTools.ErrorHandling
                     {
                         if (!(contextFeature.Error is UserReportableError))
                         {
-                            Log.Logger.Error($"Something went wrong: {contextFeature.Error}");
+                            string data = string.Empty;
+
+                            if (contextFeature.Error.Data != null)
+                            {
+                                data = "Data: " + contextFeature.Error.Data.ToString();
+                            }
+
+                            Log.Logger.Error($"Something went wrong: {contextFeature.Error} {data}");
                         }
 
                         if (contextFeature.Error is ApiError)

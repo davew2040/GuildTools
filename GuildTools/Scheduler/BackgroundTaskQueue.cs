@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +37,8 @@ namespace GuildTools.Scheduler
             {
                 throw new ArgumentNullException(nameof(workItem));
             }
+
+            Log.Information($"Enqueuing new background work item with key '{workItem.Key}'.");
 
             _workItems.Enqueue(workItem);
             _signal.Release();

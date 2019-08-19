@@ -18,6 +18,8 @@ namespace GuildTools.ExternalServices.Blizzard
             { BlizzardRegion.EU, "EuBlizzardAccessToken" }
         };
 
+        private const string DefaultLocale = "en_US";
+
         private Dictionary<BlizzardRegion, string> regionAccessTokens;
         private HttpClient client;
         private IDataRepository dataRepo;
@@ -55,7 +57,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
-            string url = $"https://{regionString}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?namespace={ns}&locale=en-US&access_token={{0}}&fields=members";
+            string url = $"https://{regionString}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?namespace={ns}&locale={DefaultLocale}&access_token={{0}}&fields=members";
 
             return await this.DoBlizzardGet(url, region);
         }
@@ -64,7 +66,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
-            string url = $"https://{regionString}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?namespace={ns}&locale=en-US&access_token={{0}}&fields=items";
+            string url = $"https://{regionString}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?namespace={ns}&locale={DefaultLocale}&access_token={{0}}&fields=items";
 
             return await DoBlizzardGet(url, region);
         }
@@ -73,7 +75,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
-            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?namespace={ns}&locale=en-US&access_token={{0}}&fields=pvp";
+            string url = $"https://{GetRegionString(region)}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?namespace={ns}&locale={DefaultLocale}&access_token={{0}}&fields=pvp";
 
             return await DoBlizzardGet(url, region);
         }
@@ -82,7 +84,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
-            string url = $"https://{regionString}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?namespace={ns}&locale=en-US&access_token={{0}}&fields=mounts";
+            string url = $"https://{regionString}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?namespace={ns}&locale={DefaultLocale}&access_token={{0}}&fields=mounts";
 
             return await DoBlizzardGet(url, region);
         }
@@ -91,7 +93,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
-            string url = $"https://{regionString}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?namespace={ns}&locale=en-US&access_token={{0}}&fields=pets";
+            string url = $"https://{regionString}.api.blizzard.com/wow/character/{FormatRealmName(realm)}/{player}?namespace={ns}&locale={DefaultLocale}&access_token={{0}}&fields=pets";
 
             return await DoBlizzardGet(url, region);
         }
@@ -100,7 +102,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
-            string url = $"https://{regionString}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?namespace={ns}&locale=en-US&access_token={{0}}";
+            string url = $"https://{regionString}.api.blizzard.com/wow/guild/{FormatRealmName(realm)}/{FormatGuildName(guild)}?namespace={ns}&locale={DefaultLocale}&access_token={{0}}";
 
             return await DoBlizzardGet(url, region);
         }
@@ -109,7 +111,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
-            var url = $"https://{regionString}.api.blizzard.com/wow/character/{realm}/{player}?namespace={ns}&fields=guild&locale=en_US&access_token={{0}}";
+            var url = $"https://{regionString}.api.blizzard.com/wow/character/{realm}/{player}?namespace={ns}&fields=guild&locale={DefaultLocale}&access_token={{0}}";
 
             return await DoBlizzardGet(url, region);
         }
@@ -118,7 +120,7 @@ namespace GuildTools.ExternalServices.Blizzard
         {
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
-            string url = $"https://{regionString}.api.blizzard.com/data/wow/realm/index?namespace={ns}&locale=en_US&access_token={{0}}";
+            string url = $"https://{regionString}.api.blizzard.com/data/wow/realm/index?namespace={ns}&locale={DefaultLocale}&access_token={{0}}";
 
             return await DoBlizzardGet(url, region);
         }
@@ -129,7 +131,7 @@ namespace GuildTools.ExternalServices.Blizzard
             var regionString = GetRegionString(region);
             var ns = $"dynamic-{regionString}";
 
-            var url = $"https://{regionString}.api.blizzard.com/data/wow/realm/{realmSlug}?namespace={ns}&locale=en_US&access_token={{0}}";
+            var url = $"https://{regionString}.api.blizzard.com/data/wow/realm/{realmSlug}?namespace={ns}&locale={DefaultLocale}&access_token={{0}}";
 
             return await DoBlizzardGet(url, region);
         }
@@ -164,6 +166,7 @@ namespace GuildTools.ExternalServices.Blizzard
         public static string FormatGuildName(string name)
         {
             name = name.Trim().ToLower();
+            name = name.Replace('-', ' ');
 
             return name;
         }

@@ -52,7 +52,7 @@ namespace GuildTools.EF
 
             modelBuilder.Entity<BigValueCache>(entity =>
             {
-                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Id).HasMaxLength(100);
 
                 entity.Property(e => e.ExpiresOn).HasColumnType("datetime");
 

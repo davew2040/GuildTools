@@ -17,8 +17,6 @@ namespace GuildTools.Services.Mail
 
         public RegistrationConfirmationEmail GenerateRegistrationConfirmationEmail(string url)
         {
-            var fullUrl = _baseUrl + url;
-
             var newEmail = new RegistrationConfirmationEmail();
 
             newEmail.Subject = "Registration Confirmation";
@@ -28,7 +26,7 @@ namespace GuildTools.Services.Mail
 
 Click the following link to confirm your GuildTools account registration:
 
-{fullUrl}
+{url}
 
 Thanks!";
 
@@ -39,7 +37,7 @@ Hello from the GuildTools Team!
 
 Click the following link to confirm your GuildTools account registration:<br/>
 <br/>
-<a href='{fullUrl}'>{fullUrl}.<br/>
+<a href='{url}'>{url}<br/>
 <br/>
 
 Thanks!";
@@ -49,8 +47,6 @@ Thanks!";
 
         public ResetPasswordEmail GenerateResetPasswordEmail(string url)
         {
-            var fullUrl = _baseUrl + url;
-
             var newEmail = new ResetPasswordEmail();
 
             newEmail.Subject = "Reset your GuildTools password:";
@@ -61,7 +57,7 @@ Hello from the GuildTools Team!
 
 Click the following link to reset your GuildTools password: 
 
-{fullUrl}
+{url}
 
 Thanks!";
 
@@ -72,13 +68,14 @@ Hello from the GuildTools Team!<br/><br/>
 
 Click the following link to reset your GuildTools password: 
 
-<a href='{fullUrl}'>{fullUrl}.<br/><br/>
+<a href='{url}'>{url}<br/><br/>
 
 Thanks!";
 
             return newEmail;
         }
 
+        // Note: this one requires the tail URL!
         public StatsGenerationComplete GenerateStatsCompleteEmail(string url)
         {
             var fullUrl = _baseUrl + url;
