@@ -57,6 +57,7 @@ import { MobileMenuUnassignedPlayerComponent } from './components/view-guild-pro
 import { LongTouchDirective } from './directives/long-touch.directive';
 import { UserSettingsComponent } from './components/account/user-settings/user-settings.component';
 import { NavService } from './services/nav-service';
+import { SketchComponent } from './components/sketch/sketch.component';
 
 
 @NgModule({
@@ -98,7 +99,8 @@ import { NavService } from './services/nav-service';
     MainSelectorDialogComponent,
     MobileMenuMainComponent,
     MobileMenuAltComponent,
-    MobileMenuUnassignedPlayerComponent
+    MobileMenuUnassignedPlayerComponent,
+    SketchComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),

@@ -1,0 +1,17 @@
+
+<div class="container">
+  <div *ngIf="!this.pageLoaded" style="text-align: center; font-size:25px;">
+    Loading...
+  </div>
+  <div id="drawing-surface" [style.backgroundImage]="this.backgroundImageUriExpression">
+    <!-- <img id="drawing-background" src="assets/sketch/dais.jpg"/> -->
+    <canvas
+      width="400"
+      height="400"
+      id="drawing-canvas"
+      (mousedown)="handleMouseDown($event)"
+      (mouseup)="handleMouseUp($event)"
+      (mouseleave)="handleMouseLeave($event)"
+      (mousemove)="this.handleMove($event)"></canvas>
+  </div>
+</div>

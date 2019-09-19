@@ -1,0 +1,13 @@
+
+#drawing-surface {
+  width: 800px;
+  height: 600px;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+#drawing-canvas {
+  width: 400px;
+  height: 400px;
+  border: 1px solid red;
+}

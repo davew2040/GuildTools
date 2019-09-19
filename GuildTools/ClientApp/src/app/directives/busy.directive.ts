@@ -6,7 +6,7 @@ import { BusyService } from '../shared-services/busy-service';
 })
 export class BusyDirective {
 
-  constructor(el: ElementRef, private renderer: Renderer2,  busyService: BusyService) {
+  constructor(el: ElementRef, private renderer: Renderer2, busyService: BusyService) {
     busyService.isBusySubscription.subscribe((isBusy) => {
       this.renderer.setStyle(el.nativeElement, 'display', isBusy ? 'inline': 'none');
     });

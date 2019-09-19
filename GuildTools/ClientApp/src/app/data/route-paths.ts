@@ -14,4 +14,5 @@ export class RoutePaths {
   public static ResetPasswordWithToken = 'resetpasswordtoken';
   public static ViewProfile = 'viewprofile';
   public static ManagePermissions = 'managepermissions';
+  public static Sketch = 'sketch';
 }
