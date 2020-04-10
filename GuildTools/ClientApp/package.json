@@ -29,7 +29,7 @@
     "@ngtools/webpack": "^7.3.8",
     "@nguniversal/module-map-ngfactory-loader": "^7.1.1",
     "aspnet-prerendering": "^3.0.1",
-    "auth0-js": "^9.8.2",
+    "auth0-js": "^9.13.2",
     "bootstrap": "^3.3.7",
     "core-js": "^2.4.1",
     "ng-drag-drop": "^5.0.0",
